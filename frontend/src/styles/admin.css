@@ -1,0 +1,52 @@
+/* Admin-specific styles with professional fonts */
+.admin-page {
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.admin-page .heading-font,
+.admin-page .title-font {
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif !important;
+  font-weight: 600;
+}
+
+.admin-page h1,
+.admin-page h2,
+.admin-page h3,
+.admin-page h4,
+.admin-page h5,
+.admin-page h6 {
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif !important;
+  font-weight: 600;
+}
+
+.admin-page button {
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif !important;
+  font-weight: 500;
+}
+
+/* Input field styling for better readability */
+.admin-page input {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #000000 !important;
+}
+
+.admin-page input::placeholder {
+  color: rgba(0, 0, 0, 0.7) !important;
+}
+
+.admin-page textarea {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+.admin-page textarea::placeholder {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.admin-page .nextui-input-wrapper {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.admin-page .nextui-input {
+  color: #000000 !important;
+}

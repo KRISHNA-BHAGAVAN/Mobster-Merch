@@ -1,0 +1,210 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardBody, Button, Input } from "@heroui/react";
+import { Icon } from '@iconify/react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '../context/ToastContext';
+import { useCart } from '../context/CartContext';
+import { cartService, orderService, API_BASE_URL } from '../services';
+
+interface CartItem {
+  cart_id: number;
+  product_id: number;
+  name: string;
+  price: number;
+  quantity: number;
+  image_url: string;
+  subtotal: number;
+  stock: number;
+}
+
+export const Cart: React.FC = () => {
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+  const { refreshCart } = useCart();
+
+  useEffect(() => {
+    if (user) {
+      fetchCart();
+    }
+  }, [user]);
+
+  const fetchCart = async () => {
+    try {
+      const data = await cartService.getCart();
+      console.log('Cart data:', data);
+      setCartItems(data);
+    } catch (error) {
+      console.error('Error fetching cart:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateQuantity = async (cartId: number, quantity: number, maxStock: number) => {
+    if (quantity < 1) return;
+    
+    if (quantity > maxStock) {
+      showToast(`Only ${maxStock} items available in stock`, 'error');
+      return;
+    }
+    
+    try {
+      await cartService.updateCartItem(cartId, quantity);
+      await Promise.all([fetchCart(), refreshCart()]);
+    } catch (error) {
+      console.error('Error updating quantity:', error);
+      showToast('Error updating quantity', 'error');
+    }
+  };
+
+  const removeItem = async (cartId: number) => {
+    try {
+      await cartService.removeFromCart(cartId);
+      await Promise.all([fetchCart(), refreshCart()]);
+    } catch (error) {
+      console.error('Error removing item:', error);
+    }
+  };
+
+  const checkout = async () => {
+    try {
+      const orderData = await orderService.placeOrder();
+      showToast('Order created successfully!', 'success');
+      // Navigate to checkout page with order data
+      navigate('/checkout', { state: { orderData } });
+    } catch (error) {
+      showToast('Error creating order', 'error');
+    }
+  };
+
+  const total = cartItems.reduce((sum, item) => sum + Number(item.subtotal), 0);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Icon icon="lucide:loader-2" className="animate-spin h-8 w-8" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background py-20">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="heading-font text-3xl">Shopping Cart</h1>
+          <Button variant="flat" onPress={() => navigate('/products')}>
+            Continue Shopping
+          </Button>
+        </div>
+
+        {cartItems.length === 0 ? (
+          <div className="text-center py-20">
+            <Icon icon="lucide:shopping-cart" className="h-16 w-16 text-foreground/50 mx-auto mb-4" />
+            <p className="text-foreground/70 mb-4">Your cart is empty</p>
+            <Button color="primary" onPress={() => navigate('/products')}>
+              Start Shopping
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-4">
+              {cartItems.map((item) => (
+                <Card key={item.cart_id}>
+                  <CardBody className="p-4">
+                    <div className="flex gap-4">
+                      <img 
+                        src={item.image_url ? `${API_BASE_URL.replace('/api', '')}${item.image_url}` : '/placeholder.jpg'}
+                        alt={item.name}
+                        className="w-20 h-20 object-cover rounded"
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-semibold mb-2">{item.name}</h3>
+                        <p className="text-primary font-mono">₹{item.price}</p>
+                        <p className="text-xs text-foreground/60">Stock: {item.stock}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Button
+                            size="sm"
+                            className="bg-gray-800 text-white hover:bg-gray-700"
+                            onPress={() => updateQuantity(item.cart_id, item.quantity - 1, item.stock)}
+                          >
+                            -
+                          </Button>
+                         <Input
+                            type="number"
+                            value={item.quantity.toString()}
+                            onChange={(e) => {
+                              const newQuantity = parseInt(e.target.value) || 1;
+                              updateQuantity(item.cart_id, newQuantity, item.stock);
+                            }}
+                            className="w-20 text-center [&>div>input]:[-webkit-appearance:textfield] [&>div>input]:[&::-webkit-outer-spin-button]:appearance-none [&>div>input]:[&::-webkit-inner-spin-button]:appearance-none [&>div>input]:[&::-webkit-inner-spin-button]:[-webkit-appearance:none] [&>div>input]:[&::-webkit-outer-spin-button]:[-webkit-appearance:none]"
+                            classNames={{
+                              inputWrapper: "!bg-black !border !border-gray-600 rounded-full shadow-sm focus:!border-primary",
+                              input: "!text-white font-semibold text-lg text-center [-webkit-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:[-webkit-appearance:none] [&::-webkit-outer-spin-button]:[-webkit-appearance:none]"
+                            }}
+                          />
+
+
+                          <Button
+                            size="sm"
+                            className="bg-gray-800 text-white hover:bg-gray-700"
+                            onPress={() => updateQuantity(item.cart_id, item.quantity + 1, item.stock)}
+                            isDisabled={item.quantity >= item.stock}
+                          >
+                            +
+                          </Button>
+                          <Button
+                            size="sm"
+                            color="danger"
+                            variant="flat"
+                            onPress={() => removeItem(item.cart_id)}
+                            startContent={<Icon icon="lucide:trash" />}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">₹{Number(item.subtotal).toFixed(2)}</p>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+              ))}
+            </div>
+
+            <div>
+              <Card>
+                <CardBody className="p-6">
+                  <h3 className="font-semibold text-xl mb-4">Order Summary</h3>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex justify-between">
+                      <span>Subtotal</span>
+                      <span>₹{total.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold text-lg border-t pt-2">
+                      <span>Total</span>
+                      <span>₹{total.toFixed(2)}</span>
+                    </div>
+                  </div>
+                  <Button
+                    color="primary"
+                    fullWidth
+                    size="lg"
+                    onPress={checkout}
+                    startContent={<Icon icon="lucide:credit-card" />}
+                  >
+                    Checkout
+                  </Button>
+                </CardBody>
+              </Card>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

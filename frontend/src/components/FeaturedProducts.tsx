@@ -1,0 +1,261 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardBody, Button } from "@heroui/react";
+import { motion } from "framer-motion";
+import { Icon } from '@iconify/react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { useCart } from '../context/CartContext';
+import { productService, cartService, API_BASE_URL } from '../services';
+
+interface Product {
+  product_id: number;
+  name: string;
+  price: number;
+  image_url: string;
+  category: string;
+  description: string;
+  stock: number;
+}
+
+interface CartItem {
+  product_id: number;
+  quantity: number;
+}
+
+export const FeaturedProducts: React.FC = () => {
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+  const { showToast } = useToast();
+  const { refreshCart } = useCart();
+
+  const handleAddToCart = (productId: number) => {
+    if (isAuthenticated) {
+      addToCart(productId);
+    } else {
+      navigate('/login');
+    }
+  };
+
+  const addToCart = async (productId: number) => {
+    try {
+      await cartService.addToCart({ product_id: productId, quantity: 1 });
+      await Promise.all([fetchCartItems(), refreshCart()]);
+      showToast('Added to cart successfully!', 'success');
+    } catch (error) {
+      showToast('Error adding to cart', 'error');
+    }
+  };
+
+  const updateQuantity = async (productId: number, newQuantity: number) => {
+    if (newQuantity === 0) {
+      await removeFromCart(productId);
+      return;
+    }
+    
+    // Check stock limit
+    const product = featuredProducts.find(p => p.product_id === productId);
+    if (product && newQuantity > product.stock) {
+      showToast(`Only ${product.stock} items available in stock`, 'error');
+      return;
+    }
+    
+    try {
+      await cartService.updateQuantity(productId, newQuantity);
+      await Promise.all([fetchCartItems(), refreshCart()]);
+    } catch (error) {
+      showToast('Error updating quantity', 'error');
+    }
+  };
+
+  const removeFromCart = async (productId: number) => {
+    try {
+      await cartService.removeByProductId(productId);
+      await Promise.all([fetchCartItems(), refreshCart()]);
+    } catch (error) {
+      showToast('Error removing from cart', 'error');
+    }
+  };
+
+  const getCartQuantity = (productId: number): number => {
+    const item = cartItems.find(item => item.product_id === productId);
+    return item ? item.quantity : 0;
+  };
+
+  useEffect(() => {
+    fetchProducts();
+    if (isAuthenticated) {
+      fetchCartItems();
+    }
+  }, [isAuthenticated]);
+
+  const fetchProducts = async () => {
+    try {
+      const data = await productService.getAllProducts();
+      setFeaturedProducts(data.slice(0, 4)); // Get first 4 products
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCartItems = async () => {
+    try {
+      const data = await cartService.getCart();
+      setCartItems(data);
+    } catch (error) {
+      console.error('Error fetching cart:', error);
+    }
+  };
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+  };
+
+  return (
+    <motion.section 
+      id="featured" 
+      className="min-h-screen py-20 relative flex items-center"
+      initial={{ opacity: 0, x: 100 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      transition={{ duration: 1, ease: "easeOut" }}
+      viewport={{ once: true, amount: 0.3 }}
+    >
+      <motion.div 
+        className="container mx-auto px-4"
+        initial={{ opacity: 0, y: 50 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.2 }}
+        viewport={{ once: true }}
+      >
+        <div className="text-center mb-12">
+          <h2 className="heading-font text-3xl md:text-4xl mb-4 text-shadow-red">
+            FEATURED <span className="text-primary">MERCHANDISE</span>
+          </h2>
+          <div className="samurai-divider w-24 mx-auto mb-6"></div>
+          <p className="text-foreground/80 max-w-2xl mx-auto">
+            Exclusive items from the "They Call Him OG" collection. Limited quantities available.
+          </p>
+        </div>
+
+        <motion.div 
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+          variants={container}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.2 }}
+        >
+          {loading ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <motion.div key={index} variants={item}>
+                <Card className="product-card bg-content1 border border-primary/20">
+                  <CardBody className="p-0">
+                    <div className="aspect-[3/4] bg-foreground/10 animate-pulse"></div>
+                    <div className="p-4 space-y-2">
+                      <div className="h-4 bg-foreground/10 animate-pulse rounded"></div>
+                      <div className="h-4 bg-foreground/10 animate-pulse rounded w-1/2"></div>
+                    </div>
+                  </CardBody>
+                </Card>
+              </motion.div>
+            ))
+          ) : (
+            featuredProducts.map((product) => (
+              <motion.div key={product.product_id} variants={item}>
+                <Card 
+                  className="product-card bg-content1 border border-primary/20 transition-all duration-300"
+                  disableRipple
+                >
+                  <CardBody className="p-0 overflow-hidden">
+                    <div className="relative aspect-[3/4] overflow-hidden">
+                      <img 
+                        src={product.image_url ? `${API_BASE_URL.replace('/api', '')}${product.image_url}` : '/placeholder-image.jpg'} 
+                        alt={product.name} 
+                        className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                      />
+                      <div className="absolute top-2 right-2 bg-primary text-white text-xs px-2 py-1 rounded-sm heading-font">
+                        {product.category}
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="heading-font text-lg mb-1 line-clamp-2">{product.name}</h3>
+                      <p className="text-sm text-foreground/70 mb-2 line-clamp-2 font-sans">{product.description}</p>
+                      <div className="flex justify-between items-center mb-3">
+                        <p className="text-primary font-bold font-mono">₹{product.price}</p>
+                        <p className="text-xs text-foreground/60">Stock: {product.stock}</p>
+                      </div>
+                      {getCartQuantity(product.product_id) > 0 ? (
+                        <div className="flex items-center justify-between bg-primary/10 rounded-lg p-2">
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="flat"
+                            color="primary"
+                            onPress={() => updateQuantity(product.product_id, getCartQuantity(product.product_id) - 1)}
+                          >
+                            <Icon icon="lucide:minus" />
+                          </Button>
+                          <span className="font-mono text-lg font-bold px-4">
+                            {getCartQuantity(product.product_id)}
+                          </span>
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="flat"
+                            color="primary"
+                            isDisabled={getCartQuantity(product.product_id) >= product.stock}
+                            onPress={() => updateQuantity(product.product_id, getCartQuantity(product.product_id) + 1)}
+                          >
+                            <Icon icon="lucide:plus" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button 
+                          color="primary" 
+                          variant="flat" 
+                          fullWidth
+                          className="heading-font tracking-wider text-sm"
+                          startContent={<Icon icon="lucide:shopping-cart" />}
+                          onPress={() => handleAddToCart(product.product_id)}
+                        >
+                          ADD TO CART
+                        </Button>
+                      )}
+                    </div>
+                  </CardBody>
+                </Card>
+              </motion.div>
+            ))
+          )}
+        </motion.div>
+
+        <div className="text-center mt-12">
+          <Button 
+            color="primary" 
+            size="lg"
+            className="heading-font tracking-wider"
+            endContent={<Icon icon="lucide:arrow-right" />}
+            onPress={() => navigate('/products')}
+          >
+            VIEW ALL PRODUCTS
+          </Button>
+        </div>
+      </motion.div>
+    </motion.section>
+  );
+};
