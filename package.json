@@ -1,0 +1,36 @@
+{
+  "name": "og-merchandise",
+  "version": "1.0.0",
+  "description": "Complete e-commerce platform for 'They Call Him OG' movie merchandise",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "start": "cd backend && node server-production.js",
+    "prod": "npm run build && npm start"
+  },
+  "keywords": [
+    "ecommerce",
+    "react",
+    "nodejs",
+    "mysql",
+    "typescript",
+    "merchandise"
+  ],
+  "author": "OG Merchandise Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/og-merchandise.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/og-merchandise/issues"
+  },
+  "homepage": "https://github.com/yourusername/og-merchandise#readme"
+}

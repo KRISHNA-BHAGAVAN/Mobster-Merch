@@ -1,0 +1,496 @@
+import express from 'express';
+import pool from '../config/database.js';
+import { verifyToken, verifyAdmin } from './auth.js';
+
+const router = express.Router();
+
+// Generate unique 6-character alphanumeric order ID
+const generateUniqueOrderId = async (connection) => {
+  let orderId;
+  let exists = true;
+  
+  while (exists) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    orderId = '';
+    for (let i = 0; i < 6; i++) {
+      orderId += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    
+    // Check if this order_id already exists
+    const [existing] = await connection.execute(
+      'SELECT COUNT(*) as count FROM orders WHERE order_id = ?',
+      [orderId]
+    );
+    exists = existing[0].count > 0;
+  }
+  
+  return orderId;
+};
+
+// Create pending order (before payment)
+router.post('/', verifyToken, async (req, res) => {
+  const connection = await pool.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+    
+    const user_id = req.userId;
+    
+    // Get cart items
+    const [cartItems] = await connection.execute(`
+      SELECT c.product_id, c.quantity, p.price, p.stock
+      FROM cart c
+      JOIN products p ON c.product_id = p.product_id
+      WHERE c.user_id = ?
+    `, [user_id]);
+    
+    if (cartItems.length === 0) {
+      return res.status(400).json({ message: 'Cart is empty' });
+    }
+    
+    // Check stock availability
+    for (const item of cartItems) {
+      if (item.stock < item.quantity) {
+        return res.status(400).json({ 
+          message: `Insufficient stock for product ID ${item.product_id}` 
+        });
+      }
+    }
+    
+    // Calculate total
+    const total = cartItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+    
+    // Generate unique alphanumeric order ID
+    const order_id = await generateUniqueOrderId(connection);
+    
+    // Create order with alphanumeric ID
+    await connection.execute(
+      'INSERT INTO orders (order_id, user_id, total, status) VALUES (?, ?, ?, ?)',
+      [order_id, user_id, total, 'pending']
+    );
+    
+    // Insert order items
+    for (const item of cartItems) {
+      await connection.execute(
+        'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)',
+        [order_id, item.product_id, item.quantity, item.price]
+      );
+    }
+    
+    // Generate auto-increment payment_id
+    const [paymentResult] = await connection.execute(
+      'SELECT COALESCE(MAX(payment_id), 0) + 1 as next_id FROM payments'
+    );
+    const payment_id = paymentResult[0].next_id;
+    
+    // Create payment record
+    await connection.execute(
+      'INSERT INTO payments (payment_id, order_id, amount, method, status) VALUES (?, ?, ?, ?, ?)',
+      [payment_id, order_id, total, 'upi', 'pending']
+    );
+    
+    // Generate UPI link
+    const upiLink = `upi://pay?pa=ogmerch@upi&pn=OG Merchandise&am=${total}&cu=INR&tn=Order${order_id}`;
+    
+    // Clear cart
+    await connection.execute('DELETE FROM cart WHERE user_id = ?', [user_id]);
+    
+    await connection.commit();
+    
+    res.status(201).json({ 
+      message: 'Order created successfully', 
+      order_id,
+      total,
+      upi_link: upiLink
+    });
+    
+  } catch (error) {
+    console.error('Order creation error:', error);
+    await connection.rollback();
+    res.status(500).json({ message: 'Error creating order', error: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
+// Get order status by order_id
+router.get('/:order_id/status', verifyToken, async (req, res) => {
+  try {
+    const [orders] = await pool.execute(
+      'SELECT order_id, status FROM orders WHERE order_id = ? AND user_id = ?',
+      [req.params.order_id, req.userId]
+    );
+    
+    if (orders.length === 0) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    
+    res.json({ 
+      status: orders[0].status,
+      order_id: orders[0].order_id
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching order status' });
+  }
+});
+
+// Get user orders
+router.get('/user/:user_id', verifyToken, async (req, res) => {
+  try {
+    const [orders] = await pool.execute(`
+      SELECT o.order_id, o.total, o.status, o.created_at,
+             oi.product_id, oi.quantity, oi.price,
+             p.name, p.image_url,
+             pay.status as payment_status, pay.method as payment_method
+      FROM orders o
+      LEFT JOIN order_items oi ON o.order_id = oi.order_id
+      LEFT JOIN products p ON oi.product_id = p.product_id
+      LEFT JOIN payments pay ON o.order_id = pay.order_id
+      WHERE o.user_id = ?
+      ORDER BY o.created_at DESC
+    `, [req.params.user_id]);
+    
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching orders' });
+  }
+});
+
+// Update order status (admin only)
+router.put('/:order_id/status', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const [result] = await pool.execute(
+      'UPDATE orders SET status = ? WHERE order_id = ?',
+      [status, req.params.order_id]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    
+    res.json({ message: 'Order status updated' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating order status' });
+  }
+});
+
+// Get all orders for admin with filters
+router.get('/admin/all', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { status } = req.query;
+    let query = `
+      SELECT o.order_id, o.user_id, o.total, o.status, o.created_at,
+             u.name as user_name, u.email,
+             GROUP_CONCAT(CONCAT(p.name, ' (', oi.quantity, ')') SEPARATOR ', ') as items
+      FROM orders o
+      JOIN users u ON o.user_id = u.user_id
+      LEFT JOIN order_items oi ON o.order_id = oi.order_id
+      LEFT JOIN products p ON oi.product_id = p.product_id
+    `;
+    
+    const params = [];
+    if (status) {
+      query += ' WHERE o.status = ?';
+      params.push(status);
+    }
+    
+    query += ' GROUP BY o.order_id ORDER BY o.created_at DESC';
+    
+    const [orders] = await pool.execute(query, params);
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching orders' });
+  }
+});
+
+// Get pending payments for admin
+router.get('/admin/payments/pending', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const [payments] = await pool.execute(`
+      SELECT p.payment_id, p.order_id, p.amount, p.status, p.created_at,
+             p.transaction_ref, o.user_id, u.name as user_name
+      FROM payments p
+      JOIN orders o ON p.order_id = o.order_id
+      JOIN users u ON o.user_id = u.user_id
+      WHERE p.status = 'pending'
+      ORDER BY p.created_at DESC
+    `);
+    
+    res.json(payments);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching pending payments' });
+  }
+});
+
+// Daily sales report
+router.get('/admin/reports/daily', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const [dailySales] = await pool.execute(`
+      SELECT DATE(o.created_at) as date, 
+             COUNT(*) as total_orders,
+             SUM(o.total) as total_revenue
+      FROM orders o
+      WHERE o.status = 'paid'
+      GROUP BY DATE(o.created_at)
+      ORDER BY date DESC
+      LIMIT 30
+    `);
+    
+    const [failedPayments] = await pool.execute(`
+      SELECT COUNT(*) as failed_count
+      FROM payments
+      WHERE status IN ('failed', 'pending')
+    `);
+    
+    res.json({
+      dailySales,
+      failedPaymentsCount: failedPayments[0].failed_count
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching reports' });
+  }
+});
+
+// Request order cancellation
+router.post('/:order_id/cancel-request', verifyToken, async (req, res) => {
+  try {
+    const order_id = req.params.order_id;
+    const user_id = req.userId;
+    
+    // Get user and order details
+    const [orderDetails] = await pool.execute(`
+      SELECT o.order_id, o.total, o.status, u.name, u.email, p.status as payment_status
+      FROM orders o
+      JOIN users u ON o.user_id = u.user_id
+      LEFT JOIN payments p ON o.order_id = p.order_id
+      WHERE o.order_id = ? AND o.user_id = ?
+    `, [order_id, user_id]);
+    
+    if (orderDetails.length === 0) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    
+    const order = orderDetails[0];
+    
+    // Check if order can be cancelled
+    if (order.status === 'cancelled' || order.status === 'delivered') {
+      return res.status(400).json({ message: 'Order cannot be cancelled' });
+    }
+    
+    // Create notification for admin
+    await pool.execute(`
+      INSERT INTO notifications (type, title, message, order_id, user_id)
+      VALUES (?, ?, ?, ?, ?)
+    `, [
+      'cancellation_request',
+      'Order Cancellation Request',
+      `Customer ${order.name} (${order.email}) has requested to cancel order #${order_id} worth ₹${order.total}. Payment Status: ${order.payment_status || 'pending'}`,
+      order_id,
+      user_id
+    ]);
+    
+    res.json({ message: 'Cancellation request submitted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error submitting cancellation request' });
+  }
+});
+
+// Request refund
+router.post('/:order_id/refund-request', verifyToken, async (req, res) => {
+  try {
+    const order_id = req.params.order_id;
+    const user_id = req.userId;
+    
+    // Get user and order details
+    const [orderDetails] = await pool.execute(`
+      SELECT o.order_id, o.total, u.name, u.email
+      FROM orders o
+      JOIN users u ON o.user_id = u.user_id
+      WHERE o.order_id = ? AND o.user_id = ?
+    `, [order_id, user_id]);
+    
+    if (orderDetails.length === 0) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    
+    const order = orderDetails[0];
+    
+    // Create notification for admin
+    await pool.execute(`
+      INSERT INTO notifications (type, title, message, order_id, user_id)
+      VALUES (?, ?, ?, ?, ?)
+    `, [
+      'refund_request',
+      'Refund Request',
+      `Customer ${order.name} (${order.email}) has requested a refund for order #${order_id} worth ₹${order.total}`,
+      order_id,
+      user_id
+    ]);
+    
+    res.json({ message: 'Refund request submitted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error submitting refund request' });
+  }
+});
+
+// Get notifications (admin only)
+router.get('/admin/notifications', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const [notifications] = await pool.execute(`
+      SELECT notification_id, type, title, message, order_id, user_id, is_read, created_at
+      FROM notifications
+      ORDER BY created_at DESC
+    `);
+    
+    res.json(notifications);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching notifications' });
+  }
+});
+
+// Mark notification as read (admin only)
+router.put('/admin/notifications/:notification_id/read', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    await pool.execute(
+      'UPDATE notifications SET is_read = TRUE WHERE notification_id = ?',
+      [req.params.notification_id]
+    );
+    
+    res.json({ message: 'Notification marked as read' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating notification' });
+  }
+});
+
+// Send message to customer (admin only)
+router.post('/admin/send-message', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { user_id, title, message } = req.body;
+    
+    await pool.execute(`
+      INSERT INTO notifications (type, title, message, user_id)
+      VALUES (?, ?, ?, ?)
+    `, ['admin_message', title, message, user_id]);
+    
+    res.json({ message: 'Message sent successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error sending message' });
+  }
+});
+
+// Get customer notifications
+router.get('/notifications', verifyToken, async (req, res) => {
+  try {
+    const [notifications] = await pool.execute(`
+      SELECT notification_id, type, title, message, order_id, is_read, created_at
+      FROM notifications
+      WHERE user_id = ?
+      ORDER BY created_at DESC
+    `, [req.userId]);
+    
+    res.json(notifications);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching notifications' });
+  }
+});
+
+// Mark customer notification as read
+router.put('/notifications/:notification_id/read', verifyToken, async (req, res) => {
+  try {
+    await pool.execute(
+      'UPDATE notifications SET is_read = TRUE WHERE notification_id = ? AND user_id = ?',
+      [req.params.notification_id, req.userId]
+    );
+    
+    res.json({ message: 'Notification marked as read' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating notification' });
+  }
+});
+
+// Get all users (admin only)
+router.get('/admin/users', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const [users] = await pool.execute(`
+      SELECT user_id, name, email, phone, created_at
+      FROM users
+      ORDER BY name ASC
+    `);
+    
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching users' });
+  }
+});
+
+// Admin approve/decline cancellation
+router.post('/admin/cancellation/:notification_id/:action', verifyToken, verifyAdmin, async (req, res) => {
+  const connection = await pool.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+    
+    const { notification_id, action } = req.params; // action: 'approve' or 'decline'
+    
+    // Get notification details
+    const [notifications] = await connection.execute(`
+      SELECT n.order_id, n.user_id, u.name, u.email
+      FROM notifications n
+      JOIN users u ON n.user_id = u.user_id
+      WHERE n.notification_id = ? AND n.type = 'cancellation_request'
+    `, [notification_id]);
+    
+    if (notifications.length === 0) {
+      return res.status(404).json({ message: 'Cancellation request not found' });
+    }
+    
+    const { order_id, user_id, name, email } = notifications[0];
+    
+    if (action === 'approve') {
+      // Cancel the order
+      await connection.execute('UPDATE orders SET status = ? WHERE order_id = ?', ['cancelled', order_id]);
+      
+      // Send approval message to customer
+      await connection.execute(`
+        INSERT INTO notifications (type, title, message, order_id, user_id)
+        VALUES (?, ?, ?, ?, ?)
+      `, [
+        'admin_message',
+        'Order Cancellation Approved',
+        `Your cancellation request for order #${order_id} has been approved. The order has been cancelled successfully.`,
+        order_id,
+        user_id
+      ]);
+    } else if (action === 'decline') {
+      // Send decline message to customer
+      await connection.execute(`
+        INSERT INTO notifications (type, title, message, order_id, user_id)
+        VALUES (?, ?, ?, ?, ?)
+      `, [
+        'admin_message',
+        'Order Cancellation Declined',
+        `Your cancellation request for order #${order_id} has been declined. The order will continue to be processed.`,
+        order_id,
+        user_id
+      ]);
+    }
+    
+    // Mark the original notification as read
+    await connection.execute(
+      'UPDATE notifications SET is_read = TRUE WHERE notification_id = ?',
+      [notification_id]
+    );
+    
+    await connection.commit();
+    
+    res.json({ message: `Cancellation request ${action}d successfully` });
+  } catch (error) {
+    await connection.rollback();
+    res.status(500).json({ message: 'Error processing cancellation request' });
+  } finally {
+    connection.release();
+  }
+});
+
+export default router;
