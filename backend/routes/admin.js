@@ -10,7 +10,7 @@ const router = express.Router();
 // Configure multer for image uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/products/');
+    cb(null, '/var/www/uploads/products/');
   },
   filename: (req, file, cb) => {
     const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname);
@@ -78,7 +78,7 @@ router.put('/products/:id', verifyToken, verifyAdmin, upload.single('image'), as
     // If new image uploaded, delete old one and use new
     if (req.file) {
       if (current[0].image_url) {
-        const oldImagePath = `uploads/products/${path.basename(current[0].image_url)}`;
+        const oldImagePath = `/var/www/uploads/products/${path.basename(current[0].image_url)}`;
         if (fs.existsSync(oldImagePath)) {
           fs.unlinkSync(oldImagePath);
         }
@@ -110,7 +110,7 @@ router.delete('/products/:id', verifyToken, verifyAdmin, async (req, res) => {
     
     // Delete image file if exists
     if (product[0].image_url) {
-      const imagePath = `uploads/products/${path.basename(product[0].image_url)}`;
+      const imagePath = `/var/www/uploads/products/${path.basename(product[0].image_url)}`;
       if (fs.existsSync(imagePath)) {
         fs.unlinkSync(imagePath);
       }

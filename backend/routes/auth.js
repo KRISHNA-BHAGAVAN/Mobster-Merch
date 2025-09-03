@@ -11,7 +11,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 // Multer configuration for profile image uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/');
+    cb(null, '/var/www/uploads/profiles/');
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -237,7 +237,7 @@ router.put('/profile', verifyToken, upload.single('image'), async (req, res) => 
     }
     
     if (req.file) {
-      const imageUrl = `/uploads/${req.file.filename}`;
+      const imageUrl = `/uploads/profiles/${req.file.filename}`;
       updateFields.push('image_url = ?');
       values.push(imageUrl);
     }

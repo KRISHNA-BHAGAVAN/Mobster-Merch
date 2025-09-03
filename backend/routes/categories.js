@@ -7,7 +7,7 @@ import { verifyToken, verifyAdmin } from './auth.js';
 // Configure multer for category image uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/categories/');
+    cb(null, '/var/www/uploads/categories/');
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
