@@ -7,7 +7,8 @@ export { categoryService } from './categoryService';
 export { paymentService } from './paymentService';
 export { adminService } from './adminService';
 export { profileService } from './profileService';
-export { API_BASE_URL, apiCall } from './api';
+export { apiCall } from './api';
+export { API_BASE_URL } from '../config/api';
 
 // Export types
 export type { LoginData, RegisterData } from './authService';

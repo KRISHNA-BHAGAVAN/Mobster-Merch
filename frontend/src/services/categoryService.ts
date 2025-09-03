@@ -1,4 +1,5 @@
-import { apiCall, API_BASE_URL } from './api';
+import { apiCall } from './api';
+import { API_BASE_URL } from '../config/api';
 
 export interface Category {
   category_name: string;
