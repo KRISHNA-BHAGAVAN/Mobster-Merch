@@ -1,4 +1,5 @@
 import { apiCall } from './api';
+import { API_BASE_URL } from '../config/api';
 
 export const productService = {
   getAllProducts: () => 
@@ -12,7 +13,7 @@ export const productService = {
 
   // Admin only
   createProduct: (formData: FormData) => 
-    fetch('http://localhost:5000/api/admin/products', {
+    fetch(`${API_BASE_URL}/admin/products`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -21,7 +22,7 @@ export const productService = {
     }).then(res => res.json()),
 
   updateProduct: (id: number, formData: FormData) => 
-    fetch(`http://localhost:5000/api/admin/products/${id}`, {
+    fetch(`${API_BASE_URL}/admin/products/${id}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`

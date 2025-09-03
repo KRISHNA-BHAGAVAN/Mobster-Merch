@@ -1,7 +1,7 @@
 module.exports = {
   apps: [{
     name: 'og-merchandise',
-    script: './backend/server-production.js',
+    script: './backend/server.js',
     env: {
       NODE_ENV: 'production',
       PORT: 5000

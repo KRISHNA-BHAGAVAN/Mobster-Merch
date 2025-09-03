@@ -1,3 +1,5 @@
+import { API_BASE_URL } from '../config/api';
+
 // API utility with automatic token refresh
 export const apiCall = async (url: string, options: RequestInit = {}) => {
   const token = localStorage.getItem('token');
@@ -16,7 +18,7 @@ export const apiCall = async (url: string, options: RequestInit = {}) => {
     const refreshToken = localStorage.getItem('refreshToken');
     if (refreshToken) {
       try {
-        const refreshResponse = await fetch('http://localhost:5000/api/auth/refresh', {
+        const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refreshToken }),
