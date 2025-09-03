@@ -7,6 +7,7 @@ import cartRoutes from './routes/cart.js';
 import orderRoutes from './routes/orders.js';
 import categoryRoutes from './routes/categories.js';
 import paymentRoutes from './routes/payments.js';
+import settingsRoutes from './routes/settings.js';
 import path from 'path';
 
 console.log(import.meta.dirname);
@@ -28,6 +29,7 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/settings', settingsRoutes);
 
 app.use("/health",(req, res) => {
   res.send("Your Merchandise API is running fine");
