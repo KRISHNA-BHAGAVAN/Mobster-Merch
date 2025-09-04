@@ -20,7 +20,10 @@ import categoryRoutes from './routes/categories.js';
 import paymentRoutes from './routes/payments.js';
 import settingsRoutes from './routes/settings.js';
 
-dotenv.config({ override: true });
+dotenv.config({ path: '../.env', override: true });
+
+// Debug: Check if SESSION_SECRET is loaded
+console.log('SESSION_SECRET loaded:', !!process.env.SESSION_SECRET);
 
 // ---------------------
 // Init

@@ -117,7 +117,7 @@ export const Cart: React.FC = () => {
                   <div className="p-4">
                     <div className="flex gap-4">
                       <img 
-                        src={item.image_url ? `${API_BASE_URL.replace('/api', '')}${item.image_url}` : '/placeholder.jpg'}
+                        src={item.image_url ? `${API_BASE_URL.replace('api', '')}${item.image_url}` : '/placeholder.jpg'}
                         alt={item.name}
                         className="w-20 h-20 object-cover rounded"
                       />
@@ -140,11 +140,7 @@ export const Cart: React.FC = () => {
                               const newQuantity = parseInt(e.target.value) || 1;
                               updateQuantity(item.cart_id, newQuantity, item.stock);
                             }}
-                            className="w-20 text-center [&>div>input]:[-webkit-appearance:textfield] [&>div>input]:[&::-webkit-outer-spin-button]:appearance-none [&>div>input]:[&::-webkit-inner-spin-button]:appearance-none [&>div>input]:[&::-webkit-inner-spin-button]:[-webkit-appearance:none] [&>div>input]:[&::-webkit-outer-spin-button]:[-webkit-appearance:none]"
-                            classNames={{
-                              inputWrapper: "!bg-black !border !border-gray-600 rounded-full shadow-sm focus:!border-primary",
-                              input: "!text-white font-semibold text-lg text-center [-webkit-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:[-webkit-appearance:none] [&::-webkit-outer-spin-button]:[-webkit-appearance:none]"
-                            }}
+                            className="w-20 text-center bg-black border border-gray-600 rounded text-white font-semibold text-lg focus:border-primary [-webkit-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
 
 
@@ -152,7 +148,7 @@ export const Cart: React.FC = () => {
                             
                             className="bg-gray-800 text-white hover:bg-gray-700"
                             onClick={() => updateQuantity(item.cart_id, item.quantity + 1, item.stock)}
-                            isDisabled={item.quantity >= item.stock}
+                            disabled={item.quantity >= item.stock}
                           >
                             +
                           </button>

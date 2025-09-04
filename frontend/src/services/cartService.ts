@@ -9,18 +9,24 @@ export const cartService = {
   getCart: async () => {
     try {
       const response = await apiCall('/cart');
-      return response.json();
+      return response;
     } catch (error) {
       return [];
     }
   },
 
   addToCart: async (data: AddToCartData) => {
-    const response = await apiCall('/cart', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-    return response.json();
+    try {
+      console.log('Adding to cart:', data);
+      const response = await apiCall('/cart', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+      return response;
+    } catch (error) {
+      console.error('Add to cart error:', error);
+      throw error;
+    }
   },
 
   updateCartItem: async (cartId: number, quantity: number) => {

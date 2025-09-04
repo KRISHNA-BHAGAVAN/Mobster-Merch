@@ -373,7 +373,7 @@ export const AdminDashboard: React.FC = () => {
 
     try {
       if (editingCategory) {
-        await categoryService.updateCategoryWithImage(editingCategory.category_name, formDataToSend);
+        await categoryService.updateCategoryWithImage(editingCategory.name, formDataToSend);
       } else {
         await categoryService.createCategoryWithImage(formDataToSend);
       }
@@ -404,7 +404,7 @@ export const AdminDashboard: React.FC = () => {
   const handleCategoryEdit = (category: Category) => {
     setEditingCategory(category);
     setCategoryFormData({
-      name: category.category_name,
+      name: category.name,
       description: category.description || '',
       image_url: category.image_url || ''
     });
@@ -538,7 +538,7 @@ export const AdminDashboard: React.FC = () => {
                   >
                     <option value="">Select a category</option>
                     {categories.map(cat => (
-                      <option key={cat.name} value={cat.name}>{cat.name}</option>
+                      <option key={cat.category_id} value={cat.name}>{cat.name}</option>
                     ))}
                   </select>
                 </div>
@@ -570,9 +570,9 @@ export const AdminDashboard: React.FC = () => {
 
         <div className="border-b border-gray-700 mb-6">
           <div className="flex flex-wrap space-x-4">
-            {['products', 'categories', 'orders', 'payments', 'reports', 'notifications'].map(tab => (
+            {['products', 'categories', 'orders', 'payments', 'reports', 'notifications'].map((tab,i) => (
               <button
-                key={tab}
+                key={i}
                 onClick={() => setActiveTab(tab)}
                 className={`py-3 px-2 text-sm font-medium capitalize border-b-2 transition-colors duration-200 ${
                   activeTab === tab
@@ -614,7 +614,7 @@ export const AdminDashboard: React.FC = () => {
                   >
                     {product.image_url && (
                       <img 
-                        src={`${API_BASE_URL.replace('/api', '')}${product.image_url}`}
+                        src={`${API_BASE_URL.replace('api', '')}${product.image_url}`}
                         alt={product.name}
                         className="w-full h-48 object-cover rounded-lg mb-4"
                       />
@@ -651,7 +651,7 @@ export const AdminDashboard: React.FC = () => {
                   >
                     {product.image_url && (
                       <img 
-                        src={`${API_BASE_URL.replace('/api', '')}${product.image_url}`}
+                        src={`${API_BASE_URL.replace('api', '')}${product.image_url}`}
                         alt={product.name}
                         className="w-full h-48 object-cover rounded-lg mb-4 opacity-50"
                       />
@@ -727,8 +727,8 @@ export const AdminDashboard: React.FC = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {categories.map(category => (
-                  <div key={category.category_name} className="bg-gray-900 p-4 rounded-xl shadow-md border border-gray-700">
-                    <h3 className="text-lg font-bold text-white mb-1">{category.category_name}</h3>
+                  <div key={category.category_id} className="bg-gray-900 p-4 rounded-xl shadow-md border border-gray-700">
+                    <h3 className="text-lg font-bold text-white mb-1">{category.name}</h3>
                     <p className="text-sm text-gray-400 mb-4">{category.description || 'No description'}</p>
                     <div className="flex gap-2">
                       <button 
@@ -738,7 +738,7 @@ export const AdminDashboard: React.FC = () => {
                         Edit
                       </button>
                       <button 
-                        onClick={() => handleCategoryDelete(category.category_name)}
+                        onClick={() => handleCategoryDelete(category.name)}
                         className="flex-1 py-2 rounded-full bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors duration-200"
                       >
                         Delete
@@ -994,7 +994,7 @@ export const AdminDashboard: React.FC = () => {
                   >
                     <option value="">Select Customer</option>
                     {allUsers.map(user => (
-                      <option key={user.user_id.toString()} value={user.user_id.toString()}>
+                      <option key={`user-${user.user_id}`} value={user.user_id.toString()}>
                         {user.name} ({user.email})
                       </option>
                     ))}

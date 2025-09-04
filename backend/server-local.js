@@ -1,45 +1,46 @@
 // server.js
-import express from 'express';
-import cors from 'cors';
-import session from 'express-session';
-import cookieParser from 'cookie-parser';
-import { RedisStore } from 'connect-redis'; 
-import { redisClient } from './config/redis.js';
+import express from "express";
+import cors from "cors";
+import session from "express-session";
+import cookieParser from "cookie-parser";
+import { RedisStore } from "connect-redis";
+import { redisClient } from "./config/redis.js";
 
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import path from 'path';
-import dotenv from 'dotenv';
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import path from "path";
+import dotenv from "dotenv";
 
 // Import routes
-import authRoutes from './routes/auth.js';
-import profileRoutes from './routes/profile.js';
-import productRoutes from './routes/product.js';
-import adminRoutes from './routes/admin.js';
-import cartRoutes from './routes/cart.js';
-import orderRoutes from './routes/orders.js';
-import categoryRoutes from './routes/categories.js';
-import paymentRoutes from './routes/payments.js';
-import settingsRoutes from './routes/settings.js';
+import authRoutes from "./routes/auth.js";
+import profileRoutes from "./routes/profile.js";
+import productRoutes from "./routes/product.js";
+import adminRoutes from "./routes/admin.js";
+import cartRoutes from "./routes/cart.js";
+import orderRoutes from "./routes/orders.js";
+import categoryRoutes from "./routes/categories.js";
+import paymentRoutes from "./routes/payments.js";
+import settingsRoutes from "./routes/settings.js";
 
-dotenv.config({ override: true });
+dotenv.config({ path: "../.env", override: true });
 
 // ---------------------
 // Init
 // ---------------------
 const __dirname = import.meta.dirname;
 const app = express();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 5000;
 const NODE_ENV = process.env.NODE_ENV;
 
-
 // Debug Redis connection
-redisClient.on('connect', () => console.log('✅ Redis connected successfully'));
-redisClient.on('error', (err) => console.error('❌ Redis connection error:', err));
+redisClient.on("connect", () => console.log("✅ Redis connected successfully"));
+redisClient.on("error", (err) =>
+  console.error("❌ Redis connection error:", err)
+);
 
 const redisStore = new RedisStore({
   client: redisClient,
-  prefix: 'sess:',
+  prefix: "sess:",
 });
 
 // ---------------------
@@ -88,8 +89,8 @@ app.use(
   cors({
     credentials: true,
     origin: true, // allow dev frontend + prod
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
@@ -106,14 +107,14 @@ app.use(express.urlencoded({ extended: true }));
 app.use(
   session({
     store: redisStore,
-    name: 'sid',
+    name: "sid",
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'lax',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "Strict" : "lax",
       maxAge: 1000 * 60 * 60 * 24, // 1 day
     },
   })
@@ -122,39 +123,48 @@ app.use(
 // ---------------------
 // Static uploads
 // ---------------------
-app.use('/uploads', express.static(process.env.UPLOADS_DIR));
-app.use('/uploads/profiles', express.static(process.env.PROFILE_UPLOADS));
-app.use('/uploads/products', express.static(process.env.PRODUCT_UPLOADS));
-app.use('/uploads/categories', express.static(process.env.CATEGORY_UPLOADS));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use(
+  "/uploads/profiles",
+  express.static(path.join(__dirname, "uploads/profiles"))
+);
+app.use(
+  "/uploads/products",
+  express.static(path.join(__dirname, "uploads/products"))
+);
+app.use(
+  "/uploads/categories",
+  express.static(path.join(__dirname, "uploads/categories"))
+);
 
 // ---------------------
 // API Routes
 // ---------------------
-app.use('/api/auth', authRoutes);
-app.use('/api/profile', profileRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/cart', cartRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/settings', settingsRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/cart", cartRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/settings", settingsRoutes);
 
 // ---------------------
 // Health check
 // ---------------------
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Your Merchandise API is running fine' });
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", message: "Your Merchandise API is running fine" });
 });
 
 // ---------------------
 // Serve React frontend (Reverse Proxy)
 // ---------------------
-const frontendPath = path.join(__dirname, '..', 'frontend', 'dist');
+const frontendPath = path.join(__dirname, "..", "frontend", "dist");
 app.use(express.static(frontendPath));
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(frontendPath, 'index.html'));
+app.get("*", (req, res) => {
+  res.sendFile(path.join(frontendPath, "index.html"));
 });
 
 // ---------------------
@@ -163,7 +173,9 @@ app.get('*', (req, res) => {
 app.use((err, req, res, next) => {
   console.error(err.stack);
   if (!res.headersSent) {
-    res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
+    res
+      .status(err.status || 500)
+      .json({ error: err.message || "Internal Server Error" });
   }
 });
 
@@ -171,5 +183,7 @@ app.use((err, req, res, next) => {
 // Start server
 // ---------------------
 app.listen(PORT, () => {
-  console.log(`🚀 Server running in ${NODE_ENV} mode on http://localhost:${PORT}`);
+  console.log(
+    `🚀 Server running in ${NODE_ENV} mode on http://localhost:${PORT}`
+  );
 });

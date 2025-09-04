@@ -1,11 +1,11 @@
-import express from 'express';
-import pool from '../config/database.js';
-import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
+import express from "express";
+import pool from "../config/database.js";
 
 const router = express.Router();
 
 // GET all active products
-router.get('/get-avaliable-products', async (req, res) => {
+router.get("/get-available-products", async (req, res) => {
+  console.log("Available products fetched successfully");
   try {
     const [rows] = await pool.execute(`
       SELECT p.*, c.name as category_name 
@@ -16,12 +16,12 @@ router.get('/get-avaliable-products', async (req, res) => {
     `);
     res.json(rows);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching products' });
+    res.status(500).json({ message: "Error fetching products" });
   }
 });
 
 // GET soft deleted products (admin only)
-router.get('/not-avaliable-products',  async (req, res) => {
+router.get("/not-available-products", async (req, res) => {
   try {
     const [rows] = await pool.execute(`
       SELECT p.*, c.name as category_name 
@@ -32,44 +32,50 @@ router.get('/not-avaliable-products',  async (req, res) => {
     `);
     res.json(rows);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching deleted products' });
+    res.status(500).json({ message: "Error fetching deleted products" });
   }
 });
 
 // GET products by category
-router.get('/:category_id', async (req, res) => {
+router.get("/:category_id", async (req, res) => {
   try {
     const categoryId = req.params.category_id;
-    const [rows] = await pool.execute(`
+
+    const [rows] = await pool.execute(
+      `
       SELECT p.*, c.name as category_name 
       FROM products p 
       LEFT JOIN categories c ON p.category_id = c.category_id 
       WHERE p.category_id = ? AND p.is_deleted = FALSE 
       ORDER BY p.created_at DESC
-    `, [categoryId]);
+    `,
+      [categoryId]
+    );
     res.json(rows);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching products by category' });
+    res.status(500).json({ message: "Error fetching products by category" });
   }
 });
 
 // GET single product
-router.get('/:id', async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
-    const [rows] = await pool.execute(`
+    const [rows] = await pool.execute(
+      `
       SELECT p.*, c.name as category_name 
       FROM products p 
       LEFT JOIN categories c ON p.category_id = c.category_id 
       WHERE p.product_id = ? AND p.is_deleted = FALSE
-    `, [req.params.id]);
+    `,
+      [req.params.id]
+    );
     if (rows.length === 0) {
-      return res.status(404).json({ message: 'Product not found' });
+      return res.status(404).json({ message: "Product not found" });
     }
     res.json(rows[0]);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching product' });
+    res.status(500).json({ message: "Error fetching product" });
   }
 });
-
 
 export default router;

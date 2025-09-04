@@ -160,11 +160,8 @@ export const AllProducts: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             
-            className="w-full md:w-80"
-            classNames={{
-              inputWrapper: "bg-white",
-              input: "!text-black !placeholder-black",
-            }}
+            className="w-full md:w-80 "
+            style={{padding: "0.5rem", borderRadius: "0.375rem", border: "1px solid #ccc"}}
           />
 
           <button
@@ -186,7 +183,7 @@ export const AllProducts: React.FC = () => {
               <div className="p-0 overflow-hidden">
                 <div className="relative aspect-[3/4] overflow-hidden">
                   <img 
-                    src={product.image_url ? `${API_BASE_URL.replace('/api', '')}${product.image_url}` : '/placeholder-image.jpg'} 
+                    src={product.image_url ? `${API_BASE_URL.replace('api', '')}${product.image_url}` : '/placeholder-image.jpg'} 
                     alt={product.name} 
                     className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                   />
@@ -216,11 +213,7 @@ export const AllProducts: React.FC = () => {
                         {getCartQuantity(product.product_id)}
                       </span>
                       <button
-                        
-                        
-                        
-                        
-                        isDisabled={getCartQuantity(product.product_id) >= product.stock}
+                        disabled={getCartQuantity(product.product_id) >= product.stock}
                         onClick={() => updateQuantity(product.product_id, getCartQuantity(product.product_id) + 1)}
                       >
                         <Icon icon="lucide:plus" />

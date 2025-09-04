@@ -97,7 +97,7 @@ export const CategoryProducts: React.FC = () => {
               <div className="p-0 overflow-hidden">
                 <div className="relative aspect-[3/4] overflow-hidden">
                   <img 
-                    src={product.image_url ? `${API_BASE_URL.replace('/api', '')}${product.image_url}` : '/placeholder-image.jpg'} 
+                    src={product.image_url ? `${API_BASE_URL.replace('api', '')}${product.image_url}` : '/placeholder-image.jpg'} 
                     alt={product.name} 
                     className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                   />
