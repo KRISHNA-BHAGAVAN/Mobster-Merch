@@ -52,27 +52,7 @@ function App() {
     );
   }
 
-  if (!websiteOpen) {
-    return (
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <AuthProvider>
-          <ToastProvider>
-            <Router>
-            <Routes>
-              <Route path="/admin" element={
-                <ProtectedRoute adminOnly>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="*" element={<MaintenanceMode />} />
-            </Routes>
-            </Router>
-          </ToastProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    );
-  }
+
 
   return (
     <ThemeProvider theme={theme}>
@@ -83,8 +63,19 @@ function App() {
             <Router>
             <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div></div>}>
               <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={<MainWebsite />} />
+          {!websiteOpen ? (
+            <>
+              <Route path="/admin" element={
+                <ProtectedRoute adminOnly>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="*" element={<Login />} />
+            </>
+          ) : (
+            <>
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<MainWebsite />} />
           <Route path="/products" element={<AllProducts />} />
           <Route path="/category/:category" element={<CategoryProducts />} />
           <Route 
@@ -111,15 +102,17 @@ function App() {
               </ProtectedRoute>
             } 
           />
-          <Route 
-            path="/admin" 
-            element={
-              <ProtectedRoute adminOnly>
-                <AdminDashboard />
-              </ProtectedRoute>
-            } 
-          />
-                <Route path="*" element={<Navigate to="/" replace />} />
+              <Route 
+                path="/admin" 
+                element={
+                  <ProtectedRoute adminOnly>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </>
+          )}
               </Routes>
             </Suspense>
             </Router>

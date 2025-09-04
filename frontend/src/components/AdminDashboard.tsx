@@ -38,6 +38,7 @@ export const AdminDashboard: React.FC = () => {
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
   const [reports, setReports] = useState<ReportsData | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [analytics, setAnalytics] = useState<any>(null);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageForm, setMessageForm] = useState({ user_id: '', title: '', message: '' });
   const [allUsers, setAllUsers] = useState<any[]>([]);
@@ -98,6 +99,8 @@ export const AdminDashboard: React.FC = () => {
       fetchReports();
     } else if (activeTab === 'notifications') {
       fetchNotifications();
+    } else if (activeTab === 'analytics') {
+      fetchAnalytics();
     }
   }, [activeTab, orderStatusFilter]);
 
@@ -129,7 +132,20 @@ export const AdminDashboard: React.FC = () => {
       const newStatus = !websiteOpen;
       await settingsService.toggleWebsiteStatus(newStatus);
       setWebsiteOpen(newStatus);
-      toast.success(`Website ${newStatus ? 'opened' : 'closed'} successfully! ${!newStatus ? 'Refresh any open tabs to see maintenance mode.' : ''}`);
+      
+      if (newStatus) {
+        // Notify all users when site opens
+        try {
+          await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/settings/notify-all-users`, {
+            method: 'POST',
+            credentials: 'include'
+          });
+        } catch (error) {
+          console.error('Error notifying users:', error);
+        }
+      }
+      
+      toast.success(`Website ${newStatus ? 'opened' : 'closed'} successfully!`);
     } catch (error) {
       toast.error('Error updating website status');
     }
@@ -209,6 +225,20 @@ export const AdminDashboard: React.FC = () => {
       setNotifications([]);
     }
   };
+
+  const fetchAnalytics = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/settings/analytics`, {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      setAnalytics(data);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+    }
+  };
+
+
 
   const markAsRead = async (notificationId: number) => {
     try {
@@ -570,7 +600,7 @@ export const AdminDashboard: React.FC = () => {
 
         <div className="border-b border-gray-700 mb-6">
           <div className="flex flex-wrap space-x-4">
-            {['products', 'categories', 'orders', 'payments', 'reports', 'notifications'].map((tab,i) => (
+            {['products', 'categories', 'orders', 'payments', 'reports', 'notifications', 'analytics'].map((tab,i) => (
               <button
                 key={i}
                 onClick={() => setActiveTab(tab)}
@@ -636,7 +666,7 @@ export const AdminDashboard: React.FC = () => {
                         onClick={() => handleSoftDelete(product.product_id)}
                         className="flex-1 py-2 rounded-full bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors duration-200"
                       >
-                        Delete
+                        Stop
                       </button>
                     </div>
                   </motion.div>
@@ -956,6 +986,38 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+          
+          {activeTab === 'analytics' && (
+            <div className="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
+              {analytics && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="text-center p-4 bg-blue-950 rounded-lg border border-blue-800">
+                      <p className="text-2xl font-mono text-blue-400">{analytics.userCount}</p>
+                      <p className="text-sm text-gray-400">Total Users</p>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-900 p-6 rounded-xl">
+                    <h3 className="text-xl font-bold mb-4 text-white">Recent Users</h3>
+                    <div className="space-y-2">
+                      {analytics.recentUsers.map((user: any, index: number) => (
+                        <div key={index} className="flex justify-between items-center p-3 rounded-lg bg-gray-800">
+                          <div>
+                            <span className="text-white font-semibold">{user.name}</span>
+                            <span className="text-gray-400 ml-2">({user.email})</span>
+                          </div>
+                          <span className="text-sm text-gray-400">{new Date(user.created_at).toLocaleDateString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+
+                </div>
+              )}
             </div>
           )}
         </div>

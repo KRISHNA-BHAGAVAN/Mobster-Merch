@@ -20,12 +20,12 @@ export const MaintenanceMode: React.FC = () => {
           </motion.div>
           
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
-            Website Under Maintenance
+            Checkout Temporarily Unavailable
           </h1>
           
           <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-            We're currently updating our store to serve you better. 
-            Please check back soon!
+            We're currently updating our checkout system. 
+            You can still browse products. Checkout will be back soon!
           </p>
           
           <motion.div

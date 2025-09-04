@@ -221,11 +221,7 @@ export const FeaturedProducts: React.FC = () => {
                             {getCartQuantity(product.product_id)}
                           </span>
                           <button
-                            
-                            
-                            
-                            
-                            isDisabled={getCartQuantity(product.product_id) >= product.stock}
+                            disabled={getCartQuantity(product.product_id) >= product.stock}
                             onClick={() => updateQuantity(product.product_id, getCartQuantity(product.product_id) + 1)}
                           >
                             <Icon icon="lucide:plus" />

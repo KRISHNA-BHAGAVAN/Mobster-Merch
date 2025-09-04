@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { useCart } from '../context/CartContext';
 import { cartService, orderService, API_BASE_URL } from '../services';
+import { settingsService } from '../services/settingsService';
 
 interface CartItem {
   cart_id: number;
@@ -21,6 +22,8 @@ interface CartItem {
 export const Cart: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
+  const [websiteOpen, setWebsiteOpen] = useState(true);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -70,11 +73,26 @@ export const Cart: React.FC = () => {
     }
   };
 
+  const checkWebsiteStatus = async () => {
+    try {
+      const data = await settingsService.getWebsiteStatus();
+      setWebsiteOpen(data.isOpen);
+    } catch (error) {
+      console.error('Error checking website status:', error);
+    }
+  };
+
   const checkout = async () => {
+    await checkWebsiteStatus();
+    
+    if (!websiteOpen) {
+      setShowMaintenanceModal(true);
+      return;
+    }
+    
     try {
       const orderData = await orderService.placeOrder();
       showToast('Order created successfully!', 'success');
-      // Navigate to checkout page with order data
       navigate('/checkout', { state: { orderData } });
     } catch (error) {
       showToast('Error creating order', 'error');
@@ -196,6 +214,24 @@ export const Cart: React.FC = () => {
                     Checkout
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {showMaintenanceModal && (
+          <div className="fixed inset-0 z-50 bg-black bg-opacity-80 flex items-center justify-center p-4">
+            <div className="bg-gray-800 p-6 rounded-xl max-w-md w-full border border-gray-700">
+              <div className="text-center">
+                <Icon icon="lucide:settings" className="w-12 h-12 text-orange-500 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-white mb-4">Checkout Temporarily Unavailable</h3>
+                <p className="text-gray-300 mb-6">We're currently updating our checkout system. Please try again later!</p>
+                <button
+                  onClick={() => setShowMaintenanceModal(false)}
+                  className="w-full py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-colors"
+                >
+                  OK
+                </button>
               </div>
             </div>
           </div>
