@@ -18,4 +18,4 @@ fi
 
 # Start production server
 echo "🌟 Starting production server..."
-npm start
+pm2 restart ecosystem.config.js --env production
