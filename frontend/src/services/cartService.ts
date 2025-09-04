@@ -34,12 +34,12 @@ export const cartService = {
       method: 'PUT',
       body: JSON.stringify({ quantity })
     });
-    return response.json();
+    return response;
   },
 
   removeFromCart: async (cartId: number) => {
     const response = await apiCall(`/cart/${cartId}`, { method: 'DELETE' });
-    return response.json();
+    return response;
   },
 
   updateQuantity: async (productId: number, quantity: number) => {
@@ -47,11 +47,11 @@ export const cartService = {
       method: 'PUT',
       body: JSON.stringify({ quantity })
     });
-    return response.json();
+    return response;
   },
 
   removeByProductId: async (productId: number) => {
     const response = await apiCall(`/cart/product/${productId}`, { method: 'DELETE' });
-    return response.json();
+    return response;
   }
 };
