@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, CardBody, Divider } from "@heroui/react";
+// TODO: Replace HeroUI components with Material-UI
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 
@@ -29,8 +29,8 @@ export const AboutSection: React.FC = () => {
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
           >
-            <Card className="bg-content1 border border-primary/10">
-              <CardBody className="p-6">
+            <div className="bg-content1 border border-primary/10">
+              <div className="p-6">
                 <div className="flex items-center mb-4">
                   <div className="w-1 h-8 bg-primary mr-3"></div>
                   <h3 className="text-2xl font-storm text-foreground">THE FILM</h3>
@@ -59,8 +59,8 @@ export const AboutSection: React.FC = () => {
                     <span>2023</span>
                   </div>
                 </div>
-              </CardBody>
-            </Card>
+              </div>
+            </div>
           </motion.div>
 
           <motion.div

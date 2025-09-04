@@ -1,17 +1,17 @@
-import { API_BASE_URL } from '../config/api';
+const API_BASE_URL = 'http://localhost:5001/api';
 
-export const authService = {
-  login: async (identifier: string, password: string) => {
+export const secureAuthService = {
+  login: async (email: string, password: string) => {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ identifier, password })
+      body: JSON.stringify({ email, password })
     });
     
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error);
+      throw new Error(error.message);
     }
     
     return response.json();
@@ -27,7 +27,7 @@ export const authService = {
     
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error);
+      throw new Error(error.message);
     }
     
     return response.json();
@@ -39,27 +39,9 @@ export const authService = {
     });
     
     if (!response.ok) {
-      return null;
+      throw new Error('Not authenticated');
     }
     
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      return null;
-    }
-    
-    return response.json();
-  },
-
-  refreshToken: async () => {
-    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-      method: 'POST',
-      credentials: 'include'
-    });
-    
-    if (!response.ok) {
-      return null; // Return null on failure instead of throwing
-    }
-
     return response.json();
   },
 

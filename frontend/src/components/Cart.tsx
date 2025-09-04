@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardBody, Button, Input } from "@heroui/react";
+// TODO: Replace HeroUI components with Material-UI
 import { Icon } from '@iconify/react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -96,25 +96,25 @@ export const Cart: React.FC = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-8">
           <h1 className="heading-font text-3xl">Shopping Cart</h1>
-          <Button variant="flat" onPress={() => navigate('/products')}>
+          <button  onClick={() => navigate('/products')}>
             Continue Shopping
-          </Button>
+          </button>
         </div>
 
         {cartItems.length === 0 ? (
           <div className="text-center py-20">
             <Icon icon="lucide:shopping-cart" className="h-16 w-16 text-foreground/50 mx-auto mb-4" />
             <p className="text-foreground/70 mb-4">Your cart is empty</p>
-            <Button color="primary" onPress={() => navigate('/products')}>
+            <button  onClick={() => navigate('/products')}>
               Start Shopping
-            </Button>
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-4">
               {cartItems.map((item) => (
-                <Card key={item.cart_id}>
-                  <CardBody className="p-4">
+                <div key={item.cart_id}>
+                  <div className="p-4">
                     <div className="flex gap-4">
                       <img 
                         src={item.image_url ? `${API_BASE_URL.replace('/api', '')}${item.image_url}` : '/placeholder.jpg'}
@@ -126,14 +126,14 @@ export const Cart: React.FC = () => {
                         <p className="text-primary font-mono">₹{item.price}</p>
                         <p className="text-xs text-foreground/60">Stock: {item.stock}</p>
                         <div className="flex items-center gap-2 mt-2">
-                          <Button
-                            size="sm"
+                          <button
+                            
                             className="bg-gray-800 text-white hover:bg-gray-700"
-                            onPress={() => updateQuantity(item.cart_id, item.quantity - 1, item.stock)}
+                            onClick={() => updateQuantity(item.cart_id, item.quantity - 1, item.stock)}
                           >
                             -
-                          </Button>
-                         <Input
+                          </button>
+                         <input
                             type="number"
                             value={item.quantity.toString()}
                             onChange={(e) => {
@@ -148,37 +148,37 @@ export const Cart: React.FC = () => {
                           />
 
 
-                          <Button
-                            size="sm"
+                          <button
+                            
                             className="bg-gray-800 text-white hover:bg-gray-700"
-                            onPress={() => updateQuantity(item.cart_id, item.quantity + 1, item.stock)}
+                            onClick={() => updateQuantity(item.cart_id, item.quantity + 1, item.stock)}
                             isDisabled={item.quantity >= item.stock}
                           >
                             +
-                          </Button>
-                          <Button
-                            size="sm"
-                            color="danger"
-                            variant="flat"
-                            onPress={() => removeItem(item.cart_id)}
-                            startContent={<Icon icon="lucide:trash" />}
+                          </button>
+                          <button
+                            
+                            
+                            
+                            onClick={() => removeItem(item.cart_id)}
+                            
                           >
                             Remove
-                          </Button>
+                          </button>
                         </div>
                       </div>
                       <div className="text-right">
                         <p className="font-semibold">₹{Number(item.subtotal).toFixed(2)}</p>
                       </div>
                     </div>
-                  </CardBody>
-                </Card>
+                  </div>
+                </div>
               ))}
             </div>
 
             <div>
-              <Card>
-                <CardBody className="p-6">
+              <div>
+                <div className="p-6">
                   <h3 className="font-semibold text-xl mb-4">Order Summary</h3>
                   <div className="space-y-2 mb-4">
                     <div className="flex justify-between">
@@ -190,17 +190,17 @@ export const Cart: React.FC = () => {
                       <span>₹{total.toFixed(2)}</span>
                     </div>
                   </div>
-                  <Button
-                    color="primary"
-                    fullWidth
-                    size="lg"
-                    onPress={checkout}
-                    startContent={<Icon icon="lucide:credit-card" />}
+                  <button
+                    
+                    style={{width: "100%"}}
+                    
+                    onClick={checkout}
+                    
                   >
                     Checkout
-                  </Button>
-                </CardBody>
-              </Card>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

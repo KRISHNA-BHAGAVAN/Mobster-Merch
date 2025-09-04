@@ -1,9 +1,7 @@
 import { API_BASE_URL } from '../config/api';
 
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
   return {
-    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json'
   };
 };
@@ -12,7 +10,8 @@ export const orderService = {
   placeOrder: async () => {
     const response = await fetch(`${API_BASE_URL}/orders`, {
       method: 'POST',
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(),
+      credentials: 'include'
     });
     
     if (!response.ok) throw new Error('Failed to place order');
@@ -21,7 +20,8 @@ export const orderService = {
 
   getUserOrders: async (userId: number) => {
     const response = await fetch(`${API_BASE_URL}/orders/user/${userId}`, {
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(),
+      credentials: 'include'
     });
     
     if (!response.ok) throw new Error('Failed to fetch orders');
@@ -31,7 +31,8 @@ export const orderService = {
   requestCancellation: async (orderId: string) => {
     const response = await fetch(`${API_BASE_URL}/orders/${orderId}/cancel-request`, {
       method: 'POST',
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(),
+      credentials: 'include'
     });
     
     if (!response.ok) throw new Error('Failed to request cancellation');
@@ -41,7 +42,8 @@ export const orderService = {
   requestRefund: async (orderId: string) => {
     const response = await fetch(`${API_BASE_URL}/orders/${orderId}/refund-request`, {
       method: 'POST',
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(),
+      credentials: 'include'
     });
     
     if (!response.ok) throw new Error('Failed to request refund');
@@ -50,7 +52,8 @@ export const orderService = {
 
   getNotifications: async () => {
     const response = await fetch(`${API_BASE_URL}/orders/admin/notifications`, {
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(),
+      credentials: 'include'
     });
     
     if (!response.ok) throw new Error('Failed to fetch notifications');
@@ -60,7 +63,8 @@ export const orderService = {
   markNotificationRead: async (notificationId: number) => {
     const response = await fetch(`${API_BASE_URL}/orders/admin/notifications/${notificationId}/read`, {
       method: 'PUT',
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(),
+      credentials: 'include'
     });
     
     if (!response.ok) throw new Error('Failed to mark notification as read');
@@ -71,6 +75,7 @@ export const orderService = {
     const response = await fetch(`${API_BASE_URL}/orders/admin/send-message`, {
       method: 'POST',
       headers: getAuthHeaders(),
+      credentials: 'include',
       body: JSON.stringify({ user_id: userId, title, message })
     });
     
@@ -80,7 +85,8 @@ export const orderService = {
 
   getCustomerNotifications: async () => {
     const response = await fetch(`${API_BASE_URL}/orders/notifications`, {
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(),
+      credentials: 'include'
     });
     
     if (!response.ok) throw new Error('Failed to fetch notifications');
@@ -90,7 +96,8 @@ export const orderService = {
   markCustomerNotificationRead: async (notificationId: number) => {
     const response = await fetch(`${API_BASE_URL}/orders/notifications/${notificationId}/read`, {
       method: 'PUT',
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(),
+      credentials: 'include'
     });
     
     if (!response.ok) throw new Error('Failed to mark notification as read');
@@ -100,7 +107,8 @@ export const orderService = {
   approveCancellation: async (notificationId: number) => {
     const response = await fetch(`${API_BASE_URL}/orders/admin/cancellation/${notificationId}/approve`, {
       method: 'POST',
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(),
+      credentials: 'include'
     });
     
     if (!response.ok) throw new Error('Failed to approve cancellation');
@@ -110,7 +118,8 @@ export const orderService = {
   declineCancellation: async (notificationId: number) => {
     const response = await fetch(`${API_BASE_URL}/orders/admin/cancellation/${notificationId}/decline`, {
       method: 'POST',
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(),
+      credentials: 'include'
     });
     
     if (!response.ok) throw new Error('Failed to decline cancellation');
@@ -119,7 +128,8 @@ export const orderService = {
 
   getAllUsers: async () => {
     const response = await fetch(`${API_BASE_URL}/orders/admin/users`, {
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(),
+      credentials: 'include'
     });
     
     if (!response.ok) throw new Error('Failed to fetch users');

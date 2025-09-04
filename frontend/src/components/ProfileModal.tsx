@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Avatar } from "@heroui/react";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Avatar, Box, Typography } from '@mui/material';
 import { Icon } from '@iconify/react';
 import { profileService, UserProfile } from '../services/profileService';
-import { useToast } from '../context/ToastContext';
+import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../services';
 
@@ -14,11 +14,11 @@ interface ProfileModalProps {
 export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({ name: '', phone: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const { showToast } = useToast();
-  const { user, updateUser } = useAuth();
+
+  const { user } = useAuth();
 
   useEffect(() => {
     if (isOpen) {
@@ -30,23 +30,22 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
     try {
       const data = await profileService.getProfile();
       setProfile(data);
-      setFormData({ name: data.name, phone: data.phone || '' });
+      setFormData({ name: data.name, email: data.email, phone: data.phone || '' });
     } catch (error) {
-      showToast('Error fetching profile', 'error');
+      toast.error('Error fetching profile');
     }
   };
 
   const handleSave = async () => {
     setLoading(true);
     try {
-      const updatedProfile = await profileService.updateProfile(formData, imageFile || undefined);
-      setProfile(updatedProfile);
-      updateUser(updatedProfile);
+      await profileService.updateProfile(formData, imageFile || undefined);
+      await fetchProfile(); // Refresh profile data
       setIsEditing(false);
       setImageFile(null);
-      showToast('Profile updated successfully!', 'success');
+      toast.success('Profile updated successfully!');
     } catch (error) {
-      showToast('Error updating profile', 'error');
+      toast.error('Error updating profile');
     } finally {
       setLoading(false);
     }
@@ -54,7 +53,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
 
   const getAvatarSrc = () => {
     if (profile?.image_url) {
-      return `${API_BASE_URL.replace('/api', '')}${profile.image_url}`;
+      const url = `${API_BASE_URL.replace('/api', '')}${profile.image_url}`;
+      console.log('Avatar URL:', url, 'Image URL from profile:', profile.image_url);
+      return url;
     }
     return undefined;
   };
@@ -64,84 +65,90 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
-      <ModalContent>
-        <ModalHeader>
-          <div className="flex items-center gap-2">
-            <Icon icon="lucide:user" />
-            Profile
-          </div>
-        </ModalHeader>
-        <ModalBody>
-          {profile && (
-            <div className="space-y-4">
-              <div className="flex flex-col items-center gap-4">
-                <Avatar
-                  src={getAvatarSrc()}
-                  name={!profile?.image_url ? getInitials() : undefined}
-                  size="lg"
-                  className="w-20 h-20 text-large"
+    <Dialog open={isOpen} onClose={onClose} maxWidth="sm" style={{width: "100%"}}>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Icon icon="lucide:user" />
+        Profile
+      </DialogTitle>
+      <DialogContent>
+        {profile && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+              <Avatar
+                src={getAvatarSrc()}
+                sx={{ width: 80, height: 80, fontSize: '2rem' }}
+              >
+                {!profile?.image_url ? getInitials() : undefined}
+              </Avatar>
+              
+              {isEditing && (
+                <TextField
+                  type="file"
+                  inputProps={{ accept: 'image/*' }}
+                  onChange={(e) => {
+                    const target = e.target as HTMLInputElement;
+                    setImageFile(target.files?.[0] || null);
+                  }}
+                  InputProps={{
+                    startAdornment: <Icon icon="lucide:camera" className="mr-2" />,
+                  }}
+                  style={{width: "100%"}}
                 />
-                
-                {isEditing && (
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                    startContent={<Icon icon="lucide:camera" />}
-                  />
-                )}
-              </div>
+              )}
+            </Box>
 
-              <div className="space-y-3">
-                <Input
-                  label="Name"
-                  value={isEditing ? formData.name : profile.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  isReadOnly={!isEditing}
-                  variant={isEditing ? "bordered" : "flat"}
-                />
-                
-                <Input
-                  label="Email"
-                  value={profile.email}
-                  isReadOnly
-                  variant="flat"
-                />
-                
-                <Input
-                  label="Phone"
-                  value={isEditing ? formData.phone : (profile.phone || 'Not provided')}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  isReadOnly={!isEditing}
-                  variant={isEditing ? "bordered" : "flat"}
-                />
-              </div>
-            </div>
-          )}
-        </ModalBody>
-        <ModalFooter>
-          {isEditing ? (
-            <>
-              <Button variant="flat" onPress={() => setIsEditing(false)}>
-                Cancel
-              </Button>
-              <Button color="primary" onPress={handleSave} isLoading={loading}>
-                Save Changes
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button variant="flat" onPress={onClose}>
-                Close
-              </Button>
-              <Button color="primary" onPress={() => setIsEditing(true)}>
-                Edit Profile
-              </Button>
-            </>
-          )}
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField
+                label="Name"
+                value={isEditing ? formData.name : profile.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                InputProps={{ readOnly: !isEditing }}
+                variant={isEditing ? "outlined" : "filled"}
+                style={{width: "100%"}}
+              />
+              
+              <TextField
+                label="Email"
+                value={isEditing ? formData.email : profile.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                InputProps={{ readOnly: !isEditing }}
+                variant={isEditing ? "outlined" : "filled"}
+                style={{width: "100%"}}
+              />
+              
+              <TextField
+                label="Phone"
+                value={isEditing ? formData.phone : (profile.phone || 'Not provided')}
+                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                InputProps={{ readOnly: !isEditing }}
+                variant={isEditing ? "outlined" : "filled"}
+                style={{width: "100%"}}
+              />
+            </Box>
+          </Box>
+        )}
+      </DialogContent>
+      <DialogActions>
+        {isEditing ? (
+          <>
+            <button onClick={() => setIsEditing(false)}>
+              Cancel
+            </button>
+            <button variant="contained" onClick={handleSave} disabled={loading}>
+              {loading ? 'Saving...' : 'Save Changes'}
+            </button>
+          </>
+        ) : (
+          <>
+            <button onClick={onClose}>
+              Close
+            </button>
+            <button variant="contained" onClick={() => setIsEditing(true)}>
+              Edit Profile
+            </button>
+          </>
+        )}
+      </DialogActions>
+    </Dialog>
   );
 };

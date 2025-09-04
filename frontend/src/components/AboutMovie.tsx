@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button } from "@heroui/react";
+// TODO: Replace HeroUI components with Material-UI
 import { motion } from "framer-motion";
 import { Icon } from '@iconify/react';
 
@@ -49,14 +49,14 @@ export const AboutMovie: React.FC = () => {
               </div>
             </div>
             
-            <Button 
-              color="primary" 
-              size="lg"
+            <button 
+               
+              
               className="heading-font tracking-wider"
-              startContent={<Icon icon="lucide:play" />}
+              
             >
               WATCH TRAILER
-            </Button>
+            </button>
           </motion.div>
           
           <motion.div

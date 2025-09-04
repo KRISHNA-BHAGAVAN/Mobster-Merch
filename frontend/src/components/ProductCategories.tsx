@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardBody } from "@heroui/react";
+// TODO: Replace HeroUI components with Material-UI
 import { motion } from "framer-motion";
 import { useNavigate } from 'react-router-dom';
 import { categoryService, productService, Category, API_BASE_URL } from '../services';
@@ -19,16 +19,18 @@ export const ProductCategories: React.FC = () => {
 
   const fetchCategoriesWithCount = async () => {
     try {
-      const categoriesData = await categoryService.getAllCategories();
+      const response = await categoryService.getAllCategories();
+      const categoriesData = response.categories || [];
       
       // Get product count for each category
       const categoriesWithCount = await Promise.all(
         categoriesData.map(async (category) => {
           try {
             const products = await productService.getProductsByCategory(category.category_name);
+            const productsArray = products.products || [];
             return {
               ...category,
-              count: products.length
+              count: productsArray.length
             };
           } catch (error) {
             return {
@@ -86,23 +88,21 @@ export const ProductCategories: React.FC = () => {
           {loading ? (
             Array.from({ length: 3 }).map((_, index) => (
               <motion.div key={index} variants={item}>
-                <Card className="overflow-hidden border border-primary/20 h-[300px]">
-                  <CardBody className="p-0">
+                <div className="overflow-hidden border border-primary/20 h-[300px]">
+                  <div className="p-0">
                     <div className="w-full h-full bg-foreground/10 animate-pulse"></div>
-                  </CardBody>
-                </Card>
+                  </div>
+                </div>
               </motion.div>
             ))
           ) : (
             categories.map((category) => (
               <motion.div key={category.category_name} variants={item}>
-                <Card 
-                  isPressable
-                  className="overflow-hidden border border-primary/20 h-[300px]"
-                  disableRipple
-                  onPress={() => navigate(`/category/${category.category_name}`)}
+                <div 
+                  className="overflow-hidden border border-primary/20 h-[300px] cursor-pointer"
+                  onClick={() => navigate(`/category/${category.category_name}`)}
                 >
-                  <CardBody className="p-0 overflow-hidden">
+                  <div className="p-0 overflow-hidden">
                    <div className="relative w-full h-full">
                       <img 
                         src={category.image_url ? `${API_BASE_URL.replace('/api', '')}${category.image_url}` : '/placeholder-image.jpg'} 
@@ -123,8 +123,8 @@ export const ProductCategories: React.FC = () => {
                         )}
                       </div>
                     </div>
-                  </CardBody>
-                </Card>
+                  </div>
+                </div>
               </motion.div>
             ))
           )}

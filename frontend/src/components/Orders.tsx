@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardBody, Button, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
+// TODO: Replace HeroUI components with Material-UI
 import { Icon } from '@iconify/react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -114,24 +114,24 @@ export const Orders: React.FC = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-8">
           <h1 className="heading-font text-3xl">My Orders</h1>
-          <Button variant="flat" onPress={() => navigate('/products')}>
+          <button  onClick={() => navigate('/products')}>
             Continue Shopping
-          </Button>
+          </button>
         </div>
 
         {orders.length === 0 ? (
           <div className="text-center py-20">
             <Icon icon="lucide:package" className="h-16 w-16 text-foreground/50 mx-auto mb-4" />
             <p className="text-foreground/70 mb-4">No orders found</p>
-            <Button color="primary" onPress={() => navigate('/products')}>
+            <button  onClick={() => navigate('/products')}>
               Start Shopping
-            </Button>
+            </button>
           </div>
         ) : (
           <div className="space-y-6">
             {orders.map((order) => (
-              <Card key={order.order_id}>
-                <CardBody className="p-6">
+              <div key={order.order_id}>
+                <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="font-semibold text-lg">Order #{order.order_id}</h3>
@@ -146,17 +146,17 @@ export const Orders: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <div className="flex gap-2 mb-2">
-                        <Chip color={getStatusColor(order.status)} variant="flat" size="sm">
+                        <span color={getStatusColor(order.status)}  >
                           {order.status.toUpperCase()}
-                        </Chip>
+                        </span>
                         {order.payment_status && (
-                          <Chip 
+                          <span 
                             color={order.payment_status === 'completed' ? 'success' : order.payment_status === 'pending' ? 'warning' : 'danger'} 
-                            variant="flat" 
-                            size="sm"
+                             
+                            
                           >
                             {order.payment_status.toUpperCase()}
-                          </Chip>
+                          </span>
                         )}
                       </div>
                       <p className="font-semibold text-lg">
@@ -190,19 +190,19 @@ export const Orders: React.FC = () => {
                   
                   {canCancelOrder(order.status) && (
                     <div className="mt-4 pt-4 border-t">
-                      <Button
-                        color="danger"
-                        variant="flat"
-                        size="sm"
-                        startContent={<Icon icon="lucide:x" />}
-                        onPress={() => handleCancelOrder(order.order_id)}
+                      <button
+                        
+                        
+                        
+                        
+                        onClick={() => handleCancelOrder(order.order_id)}
                       >
                         Request Cancellation
-                      </Button>
+                      </button>
                     </div>
                   )}
-                </CardBody>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         )}

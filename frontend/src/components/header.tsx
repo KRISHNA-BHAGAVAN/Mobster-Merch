@@ -1,5 +1,5 @@
 import React from "react";
-import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Button, Link, NavbarMenuToggle, NavbarMenu, NavbarMenuItem } from "@heroui/react";
+// TODO: Replace HeroUI components with Material-UI
 import { Icon } from "@iconify/react";
 import { motion } from "framer-motion";
 
@@ -57,45 +57,45 @@ export const Header: React.FC = () => {
 
       <NavbarContent justify="end">
         <NavbarItem className="hidden sm:flex">
-          <Link href="#" className="text-foreground">
+          <a href="#" className="text-foreground">
             <Icon icon="lucide:search" width={20} />
-          </Link>
+          </a>
         </NavbarItem>
         <NavbarItem className="hidden lg:flex">
           {menuItems.map((item, index) => (
-            <Link 
+            <a 
               key={index} 
               href={item.href}
               className="px-4 py-2 text-foreground hover:text-primary transition-colors"
             >
               {item.name}
-            </Link>
+            </a>
           ))}
         </NavbarItem>
         <NavbarItem>
-          <Button 
+          <button 
             as={Link} 
-            color="primary" 
+             
             href="#" 
-            variant="flat"
-            startContent={<Icon icon="lucide:shopping-bag" />}
+            
+            
             className="font-ramisa"
           >
             Cart (0)
-          </Button>
+          </button>
         </NavbarItem>
       </NavbarContent>
 
       <NavbarMenu className="bg-background/95 backdrop-blur-md pt-6">
         {menuItems.map((item, index) => (
           <NavbarMenuItem key={index}>
-            <Link
+            <a
               href={item.href}
               className="w-full text-foreground hover:text-primary text-lg py-2 font-ramisa"
               onClick={() => setIsMenuOpen(false)}
             >
               {item.name}
-            </Link>
+            </a>
           </NavbarMenuItem>
         ))}
       </NavbarMenu>

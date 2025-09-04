@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardBody, Button } from "@heroui/react";
+// TODO: Replace HeroUI components with Material-UI
 import { motion } from "framer-motion";
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
@@ -94,8 +94,10 @@ export const FeaturedProducts: React.FC = () => {
 
   const fetchProducts = async () => {
     try {
-      const data = await productService.getAllProducts();
-      setFeaturedProducts(data.slice(0, 4)); // Get first 4 products
+      const response = await productService.getAllProducts();
+      // Handle both API response formats
+      const productsArray = (response.products && Array.isArray(response.products)) ? response.products : (Array.isArray(response) ? response : []);
+      setFeaturedProducts(productsArray.slice(0, 4)); // Get first 4 products
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
@@ -104,11 +106,16 @@ export const FeaturedProducts: React.FC = () => {
   };
 
   const fetchCartItems = async () => {
+    if (!isAuthenticated || !user) {
+      setCartItems([]);
+      return;
+    }
+    
     try {
       const data = await cartService.getCart();
       setCartItems(data);
     } catch (error) {
-      console.error('Error fetching cart:', error);
+      setCartItems([]);
     }
   };
 
@@ -163,25 +170,25 @@ export const FeaturedProducts: React.FC = () => {
           {loading ? (
             Array.from({ length: 4 }).map((_, index) => (
               <motion.div key={index} variants={item}>
-                <Card className="product-card bg-content1 border border-primary/20">
-                  <CardBody className="p-0">
+                <div className="product-card bg-content1 border border-primary/20">
+                  <div className="p-0">
                     <div className="aspect-[3/4] bg-foreground/10 animate-pulse"></div>
                     <div className="p-4 space-y-2">
                       <div className="h-4 bg-foreground/10 animate-pulse rounded"></div>
                       <div className="h-4 bg-foreground/10 animate-pulse rounded w-1/2"></div>
                     </div>
-                  </CardBody>
-                </Card>
+                  </div>
+                </div>
               </motion.div>
             ))
           ) : (
             featuredProducts.map((product) => (
               <motion.div key={product.product_id} variants={item}>
-                <Card 
+                <div 
                   className="product-card bg-content1 border border-primary/20 transition-all duration-300"
-                  disableRipple
+                  
                 >
-                  <CardBody className="p-0 overflow-hidden">
+                  <div className="p-0 overflow-hidden">
                     <div className="relative aspect-[3/4] overflow-hidden">
                       <img 
                         src={product.image_url ? `${API_BASE_URL.replace('/api', '')}${product.image_url}` : '/placeholder-image.jpg'} 
@@ -201,59 +208,59 @@ export const FeaturedProducts: React.FC = () => {
                       </div>
                       {getCartQuantity(product.product_id) > 0 ? (
                         <div className="flex items-center justify-between bg-primary/10 rounded-lg p-2">
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="flat"
-                            color="primary"
-                            onPress={() => updateQuantity(product.product_id, getCartQuantity(product.product_id) - 1)}
+                          <button
+                            
+                            
+                            
+                            
+                            onClick={() => updateQuantity(product.product_id, getCartQuantity(product.product_id) - 1)}
                           >
                             <Icon icon="lucide:minus" />
-                          </Button>
+                          </button>
                           <span className="font-mono text-lg font-bold px-4">
                             {getCartQuantity(product.product_id)}
                           </span>
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="flat"
-                            color="primary"
+                          <button
+                            
+                            
+                            
+                            
                             isDisabled={getCartQuantity(product.product_id) >= product.stock}
-                            onPress={() => updateQuantity(product.product_id, getCartQuantity(product.product_id) + 1)}
+                            onClick={() => updateQuantity(product.product_id, getCartQuantity(product.product_id) + 1)}
                           >
                             <Icon icon="lucide:plus" />
-                          </Button>
+                          </button>
                         </div>
                       ) : (
-                        <Button 
-                          color="primary" 
-                          variant="flat" 
-                          fullWidth
+                        <button 
+                           
+                           
+                          style={{width: "100%"}}
                           className="heading-font tracking-wider text-sm"
-                          startContent={<Icon icon="lucide:shopping-cart" />}
-                          onPress={() => handleAddToCart(product.product_id)}
+                          
+                          onClick={() => handleAddToCart(product.product_id)}
                         >
                           ADD TO CART
-                        </Button>
+                        </button>
                       )}
                     </div>
-                  </CardBody>
-                </Card>
+                  </div>
+                </div>
               </motion.div>
             ))
           )}
         </motion.div>
 
         <div className="text-center mt-12">
-          <Button 
-            color="primary" 
-            size="lg"
+          <button 
+             
+            
             className="heading-font tracking-wider"
-            endContent={<Icon icon="lucide:arrow-right" />}
-            onPress={() => navigate('/products')}
+            
+            onClick={() => navigate('/products')}
           >
             VIEW ALL PRODUCTS
-          </Button>
+          </button>
         </div>
       </motion.div>
     </motion.section>

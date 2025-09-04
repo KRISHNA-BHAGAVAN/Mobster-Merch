@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { Card, CardBody, Input, Button, Snippet } from "@heroui/react";
+import { Card, CardContent, TextField, Button, Alert, Box, Typography } from '@mui/material';
 import { Icon } from '@iconify/react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { authService } from '../services';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from "framer-motion";
 import '../styles/admin.css';
 
 export const Login: React.FC = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const location = useLocation();
+  const [isLogin, setIsLogin] = useState(location.state?.mode !== 'register');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -16,7 +16,7 @@ export const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const { login } = useAuth();
+  const { login, register, user } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,21 +27,20 @@ export const Login: React.FC = () => {
 
     try {
       if (isLogin) {
-        const data = await authService.login({ email: username, password });
-        login(data.token, data.refreshToken, data.user, data.isAdmin);
-        
-        if (data.isAdmin) {
+        const result = await login(username, password);
+        console.log('🔍 DEBUG - isAdmin value:', result?.user?.isAdmin);
+        // Check if admin after login using the result
+        if (result?.user?.isAdmin) {
           navigate('/admin');
         } else {
           navigate('/');
         }
       } else {
-        await authService.register({ name, email: username, password, phone });
-        setSuccessMsg('Registration successful! Please login.');
+        await register(name, username, password, phone);
+        setSuccessMsg('Registration successful! You are now logged in.');
         setTimeout(() => {
-          setSuccessMsg(null);
-          setIsLogin(true);
-        }, 2000);
+          navigate('/');
+        }, 1000);
       }
     } catch (error: any) {
       console.error('Auth error:', error);
@@ -81,8 +80,15 @@ export const Login: React.FC = () => {
     transition={{ duration: 3, repeat: Infinity }}
     className="rounded-2xl"
   >
-    <Card className="w-full bg-zinc-900/90 backdrop-blur-sm border border-red-600 shadow-2xl rounded-2xl relative z-30">
-      <CardBody className="p-6"> {/* reduced from p-8 */}
+    <Card sx={{ 
+      backgroundColor: 'rgba(24, 24, 27, 0.9)', 
+      backdropFilter: 'blur(8px)', 
+      border: '1px solid #dc2626', 
+      borderRadius: '16px',
+      position: 'relative',
+      zIndex: 30
+    }}>
+      <CardContent sx={{ p: 3 }}>
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}  // slightly smaller
           animate={{ scale: 1, opacity: 1 }}
@@ -101,13 +107,9 @@ export const Login: React.FC = () => {
                   animate={{ x: [0, -8, 8, -8, 8, 0] }}
                   transition={{ duration: 0.4 }}
                 >
-                  <Snippet
-                    hideCopyButton
-                    color="danger"
-                    className="mb-4 w-full text-center bg-red-900/50 border border-red-600 text-red-400"
-                  >
+                  <Alert severity="error" sx={{ mb: 2, backgroundColor: 'rgba(127, 29, 29, 0.5)', border: '1px solid #dc2626', color: '#fca5a5' }}>
                     {errorMsg}
-                  </Snippet>
+                  </Alert>
                 </motion.div>
               )}
 
@@ -117,71 +119,107 @@ export const Login: React.FC = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4 }}
                 >
-                  <Snippet
-                    hideCopyButton
-                    color="success"
-                    className="mb-4 w-full text-center bg-green-900/50 border border-green-600 text-green-400"
-                  >
+                  <Alert severity="success" sx={{ mb: 2, backgroundColor: 'rgba(20, 83, 45, 0.5)', border: '1px solid #16a34a', color: '#86efac' }}>
                     {successMsg}
-                  </Snippet>
+                  </Alert>
                 </motion.div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <Box component="form" onSubmit={handleSubmit} sx={{ '& > :not(style)': { mb: 2.5 } }}>
                 {!isLogin && (
-                  <Input
+                  <TextField
+                    fullWidth
                     type="text"
                     label="Full Name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    startContent={<Icon icon="lucide:user" className="text-red-500" />}
-                    classNames={{
-                      inputWrapper:
-                        "bg-black border border-red-700 hover:bg-black focus:bg-black data-[hover=true]:bg-black data-[focus=true]:bg-black",
-                      input: "text-white placeholder-gray-500",
+                    autoComplete="off"
+                    InputProps={{
+                      startAdornment: <Icon icon="lucide:user" className="text-red-500 mr-2" />,
+                    }}
+                    sx={{
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: '#dc2626'
+                      },
+                      '& .MuiOutlinedInput-root': {
+                        '& input:-webkit-autofill': {
+                          WebkitBoxShadow: '0 0 0 1000px transparent inset',
+                          WebkitTextFillColor: 'white'
+                        }
+                      }
                     }}
                     required
                   />
                 )}
-                <Input
+                <TextField
+                  fullWidth
                   type={isLogin ? "text" : "email"}
                   label={isLogin ? "Email or Username" : "Email"}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  startContent={<Icon icon="lucide:mail" className="text-red-500" />}
-                  classNames={{
-                    inputWrapper:
-                      "bg-black border border-red-700 hover:bg-black focus:bg-black data-[hover=true]:bg-black data-[focus=true]:bg-black",
-                    input: "text-white placeholder-gray-500",
+                  autoComplete="off"
+                  InputProps={{
+                    startAdornment: <Icon icon="lucide:mail" className="text-red-500 mr-2" />,
+                  }}
+                  sx={{
+                    '& .MuiInputLabel-root.Mui-focused': {
+                      color: '#dc2626'
+                    },
+                    '& .MuiOutlinedInput-root': {
+                      '& input:-webkit-autofill': {
+                        WebkitBoxShadow: '0 0 0 1000px transparent inset',
+                        WebkitTextFillColor: 'white'
+                      }
+                    }
                   }}
                   required
                 />
 
-                <Input
+                <TextField
+                  fullWidth
                   type="password"
                   label="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  startContent={<Icon icon="lucide:lock" className="text-red-500" />}
-                  classNames={{
-                    inputWrapper:
-                      "bg-black border border-red-700 hover:bg-black focus:bg-black data-[hover=true]:bg-black data-[focus=true]:bg-black",
-                    input: "text-white placeholder-gray-500",
+                  autoComplete="off"
+                  InputProps={{
+                    startAdornment: <Icon icon="lucide:lock" className="text-red-500 mr-2" />,
+                  }}
+                  sx={{
+                    '& .MuiInputLabel-root.Mui-focused': {
+                      color: '#dc2626'
+                    },
+                    '& .MuiOutlinedInput-root': {
+                      '& input:-webkit-autofill': {
+                        WebkitBoxShadow: '0 0 0 1000px transparent inset',
+                        WebkitTextFillColor: 'white'
+                      }
+                    }
                   }}
                   required
                 />
 
                 {!isLogin && (
-                  <Input
+                  <TextField
+                    fullWidth
                     type="tel"
                     label="Phone"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    startContent={<Icon icon="lucide:phone" className="text-red-500" />}
-                    classNames={{
-                      inputWrapper:
-                        "bg-black border border-red-700 hover:bg-black focus:bg-black data-[hover=true]:bg-black data-[focus=true]:bg-black",
-                      input: "text-white placeholder-gray-500",
+                    autoComplete="off"
+                    InputProps={{
+                      startAdornment: <Icon icon="lucide:phone" className="text-red-500 mr-2" />,
+                    }}
+                    sx={{
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: '#dc2626'
+                      },
+                      '& .MuiOutlinedInput-root': {
+                        '& input:-webkit-autofill': {
+                          WebkitBoxShadow: '0 0 0 1000px transparent inset',
+                          WebkitTextFillColor: 'white'
+                        }
+                      }
                     }}
                     required
                   />
@@ -192,21 +230,29 @@ export const Login: React.FC = () => {
                   <Button
                     type="submit"
                     fullWidth
-                    isLoading={loading}
-                    className="heading-font bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-md"
+                    variant="contained"
+                    disabled={loading}
+                    sx={{ 
+                      fontFamily: '"Ungai", sans-serif',
+                      backgroundColor: '#dc2626',
+                      '&:hover': { backgroundColor: '#b91c1c' },
+                      borderRadius: '12px',
+                      py: 1.5
+                    }}
                   >
-                    {isLogin ? 'LOGIN' : 'REGISTER'}
+                    {loading ? 'Loading...' : (isLogin ? 'LOGIN' : 'REGISTER')}
                   </Button>
                 </motion.div>
-              </form>
+              </Box>
 
               <div className="text-center mt-6">
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-gray-400" style={{ fontFamily: '"Ungai", sans-serif' }}>
                   {isLogin ? "Don't have an account? " : "Already have an account? "}
                   <button
                     type="button"
                     onClick={() => setIsLogin(!isLogin)}
                     className="text-red-500 hover:text-red-400 underline"
+                    style={{ fontFamily: '"Ungai", sans-serif' }}
                   >
                     {isLogin ? 'Register' : 'Login'}
                   </button>
@@ -217,7 +263,7 @@ export const Login: React.FC = () => {
                 <Icon icon="lucide:circle" className="w-2 h-2 text-red-500" />
                 <p className="text-xs text-gray-500">© 2025 Bushido Systems</p>
               </div>
-            </CardBody>
+            </CardContent>
           </Card>
         </motion.div>
       </motion.div>

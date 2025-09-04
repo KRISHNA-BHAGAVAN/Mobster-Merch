@@ -14,16 +14,14 @@ export interface UpdateProfileData {
 }
 
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  return {
-    'Authorization': `Bearer ${token}`
-  };
+  return {};
 };
 
 export const profileService = {
   getProfile: async (): Promise<UserProfile> => {
-    const response = await fetch(`${API_BASE_URL}/auth/profile`, {
-      headers: getAuthHeaders()
+    const response = await fetch(`${API_BASE_URL}/profile`, {
+      headers: getAuthHeaders(),
+      credentials: 'include'
     });
     
     if (!response.ok) throw new Error('Failed to fetch profile');
@@ -37,11 +35,9 @@ export const profileService = {
     if (data.phone) formData.append('phone', data.phone);
     if (imageFile) formData.append('image', imageFile);
     
-    const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+    const response = await fetch(`${API_BASE_URL}/profile`, {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      credentials: 'include',
       body: formData
     });
     

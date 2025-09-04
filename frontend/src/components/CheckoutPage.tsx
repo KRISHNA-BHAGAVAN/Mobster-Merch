@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardBody, Button, Input } from "@heroui/react";
+// TODO: Replace HeroUI components with Material-UI
 import { Icon } from '@iconify/react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
@@ -67,18 +67,18 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ orderData: propOrder
           <p className="text-foreground/70">Order #{orderData.order_id}</p>
         </div>
 
-        <Card className="mb-6">
-          <CardBody className="p-6">
+        <div className="mb-6">
+          <div className="p-6">
             <h3 className="font-semibold text-xl mb-4">Order Summary</h3>
             <div className="flex justify-between items-center text-lg font-semibold">
               <span>Total Amount:</span>
               <span className="text-primary">₹{orderData.total}</span>
             </div>
-          </CardBody>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="mb-6">
-          <CardBody className="p-6 text-center">
+        <div className="mb-6">
+          <div className="p-6 text-center">
             <h3 className="font-semibold text-xl mb-4">Pay with UPI</h3>
             
             {/* QR Code */}
@@ -94,22 +94,22 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ orderData: propOrder
             </div>
 
             {/* UPI Link Button */}
-            <Button
-              color="primary"
-              size="lg"
+            <button
+              
+              
               className="mb-4"
-              startContent={<Icon icon="lucide:smartphone" />}
-              onPress={() => window.open(orderData.upi_link, '_blank')}
+              
+              onClick={() => window.open(orderData.upi_link, '_blank')}
             >
               Pay with UPI App
-            </Button>
+            </button>
 
             <div className="border-t pt-4">
               <p className="text-sm text-foreground/70 mb-4">
                 After completing payment, enter your transaction reference (optional)
               </p>
               
-              <Input
+              <input
                 label="Transaction Reference (Optional)"
                 placeholder="Enter UPI transaction ID"
                 value={transactionRef}
@@ -117,28 +117,28 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ orderData: propOrder
                 className="mb-4"
               />
 
-              <Button
+              <button
                 color="success"
-                size="lg"
-                fullWidth
-                isLoading={loading}
-                onPress={handlePaymentConfirmation}
-                startContent={<Icon icon="lucide:check-circle" />}
+                
+                style={{width: "100%"}}
+                disabled={loading}
+                onClick={handlePaymentConfirmation}
+                
               >
                 I Have Paid
-              </Button>
+              </button>
             </div>
-          </CardBody>
-        </Card>
+          </div>
+        </div>
 
         <div className="text-center">
-          <Button
-            variant="flat"
-            onPress={() => navigate('/cart')}
-            startContent={<Icon icon="lucide:arrow-left" />}
+          <button
+            
+            onClick={() => navigate('/cart')}
+            
           >
             Back to Cart
-          </Button>
+          </button>
         </div>
       </div>
     </div>

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardBody, Button, Input, Textarea, Select, SelectItem, Tabs, Tab, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Autocomplete, AutocompleteItem } from "@heroui/react";
-import { Icon } from '@iconify/react';
+import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '../context/ToastContext';
 import { productService, categoryService, API_BASE_URL, Category } from '../services';
 import { adminService, Order, PendingPayment, ReportsData } from '../services/adminService';
 import { orderService } from '../services/orderService';
+import { settingsService } from '../services/settingsService';
 import '../styles/admin.css';
 
 interface Product {
@@ -32,6 +32,7 @@ interface Notification {
 
 export const AdminDashboard: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [unavailableProducts, setUnavailableProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
@@ -40,11 +41,13 @@ export const AdminDashboard: React.FC = () => {
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageForm, setMessageForm] = useState({ user_id: '', title: '', message: '' });
   const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [websiteOpen, setWebsiteOpen] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [activeTab, setActiveTab] = useState('products');
+  const [productSubTab, setProductSubTab] = useState('available');
   const [orderStatusFilter, setOrderStatusFilter] = useState('');
   const [formData, setFormData] = useState({
     name: '',
@@ -60,59 +63,130 @@ export const AdminDashboard: React.FC = () => {
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [categoryImageFile, setCategoryImageFile] = useState<File | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
+  const [confirmMessage, setConfirmMessage] = useState('');
+  
   const { logout, user } = useAuth();
   const navigate = useNavigate();
-  const { showToast } = useToast();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
-
+  const showConfirmation = (message: string, action: () => void) => {
+    setConfirmMessage(message);
+    setConfirmAction(() => {
+      return () => {
+        action();
+        setShowConfirmModal(false);
+      };
+    });
+    setShowConfirmModal(true);
+  };
 
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
-    if (activeTab === 'orders') fetchOrders();
-    if (activeTab === 'payments') fetchPendingPayments();
-    if (activeTab === 'reports') fetchReports();
-    if (activeTab === 'notifications') fetchNotifications();
-  }, [activeTab]);
-
-  const fetchProducts = async () => {
-    try {
-      const data = await productService.getAdminProducts();
-      setProducts(data);
-    } catch (error) {
-      console.error('Error fetching products:', error);
+    if (activeTab === 'products') {
+      fetchProducts();
+      fetchCategories();
+    } else if (activeTab === 'orders') {
+      fetchOrders();
+    } else if (activeTab === 'payments') {
+      fetchPendingPayments();
+    } else if (activeTab === 'reports') {
+      fetchReports();
+    } else if (activeTab === 'notifications') {
+      fetchNotifications();
     }
+  }, [activeTab, orderStatusFilter]);
+
+  useEffect(() => {
+    if (activeTab === 'products') {
+      if (productSubTab === 'available') {
+        fetchAvailableProducts();
+      } else {
+        fetchUnavailableProducts();
+      }
+    }
+  }, [productSubTab]);
+
+  useEffect(() => {
+    fetchWebsiteStatus();
+  }, []);
+
+  const fetchWebsiteStatus = async () => {
+    try {
+      const data = await settingsService.getWebsiteStatus();
+      setWebsiteOpen(data.isOpen);
+    } catch (error) {
+      console.error('Error fetching website status:', error);
+    }
+  };
+
+  const toggleWebsiteStatus = async () => {
+    try {
+      const newStatus = !websiteOpen;
+      await settingsService.toggleWebsiteStatus(newStatus);
+      setWebsiteOpen(newStatus);
+      toast.success(`Website ${newStatus ? 'opened' : 'closed'} successfully! ${!newStatus ? 'Refresh any open tabs to see maintenance mode.' : ''}`);
+    } catch (error) {
+      toast.error('Error updating website status');
+    }
+  };
+
+  const fetchAvailableProducts = async () => {
+    try {
+      const data = await productService.getAvailableProducts();
+      setProducts(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching available products:', error);
+      setProducts([]);
+    }
+  };
+
+  const fetchUnavailableProducts = async () => {
+    try {
+      const data = await productService.getUnavailableProducts();
+      setUnavailableProducts(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching unavailable products:', error);
+      setUnavailableProducts([]);
+    }
+  };
+
+  const fetchProducts = () => {
+    fetchAvailableProducts();
+    fetchUnavailableProducts();
   };
 
   const fetchCategories = async () => {
     try {
       const data = await categoryService.getAllCategories();
-      setCategories(data);
+      setCategories(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching categories:', error);
+      setCategories([]);
     }
   };
 
   const fetchOrders = async () => {
     try {
       const data = await adminService.getAllOrders(orderStatusFilter || undefined);
-      setOrders(data);
+      setOrders(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching orders:', error);
+      setOrders([]);
     }
   };
 
   const fetchPendingPayments = async () => {
     try {
       const data = await adminService.getPendingPayments();
-      setPendingPayments(data);
+      setPendingPayments(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching pending payments:', error);
+      setPendingPayments([]);
     }
   };
 
@@ -122,15 +196,17 @@ export const AdminDashboard: React.FC = () => {
       setReports(data);
     } catch (error) {
       console.error('Error fetching reports:', error);
+      setReports(null);
     }
   };
 
   const fetchNotifications = async () => {
     try {
       const data = await orderService.getNotifications();
-      setNotifications(data);
+      setNotifications(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching notifications:', error);
+      setNotifications([]);
     }
   };
 
@@ -138,9 +214,9 @@ export const AdminDashboard: React.FC = () => {
     try {
       await orderService.markNotificationRead(notificationId);
       fetchNotifications();
-      showToast('Notification marked as read', 'success');
+      toast.success('Notification marked as read');
     } catch (error) {
-      showToast('Error marking notification as read', 'error');
+      toast.error('Error marking notification as read');
     }
   };
 
@@ -148,9 +224,9 @@ export const AdminDashboard: React.FC = () => {
     try {
       await orderService.approveCancellation(notificationId);
       fetchNotifications();
-      showToast('Cancellation approved successfully', 'success');
+      toast.success('Cancellation approved successfully');
     } catch (error) {
-      showToast('Error approving cancellation', 'error');
+      toast.error('Error approving cancellation');
     }
   };
 
@@ -158,9 +234,9 @@ export const AdminDashboard: React.FC = () => {
     try {
       await orderService.declineCancellation(notificationId);
       fetchNotifications();
-      showToast('Cancellation declined successfully', 'success');
+      toast.success('Cancellation declined successfully');
     } catch (error) {
-      showToast('Error declining cancellation', 'error');
+      toast.error('Error declining cancellation');
     }
   };
 
@@ -180,11 +256,11 @@ export const AdminDashboard: React.FC = () => {
         messageForm.title,
         messageForm.message
       );
-      showToast('Message sent successfully!', 'success');
+      toast.success('Message sent successfully!');
       setShowMessageModal(false);
       setMessageForm({ user_id: '', title: '', message: '' });
     } catch (error) {
-      showToast('Error sending message', 'error');
+      toast.error('Error sending message');
     }
   };
 
@@ -192,9 +268,9 @@ export const AdminDashboard: React.FC = () => {
     try {
       await adminService.updateOrderStatus(orderId, status);
       fetchOrders();
-      showToast('Order status updated!', 'success');
+      toast.success('Order status updated!');
     } catch (error) {
-      showToast('Error updating order status', 'error');
+      toast.error('Error updating order status');
     }
   };
 
@@ -202,9 +278,9 @@ export const AdminDashboard: React.FC = () => {
     try {
       await adminService.markPaymentComplete(paymentId);
       fetchPendingPayments();
-      showToast('Payment marked as completed!', 'success');
+      toast.success('Payment marked as completed!');
     } catch (error) {
-      showToast('Error marking payment as complete', 'error');
+      toast.error('Error marking payment as complete');
     }
   };
 
@@ -216,6 +292,14 @@ export const AdminDashboard: React.FC = () => {
       formDataToSend.append(key, value);
     });
     
+    const categoryObject = categories.find(cat => cat.name === formData.category);
+    if (categoryObject) {
+      formDataToSend.append('category_id', categoryObject.category_id.toString());
+    } else {
+      toast.error('Invalid category selected');
+      return;
+    }
+
     if (imageFile) {
       formDataToSend.append('image', imageFile);
     }
@@ -229,22 +313,25 @@ export const AdminDashboard: React.FC = () => {
       
       fetchProducts();
       resetForm();
-      showToast(editingProduct ? 'Product updated successfully!' : 'Product added successfully!', 'success');
+      toast.success(editingProduct ? 'Product updated successfully!' : 'Product added successfully!');
     } catch (error) {
-      showToast('Error saving product', 'error');
+      toast.error('Error saving product');
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Delete this product?')) return;
-    
-    try {
-      await productService.deleteProduct(id);
-      fetchProducts();
-      showToast('Product deleted successfully!', 'success');
-    } catch (error) {
-      showToast('Error deleting product', 'error');
-    }
+  const handleSoftDelete = async (id: number) => {
+    showConfirmation(
+      'Are you sure you want to stop displaying this product? It will be moved to the "Not Available" list.',
+      async () => {
+        try {
+          await productService.deleteProduct(id);
+          fetchProducts();
+          toast.success('Product soft-deleted successfully!');
+        } catch (error) {
+          toast.error('Error soft-deleting product');
+        }
+      }
+    );
   };
 
   const handleEdit = (product: Product) => {
@@ -293,22 +380,25 @@ export const AdminDashboard: React.FC = () => {
       
       fetchCategories();
       resetCategoryForm();
-      showToast(editingCategory ? 'Category updated successfully!' : 'Category created successfully!', 'success');
-    } catch (error: any) {
-      showToast(error.message || 'Error saving category', 'error');
+      toast.success(editingCategory ? 'Category updated successfully!' : 'Category created successfully!');
+    } catch (error) {
+      toast.error(error.message || 'Error saving category');
     }
   };
 
   const handleCategoryDelete = async (categoryName: string) => {
-    if (!confirm('Delete this category?')) return;
-    
-    try {
-      await categoryService.deleteCategory(categoryName);
-      fetchCategories();
-      showToast('Category deleted successfully!', 'success');
-    } catch (error: any) {
-      showToast(error.message || 'Error deleting category', 'error');
-    }
+    showConfirmation(
+      'Are you sure you want to delete this category?',
+      async () => {
+        try {
+          await categoryService.deleteCategory(categoryName);
+          fetchCategories();
+          toast.success('Category deleted successfully!');
+        } catch (error) {
+          toast.error(error.message || 'Error deleting category');
+        }
+      }
+    );
   };
 
   const handleCategoryEdit = (category: Category) => {
@@ -320,19 +410,60 @@ export const AdminDashboard: React.FC = () => {
     });
     setShowCategoryForm(true);
   };
+  
+  const handleRestoreProduct = async (id: number) => {
+    showConfirmation(
+      'Are you sure you want to restore this product?',
+      async () => {
+        try {
+          await productService.restoreProduct(id);
+          fetchProducts();
+          toast.success('Product restored successfully!');
+        } catch (error) {
+          toast.error('Error restoring product');
+        }
+      }
+    );
+  };
+
+  const handlePermanentDelete = async (id: number) => {
+    showConfirmation(
+      'Are you sure you want to permanently delete this product?',
+      async () => {
+        try {
+          await adminService.deleteProductPermanently(id);
+          fetchProducts();
+          toast.success('Product permanently deleted!');
+        } catch (error) {
+          toast.error('Error permanently deleting product');
+        }
+      }
+    );
+  };
 
   return (
-    <div className="admin-page min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-gray-900 text-white p-6 md:p-10">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="heading-font text-3xl">Admin Dashboard</h1>
-            <p className="text-sm text-foreground/70 mt-1">Welcome, {user?.name}</p>
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
+          <div className="mb-4 sm:mb-0">
+            <h1 className="text-3xl font-extrabold tracking-wide text-red-500">Admin Dashboard</h1>
+            <p className="text-sm text-gray-400 mt-1">Welcome, {user?.name}</p>
           </div>
-          <div className="flex gap-3">
-            <Button 
-              color="primary" 
-              onPress={() => {
+          <div className="flex flex-wrap gap-3">
+            <button 
+              onClick={toggleWebsiteStatus}
+              className={`flex items-center gap-2 py-2 px-4 rounded-full font-semibold transition-colors duration-200 ${
+                websiteOpen ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
+              }`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                <line x1="12" x2="12" y1="2" y2="12"/>
+              </svg>
+              {websiteOpen ? 'Close Website' : 'Open Website'}
+            </button>
+            <button 
+              onClick={() => {
                 if (activeTab === 'products') setShowAddForm(!showAddForm);
                 else if (activeTab === 'categories') setShowCategoryForm(!showCategoryForm);
                 else if (activeTab === 'notifications') {
@@ -340,382 +471,452 @@ export const AdminDashboard: React.FC = () => {
                   setShowMessageModal(true);
                 }
               }}
-              startContent={<Icon icon="lucide:plus" />}
+              className="flex items-center gap-2 py-2 px-4 rounded-full bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors duration-200"
             >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                <path d="M5 12h14"/>
+                <path d="M12 5v14"/>
+              </svg>
               {activeTab === 'products' ? 'Add Product' : 
                activeTab === 'categories' ? 'Add Category' : 
                activeTab === 'notifications' ? 'Send Message' : 'Add'}
-            </Button>
-            <Button 
-              color="danger" 
-              variant="flat"
-              onPress={handleLogout}
-              startContent={<Icon icon="lucide:log-out" />}
+            </button>
+            <button 
+              onClick={handleLogout}
+              className="flex items-center gap-2 py-2 px-4 rounded-full border border-white/20 text-white font-semibold hover:bg-white/10 transition-colors duration-200"
             >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" x2="9" y1="12" y2="12"/>
+              </svg>
               Logout
-            </Button>
+            </button>
           </div>
         </div>
 
-        {showAddForm && (
-          <Card className="mb-6">
-            <CardBody>
-              <h2 className="heading-font text-xl mb-4">
-                {editingProduct ? 'Edit Product' : 'Add New Product'}
-              </h2>
+        <AnimatePresence>
+          {showAddForm && (
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="mb-8 p-6 bg-gray-800 rounded-xl shadow-lg border border-gray-700"
+            >
+              <h2 className="text-xl font-bold mb-4">{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    label="Product Name"
+                  <input
+                    placeholder="Product Name"
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-red-500"
                     required
                   />
-                  <Input
-                    label="Price"
+                  <input
+                    placeholder="Price"
                     type="number"
                     step="0.01"
                     value={formData.price}
                     onChange={(e) => setFormData({...formData, price: e.target.value})}
+                    className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-red-500"
                     required
                   />
-                  <Input
-                    label="Stock"
+                  <input
+                    placeholder="Stock"
                     type="number"
                     value={formData.stock}
                     onChange={(e) => setFormData({...formData, stock: e.target.value})}
+                    className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-red-500"
                     required
                   />
-                  <Select
-                    label="Category"
-                    selectedKeys={formData.category ? [formData.category] : []}
-                    onSelectionChange={(keys) => setFormData({...formData, category: Array.from(keys)[0] as string})}
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({...formData, category: e.target.value})}
+                    className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-red-500"
+                    required
                   >
+                    <option value="">Select a category</option>
                     {categories.map(cat => (
-                      <SelectItem key={cat.category_name} value={cat.category_name}>{cat.category_name}</SelectItem>
+                      <option key={cat.name} value={cat.name}>{cat.name}</option>
                     ))}
-                  </Select>
+                  </select>
                 </div>
-                <Textarea
-                  label="Description"
+                <textarea
+                  placeholder="Description"
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-red-500"
+                  rows={3}
                 />
-                <Input
+                <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-500 file:text-white hover:file:bg-red-600"
                 />
-                <div className="flex gap-2">
-                  <Button type="submit" color="primary">
-                    {editingProduct ? 'Update' : 'Add'} Product
-                  </Button>
-                  <Button variant="flat" onPress={resetForm}>
+                <div className="flex gap-4">
+                  <button type="submit" className="py-2 px-6 rounded-full bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors duration-200">
+                    {editingProduct ? 'Update Product' : 'Add Product'}
+                  </button>
+                  <button type="button" onClick={resetForm} className="py-2 px-6 rounded-full border border-gray-600 text-gray-300 font-semibold hover:bg-gray-700 transition-colors duration-200">
                     Cancel
-                  </Button>
+                  </button>
                 </div>
               </form>
-            </CardBody>
-          </Card>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <Tabs aria-label="Admin Options" color="primary" onSelectionChange={(key) => setActiveTab(key as string)}>
-          <Tab key="products" title="Products">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {products.map(product => (
-                <Card key={product.product_id}>
-                  <CardBody>
+        <div className="border-b border-gray-700 mb-6">
+          <div className="flex flex-wrap space-x-4">
+            {['products', 'categories', 'orders', 'payments', 'reports', 'notifications'].map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`py-3 px-2 text-sm font-medium capitalize border-b-2 transition-colors duration-200 ${
+                  activeTab === tab
+                    ? 'border-red-500 text-red-500'
+                    : 'border-transparent text-gray-400 hover:text-white'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        <div>
+          {activeTab === 'products' && (
+            <div className="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
+              <div className="flex flex-wrap gap-4 mb-6">
+                <button
+                  onClick={() => setProductSubTab('available')}
+                  className={`py-2 px-4 rounded-full font-semibold transition-colors duration-200 ${productSubTab === 'available' ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                >
+                  Available Products
+                </button>
+                <button
+                  onClick={() => setProductSubTab('unavailable')}
+                  className={`py-2 px-4 rounded-full font-semibold transition-colors duration-200 ${productSubTab === 'unavailable' ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                >
+                  Not Available Products
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {productSubTab === 'available' && products.map(product => (
+                  <motion.div
+                    key={product.product_id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="bg-gray-900 p-4 rounded-xl shadow-md border border-gray-700"
+                  >
                     {product.image_url && (
                       <img 
                         src={`${API_BASE_URL.replace('/api', '')}${product.image_url}`}
                         alt={product.name}
-                        className="w-full h-48 object-cover rounded mb-4"
+                        className="w-full h-48 object-cover rounded-lg mb-4"
                       />
                     )}
-                    <h3 className="heading-font text-lg mb-2">{product.name}</h3>
-                    <p className="text-sm text-foreground/70 mb-2">{product.description}</p>
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="font-mono text-primary">₹{product.price}</span>
-                      <span className="text-sm">Stock: {product.stock}</span>
+                    <h3 className="text-lg font-bold text-white mb-1">{product.name}</h3>
+                    <p className="text-sm text-gray-400 mb-2 truncate">{product.description}</p>
+                    <div className="flex justify-between items-center mb-4 text-sm font-mono text-red-400">
+                      <span>₹{product.price}</span>
+                      <span className="text-gray-400">Stock: {product.stock}</span>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="flat"
-                        onPress={() => handleEdit(product)}
-                        startContent={<Icon icon="lucide:edit" />}
+                      <button 
+                        onClick={() => handleEdit(product)}
+                        className="flex-1 py-2 rounded-full border border-gray-600 text-gray-300 font-semibold hover:bg-gray-700 transition-colors duration-200"
                       >
                         Edit
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        color="danger" 
-                        variant="flat"
-                        onPress={() => handleDelete(product.product_id)}
-                        startContent={<Icon icon="lucide:trash" />}
+                      </button>
+                      <button 
+                        onClick={() => handleSoftDelete(product.product_id)}
+                        className="flex-1 py-2 rounded-full bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors duration-200"
                       >
                         Delete
-                      </Button>
+                      </button>
                     </div>
-                  </CardBody>
-                </Card>
-              ))}
+                  </motion.div>
+                ))}
+                {productSubTab === 'unavailable' && unavailableProducts.map(product => (
+                  <motion.div
+                    key={product.product_id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="bg-gray-900 p-4 rounded-xl shadow-md border border-gray-700 opacity-70"
+                  >
+                    {product.image_url && (
+                      <img 
+                        src={`${API_BASE_URL.replace('/api', '')}${product.image_url}`}
+                        alt={product.name}
+                        className="w-full h-48 object-cover rounded-lg mb-4 opacity-50"
+                      />
+                    )}
+                    <h3 className="text-lg font-bold text-white mb-1 line-through">{product.name}</h3>
+                    <p className="text-sm text-gray-400 mb-2 truncate">{product.description}</p>
+                    <div className="flex justify-between items-center mb-4 text-sm font-mono text-red-400">
+                      <span>₹{product.price}</span>
+                      <span className="text-gray-400">Stock: {product.stock}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleRestoreProduct(product.product_id)}
+                        className="flex-1 py-2 rounded-full bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors duration-200"
+                      >
+                        Restore
+                      </button>
+                      <button 
+                        onClick={() => handlePermanentDelete(product.product_id)}
+                        className="flex-1 py-2 rounded-full bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors duration-200"
+                      >
+                        Permanent Delete
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
             </div>
-          </Tab>
+          )}
           
-          <Tab key="categories" title="Categories">
-            {showCategoryForm && (
-              <Card className="mb-6">
-                <CardBody>
-                  <h2 className="heading-font text-xl mb-4">
-                    {editingCategory ? 'Edit Category' : 'Add New Category'}
-                  </h2>
+          {activeTab === 'categories' && (
+            <div className="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
+              {showCategoryForm && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="mb-8 p-6 bg-gray-900 rounded-xl shadow-lg border border-gray-700"
+                >
+                  <h2 className="text-xl font-bold mb-4">{editingCategory ? 'Edit Category' : 'Add New Category'}</h2>
                   <form onSubmit={handleCategorySubmit} className="space-y-4">
-                    <Input
-                      label="Category Name"
+                    <input
+                      placeholder="Category Name"
                       value={categoryFormData.name}
                       onChange={(e) => setCategoryFormData({...categoryFormData, name: e.target.value})}
+                      className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-red-500"
                       required
                     />
-                    <Textarea
-                      label="Description (Optional)"
+                    <textarea
+                      placeholder="Description (Optional)"
                       value={categoryFormData.description}
                       onChange={(e) => setCategoryFormData({...categoryFormData, description: e.target.value})}
+                      className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-red-500"
+                      rows={3}
                     />
-                    <Input
+                    <input
                       type="file"
                       accept="image/*"
-                      label="Category Image (Optional)"
                       onChange={(e) => setCategoryImageFile(e.target.files?.[0] || null)}
+                      className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-500 file:text-white hover:file:bg-red-600"
                     />
-                    <div className="flex gap-2">
-                      <Button type="submit" color="primary">
-                        {editingCategory ? 'Update' : 'Add'} Category
-                      </Button>
-                      <Button variant="flat" onPress={resetCategoryForm}>
+                    <div className="flex gap-4">
+                      <button type="submit" className="py-2 px-6 rounded-full bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors duration-200">
+                        {editingCategory ? 'Update Category' : 'Add Category'}
+                      </button>
+                      <button type="button" onClick={resetCategoryForm} className="py-2 px-6 rounded-full border border-gray-600 text-gray-300 font-semibold hover:bg-gray-700 transition-colors duration-200">
                         Cancel
-                      </Button>
+                      </button>
                     </div>
                   </form>
-                </CardBody>
-              </Card>
-            )}
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {categories.map(category => (
-                <Card key={category.category_name}>
-                  <CardBody>
-                    <h3 className="heading-font text-lg mb-2">{category.category_name}</h3>
-                    <p className="text-sm text-foreground/70 mb-4">{category.description || 'No description'}</p>
+                </motion.div>
+              )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {categories.map(category => (
+                  <div key={category.category_name} className="bg-gray-900 p-4 rounded-xl shadow-md border border-gray-700">
+                    <h3 className="text-lg font-bold text-white mb-1">{category.category_name}</h3>
+                    <p className="text-sm text-gray-400 mb-4">{category.description || 'No description'}</p>
                     <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="flat"
-                        onPress={() => handleCategoryEdit(category)}
-                        startContent={<Icon icon="lucide:edit" />}
+                      <button 
+                        onClick={() => handleCategoryEdit(category)}
+                        className="flex-1 py-2 rounded-full border border-gray-600 text-gray-300 font-semibold hover:bg-gray-700 transition-colors duration-200"
                       >
                         Edit
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        color="danger" 
-                        variant="flat"
-                        onPress={() => handleCategoryDelete(category.category_name)}
-                        startContent={<Icon icon="lucide:trash" />}
+                      </button>
+                      <button 
+                        onClick={() => handleCategoryDelete(category.category_name)}
+                        className="flex-1 py-2 rounded-full bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors duration-200"
                       >
                         Delete
-                      </Button>
+                      </button>
                     </div>
-                  </CardBody>
-                </Card>
-              ))}
+                  </div>
+                ))}
+              </div>
             </div>
-          </Tab>
+          )}
           
-          <Tab key="orders" title="Orders">
-            <div className="mb-4">
-              <Select
-                label="Filter by Status"
-                placeholder="All Orders"
-                selectedKeys={orderStatusFilter ? [orderStatusFilter] : []}
-                onSelectionChange={(keys) => {
-                  const status = Array.from(keys)[0] as string;
-                  setOrderStatusFilter(status);
-                  fetchOrders();
-                }}
-                className="max-w-xs"
-              >
-                <SelectItem key="pending" value="pending">Pending</SelectItem>
-                <SelectItem key="paid" value="paid">Paid</SelectItem>
-                <SelectItem key="shipped" value="shipped">Shipped</SelectItem>
-                <SelectItem key="delivered" value="delivered">Delivered</SelectItem>
-              </Select>
-            </div>
-            
-            <div className="space-y-4">
-              {orders.map(order => (
-                <Card key={order.order_id}>
-                  <CardBody>
-                    <div className="flex justify-between items-start mb-4">
+          {activeTab === 'orders' && (
+            <div className="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
+              <div className="mb-4">
+                <select
+                  value={orderStatusFilter}
+                  onChange={(e) => setOrderStatusFilter(e.target.value)}
+                  className="w-full sm:w-auto p-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-red-500"
+                >
+                  <option value="">All Orders</option>
+                  <option value="pending">Pending</option>
+                  <option value="paid">Paid</option>
+                  <option value="shipped">Shipped</option>
+                  <option value="delivered">Delivered</option>
+                </select>
+              </div>
+              <div className="space-y-4">
+                {orders.map(order => (
+                  <div key={order.order_id} className="bg-gray-900 p-4 rounded-xl shadow-md border border-gray-700">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
                       <div>
-                        <h3 className="heading-font text-lg">Order #{order.order_id}</h3>
-                        <p className="text-sm text-foreground/70">{order.user_name} ({order.email})</p>
-                        <p className="text-sm text-foreground/70">{new Date(order.created_at).toLocaleString()}</p>
+                        <h3 className="text-lg font-bold text-white">Order #{order.order_id}</h3>
+                        <p className="text-sm text-gray-400">{order.user_name} ({order.email})</p>
+                        <p className="text-sm text-gray-400">{new Date(order.created_at).toLocaleString()}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="font-mono text-primary text-lg">₹{order.total}</p>
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          order.status === 'paid' ? 'bg-success/20 text-success' :
-                          order.status === 'shipped' ? 'bg-warning/20 text-warning' :
-                          order.status === 'delivered' ? 'bg-primary/20 text-primary' :
-                          'bg-default/20 text-default-foreground'
+                      <div className="text-right mt-2 sm:mt-0">
+                        <p className="text-xl font-mono text-red-500">₹{order.total}</p>
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                          order.status === 'paid' ? 'bg-green-600 text-white' :
+                          order.status === 'shipped' ? 'bg-yellow-600 text-white' :
+                          order.status === 'delivered' ? 'bg-blue-600 text-white' :
+                          'bg-gray-600 text-white'
                         }`}>
                           {order.status.toUpperCase()}
                         </span>
                       </div>
                     </div>
-                    
-                    <p className="text-sm mb-4"><strong>Items:</strong> {order.items}</p>
-                    
+                    <p className="text-sm text-gray-300 mb-4"><strong>Items:</strong> {order.items}</p>
                     <div className="flex gap-2">
-                      <Select
-                        placeholder="Change Status"
-                        onSelectionChange={(keys) => {
-                          const status = Array.from(keys)[0] as string;
-                          if (status) handleOrderStatusUpdate(order.order_id, status);
-                        }}
-                        className="max-w-xs"
+                      <select
+                        value=""
+                        onChange={(e) => handleOrderStatusUpdate(order.order_id, e.target.value)}
+                        className="flex-1 p-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-red-500"
                       >
-                        <SelectItem key="pending" value="pending">Pending</SelectItem>
-                        <SelectItem key="paid" value="paid">Paid</SelectItem>
-                        <SelectItem key="shipped" value="shipped">Shipped</SelectItem>
-                        <SelectItem key="delivered" value="delivered">Delivered</SelectItem>
-                      </Select>
+                        <option value="">Change Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="paid">Paid</option>
+                        <option value="shipped">Shipped</option>
+                        <option value="delivered">Delivered</option>
+                      </select>
                     </div>
-                  </CardBody>
-                </Card>
-              ))}
+                  </div>
+                ))}
+              </div>
             </div>
-          </Tab>
+          )}
           
-          <Tab key="payments" title="Payments">
-            <div className="space-y-4">
-              {pendingPayments.map(payment => (
-                <Card key={payment.payment_id}>
-                  <CardBody>
-                    <div className="flex justify-between items-start mb-4">
+          {activeTab === 'payments' && (
+            <div className="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
+              <div className="space-y-4">
+                {pendingPayments.map(payment => (
+                  <div key={payment.payment_id} className="bg-gray-900 p-4 rounded-xl shadow-md border border-gray-700">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
                       <div>
-                        <h3 className="heading-font text-lg">Payment #{payment.payment_id}</h3>
-                        <p className="text-sm text-foreground/70">Order: {payment.order_id}</p>
-                        <p className="text-sm text-foreground/70">{payment.user_name}</p>
-                        <p className="text-sm text-foreground/70">{new Date(payment.created_at).toLocaleString()}</p>
+                        <h3 className="text-lg font-bold text-white">Payment #{payment.payment_id}</h3>
+                        <p className="text-sm text-gray-400">Order: {payment.order_id}</p>
+                        <p className="text-sm text-gray-400">{payment.user_name}</p>
+                        <p className="text-sm text-gray-400">{new Date(payment.created_at).toLocaleString()}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="font-mono text-primary text-lg">₹{payment.amount}</p>
-                        <span className="px-2 py-1 rounded text-xs bg-warning/20 text-warning">
+                      <div className="text-right mt-2 sm:mt-0">
+                        <p className="text-xl font-mono text-red-500">₹{payment.amount}</p>
+                        <span className="px-2 py-1 rounded text-xs font-semibold bg-yellow-600 text-white">
                           PENDING
                         </span>
                       </div>
                     </div>
                     
                     {payment.transaction_ref && (
-                      <p className="text-sm mb-4"><strong>Transaction Ref:</strong> {payment.transaction_ref}</p>
+                      <p className="text-sm text-gray-300 mb-4"><strong>Transaction Ref:</strong> {payment.transaction_ref}</p>
                     )}
                     
-                    <Button 
-                      color="success"
-                      onPress={() => handleMarkPaymentComplete(payment.payment_id)}
-                      startContent={<Icon icon="lucide:check" />}
+                    <button 
+                      onClick={() => handleMarkPaymentComplete(payment.payment_id)}
+                      className="py-2 px-6 rounded-full bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors duration-200"
                     >
                       Mark as Completed
-                    </Button>
-                  </CardBody>
-                </Card>
-              ))}
-              
-              {pendingPayments.length === 0 && (
-                <Card>
-                  <CardBody className="text-center py-8">
-                    <p className="text-foreground/70">No pending payments</p>
-                  </CardBody>
-                </Card>
-              )}
+                    </button>
+                  </div>
+                ))}
+                
+                {pendingPayments.length === 0 && (
+                  <div key="no-pending-payments-key" className="text-center py-8 text-gray-400">
+                    <p>No pending payments</p>
+                  </div>
+                )}
+              </div>
             </div>
-          </Tab>
+          )}
           
-          <Tab key="reports" title="Reports">
-            {reports && (
-              <div className="space-y-6">
-                <Card>
-                  <CardBody>
-                    <h3 className="heading-font text-xl mb-4">Summary</h3>
+          {activeTab === 'reports' && (
+            <div className="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
+              {reports && (
+                <div className="space-y-6">
+                  <div className="bg-gray-900 p-6 rounded-xl shadow-md border border-gray-700">
+                    <h3 className="text-xl font-bold mb-4 text-white">Summary</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="text-center p-4 bg-success/10 rounded">
-                        <p className="text-2xl font-mono text-success">
+                      <div className="text-center p-4 bg-green-950 rounded-lg border border-green-800">
+                        <p className="text-2xl font-mono text-green-400">
                           ₹{reports.dailySales.reduce((sum, day) => sum + day.total_revenue, 0)}
                         </p>
-                        <p className="text-sm text-foreground/70">Total Revenue (30 days)</p>
+                        <p className="text-sm text-gray-400">Total Revenue (30 days)</p>
                       </div>
-                      <div className="text-center p-4 bg-warning/10 rounded">
-                        <p className="text-2xl font-mono text-warning">{reports.failedPaymentsCount}</p>
-                        <p className="text-sm text-foreground/70">Failed/Pending Payments</p>
+                      <div className="text-center p-4 bg-yellow-950 rounded-lg border border-yellow-800">
+                        <p className="text-2xl font-mono text-yellow-400">{reports.failedPaymentsCount}</p>
+                        <p className="text-sm text-gray-400">Failed/Pending Payments</p>
                       </div>
                     </div>
-                  </CardBody>
-                </Card>
-                
-                <Card>
-                  <CardBody>
-                    <h3 className="heading-font text-xl mb-4">Daily Sales (Last 30 Days)</h3>
+                  </div>
+                  
+                  <div className="bg-gray-900 p-6 rounded-xl shadow-md border border-gray-700">
+                    <h3 className="text-xl font-bold mb-4 text-white">Daily Sales (Last 30 Days)</h3>
                     <div className="space-y-2">
                       {reports.dailySales.map(day => (
-                        <div key={day.date} className="flex justify-between items-center p-3 bg-default/5 rounded">
-                          <span>{new Date(day.date).toLocaleDateString()}</span>
+                        <div key={day.date} className="flex justify-between items-center p-3 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors duration-200">
+                          <span className="text-sm text-gray-300">{new Date(day.date).toLocaleDateString()}</span>
                           <div className="text-right">
-                            <span className="font-mono text-primary">₹{day.total_revenue}</span>
-                            <span className="text-sm text-foreground/70 ml-2">({day.total_orders} orders)</span>
+                            <span className="font-mono text-red-500">₹{day.total_revenue}</span>
+                            <span className="text-sm text-gray-400 ml-2">({day.total_orders} orders)</span>
                           </div>
                         </div>
                       ))}
                     </div>
-                  </CardBody>
-                </Card>
-              </div>
-            )}
-          </Tab>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           
-          <Tab key="notifications" title="Notifications">
-            <div className="space-y-4">
-              {notifications.map(notification => (
-                <Card key={notification.notification_id} className={!notification.is_read ? 'border-primary' : ''}>
-                  <CardBody>
-                    <div className="flex justify-between items-start mb-2">
+          {activeTab === 'notifications' && (
+            <div className="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
+              <div className="space-y-4">
+                {notifications.map(notification => (
+                  <div key={notification.notification_id} className={`p-4 rounded-xl shadow-md transition-all duration-200 ${!notification.is_read ? 'bg-red-950 border border-red-800' : 'bg-gray-900 border border-gray-700'}`}>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2">
                       <div>
-                        <h3 className="heading-font text-lg flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
                           {notification.title}
                           {!notification.is_read && (
-                            <span className="w-2 h-2 bg-primary rounded-full"></span>
+                            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
                           )}
                         </h3>
-                        <p className="text-sm text-foreground/70">
+                        <p className="text-sm text-gray-400">
                           {new Date(notification.created_at).toLocaleString()}
                         </p>
                       </div>
-                      <div className="flex gap-2">
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          notification.type === 'refund_request' ? 'bg-warning/20 text-warning' :
-                          notification.type === 'cancellation_request' ? 'bg-danger/20 text-danger' :
-                          'bg-primary/20 text-primary'
+                      <span className={`mt-2 sm:mt-0 px-2 py-1 rounded-full text-xs font-semibold ${
+                          notification.type === 'refund_request' ? 'bg-yellow-600 text-white' :
+                          notification.type === 'cancellation_request' ? 'bg-red-600 text-white' :
+                          'bg-blue-600 text-white'
                         }`}>
                           {notification.type.replace('_', ' ').toUpperCase()}
-                        </span>
-                      </div>
+                      </span>
                     </div>
                     
-                    <p className="mb-4">{notification.message}</p>
+                    <p className="text-gray-300 mb-4">{notification.message}</p>
                     
                     {notification.order_id && (
-                      <p className="text-sm text-foreground/60 mb-4">
+                      <p className="text-sm text-gray-500 mb-4">
                         <strong>Order ID:</strong> {notification.order_id}
                       </p>
                     )}
@@ -723,103 +924,152 @@ export const AdminDashboard: React.FC = () => {
                     <div className="flex gap-2">
                       {notification.type === 'cancellation_request' && !notification.is_read && (
                         <>
-                          <Button 
-                            size="sm"
-                            color="success"
-                            variant="flat"
-                            onPress={() => handleApproveCancellation(notification.notification_id)}
-                            startContent={<Icon icon="lucide:check" />}
+                          <button 
+                            onClick={() => handleApproveCancellation(notification.notification_id)}
+                            className="py-2 px-4 rounded-full bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors duration-200"
                           >
                             Approve
-                          </Button>
-                          <Button 
-                            size="sm"
-                            color="danger"
-                            variant="flat"
-                            onPress={() => handleDeclineCancellation(notification.notification_id)}
-                            startContent={<Icon icon="lucide:x" />}
+                          </button>
+                          <button 
+                            onClick={() => handleDeclineCancellation(notification.notification_id)}
+                            className="py-2 px-4 rounded-full bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors duration-200"
                           >
                             Decline
-                          </Button>
+                          </button>
                         </>
                       )}
                       {!notification.is_read && notification.type !== 'cancellation_request' && (
-                        <Button 
-                          size="sm"
-                          color="primary"
-                          variant="flat"
-                          onPress={() => markAsRead(notification.notification_id)}
-                          startContent={<Icon icon="lucide:check" />}
+                        <button 
+                          onClick={() => markAsRead(notification.notification_id)}
+                          className="py-2 px-4 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors duration-200"
                         >
                           Mark as Read
-                        </Button>
+                        </button>
                       )}
                     </div>
-                  </CardBody>
-                </Card>
-              ))}
-              
-              {notifications.length === 0 && (
-                <Card>
-                  <CardBody className="text-center py-8">
-                    <Icon icon="lucide:bell" className="h-12 w-12 text-foreground/50 mx-auto mb-4" />
-                    <p className="text-foreground/70">No notifications</p>
-                  </CardBody>
-                </Card>
-              )}
-            </div>
-          </Tab>
-        </Tabs>
-        
-        <Modal isOpen={showMessageModal} onClose={() => setShowMessageModal(false)} size="lg">
-          <ModalContent>
-            <ModalHeader>Send Message to Customer</ModalHeader>
-            <ModalBody>
-              <div className="space-y-4">
-                <Autocomplete
-                  label="Select Customer"
-                  placeholder="Search and select a customer"
-                  selectedKey={messageForm.user_id}
-                  onSelectionChange={(key) => setMessageForm({...messageForm, user_id: key as string})}
-                  allowsCustomValue={false}
-                >
-                  {allUsers.map(user => (
-                    <AutocompleteItem key={user.user_id.toString()} value={user.user_id.toString()}>
-                      {user.name} ({user.email})
-                    </AutocompleteItem>
-                  ))}
-                </Autocomplete>
+                  </div>
+                ))}
                 
-                <Input
-                  label="Message Title"
-                  value={messageForm.title}
-                  onChange={(e) => setMessageForm({...messageForm, title: e.target.value})}
-                  required
-                />
-                
-                <Textarea
-                  label="Message"
-                  value={messageForm.message}
-                  onChange={(e) => setMessageForm({...messageForm, message: e.target.value})}
-                  rows={4}
-                  required
-                />
+                {notifications.length === 0 && (
+                  <div key="no-notifications-card" className="text-center py-8 text-gray-400">
+                    <p>No notifications</p>
+                  </div>
+                )}
               </div>
-            </ModalBody>
-            <ModalFooter>
-              <Button variant="flat" onPress={() => setShowMessageModal(false)}>
-                Cancel
-              </Button>
-              <Button 
-                color="primary" 
-                onPress={handleSendMessage}
-                isDisabled={!messageForm.user_id || !messageForm.title || !messageForm.message}
+            </div>
+          )}
+        </div>
+        
+        <AnimatePresence>
+          {showMessageModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-black bg-opacity-80 flex items-center justify-center p-4"
+              onClick={() => setShowMessageModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 50 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 50 }}
+                transition={{ type: 'spring', damping: 15, stiffness: 100 }}
+                className="w-full max-w-lg bg-gray-800 p-6 rounded-xl shadow-2xl border border-gray-700 relative"
+                onClick={e => e.stopPropagation()}
               >
-                Send Message
-              </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-bold text-white">Send Message to Customer</h2>
+                  <button onClick={() => setShowMessageModal(false)} className="text-gray-400 hover:text-white transition-colors duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                    </svg>
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  <select
+                    value={messageForm.user_id}
+                    onChange={(e) => setMessageForm({...messageForm, user_id: e.target.value})}
+                    className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-red-500"
+                    required
+                  >
+                    <option value="">Select Customer</option>
+                    {allUsers.map(user => (
+                      <option key={user.user_id.toString()} value={user.user_id.toString()}>
+                        {user.name} ({user.email})
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    placeholder="Message Title"
+                    value={messageForm.title}
+                    onChange={(e) => setMessageForm({...messageForm, title: e.target.value})}
+                    className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-red-500"
+                    required
+                  />
+                  <textarea
+                    placeholder="Message"
+                    value={messageForm.message}
+                    onChange={(e) => setMessageForm({...messageForm, message: e.target.value})}
+                    className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-red-500"
+                    rows={4}
+                    required
+                  />
+                </div>
+                <div className="flex justify-end gap-3 mt-6">
+                  <button onClick={() => setShowMessageModal(false)} className="py-2 px-6 rounded-full border border-gray-600 text-gray-300 font-semibold hover:bg-gray-700 transition-colors duration-200">
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleSendMessage}
+                    disabled={!messageForm.user_id || !messageForm.title || !messageForm.message}
+                    className="py-2 px-6 rounded-full bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Send Message
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showConfirmModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-black bg-opacity-80 flex items-center justify-center p-4"
+              onClick={() => setShowConfirmModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 50 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 50 }}
+                transition={{ type: 'spring', damping: 15, stiffness: 100 }}
+                className="w-full max-w-sm bg-gray-800 p-6 rounded-xl shadow-2xl border border-gray-700 relative text-center"
+                onClick={e => e.stopPropagation()}
+              >
+                <h2 className="text-xl font-bold mb-4 text-white">Confirmation</h2>
+                <p className="text-gray-300 mb-6">{confirmMessage}</p>
+                <div className="flex justify-center gap-4">
+                  <button 
+                    onClick={() => setShowConfirmModal(false)}
+                    className="py-2 px-6 rounded-full border border-gray-600 text-gray-300 font-semibold hover:bg-gray-700 transition-colors duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={confirmAction}
+                    className="py-2 px-6 rounded-full bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors duration-200"
+                  >
+                    Confirm
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardBody, Button, Input } from "@heroui/react";
+// TODO: Replace HeroUI components with Material-UI
 import { motion } from "framer-motion";
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
@@ -35,21 +35,29 @@ export const AllProducts: React.FC = () => {
   const { refreshCart } = useCart();
 
   const handleAddToCart = (productId: number) => {
-    if (isAuthenticated) {
+    if (isAuthenticated && user) {
       addToCart(productId);
     } else {
+      showToast('Please login to add items to cart', 'error');
       navigate('/login');
     }
   };
 
   const addToCart = async (productId: number) => {
+    if (!isAuthenticated || !user) {
+      showToast('Please login to add items to cart', 'error');
+      navigate('/login');
+      return;
+    }
+    
     try {
       await cartService.addToCart({ product_id: productId, quantity: 1 });
       await Promise.all([fetchCartItems(), refreshCart()]);
       showToast('Added to cart successfully!', 'success');
     } catch (error) {
       console.error('Add to cart error:', error);
-      showToast('Error adding to cart', 'error');
+      showToast('Please login to add items to cart', 'error');
+      navigate('/login');
     }
   };
 
@@ -97,8 +105,10 @@ export const AllProducts: React.FC = () => {
 
   const fetchProducts = async () => {
     try {
-      const data = await productService.getAllProducts();
-      setProducts(data);
+      const response = await productService.getAllProducts();
+      // Handle both API response formats
+      const productsArray = (response.products && Array.isArray(response.products)) ? response.products : (Array.isArray(response) ? response : []);
+      setProducts(productsArray);
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
@@ -144,12 +154,12 @@ export const AllProducts: React.FC = () => {
           </div>
 
           {/* Search Bar */}
-          <Input
+          <input
             type="text"
             placeholder="Search products..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            startContent={<Icon icon="lucide:search" className="text-black" />}
+            
             className="w-full md:w-80"
             classNames={{
               inputWrapper: "bg-white",
@@ -157,23 +167,23 @@ export const AllProducts: React.FC = () => {
             }}
           />
 
-          <Button
-            variant="flat"
-            onPress={() => navigate('/')}
-            startContent={<Icon icon="lucide:arrow-left" />}
+          <button
+            
+            onClick={() => navigate('/')}
+            
           >
             Back to Home
-          </Button>
+          </button>
         </div>
 
         {/* Products Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {filteredProducts.map((product) => (
-            <Card 
+            <div 
               key={product.product_id}
               className="product-card bg-content1 border border-primary/20 transition-all duration-300"
             >
-              <CardBody className="p-0 overflow-hidden">
+              <div className="p-0 overflow-hidden">
                 <div className="relative aspect-[3/4] overflow-hidden">
                   <img 
                     src={product.image_url ? `${API_BASE_URL.replace('/api', '')}${product.image_url}` : '/placeholder-image.jpg'} 
@@ -193,44 +203,44 @@ export const AllProducts: React.FC = () => {
                   </div>
                   {getCartQuantity(product.product_id) > 0 ? (
                     <div className="flex items-center justify-between bg-primary/10 rounded-lg p-2">
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="flat"
-                        color="primary"
-                        onPress={() => updateQuantity(product.product_id, getCartQuantity(product.product_id) - 1)}
+                      <button
+                        
+                        
+                        
+                        
+                        onClick={() => updateQuantity(product.product_id, getCartQuantity(product.product_id) - 1)}
                       >
                         <Icon icon="lucide:minus" />
-                      </Button>
+                      </button>
                       <span className="font-mono text-lg font-bold px-4">
                         {getCartQuantity(product.product_id)}
                       </span>
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="flat"
-                        color="primary"
+                      <button
+                        
+                        
+                        
+                        
                         isDisabled={getCartQuantity(product.product_id) >= product.stock}
-                        onPress={() => updateQuantity(product.product_id, getCartQuantity(product.product_id) + 1)}
+                        onClick={() => updateQuantity(product.product_id, getCartQuantity(product.product_id) + 1)}
                       >
                         <Icon icon="lucide:plus" />
-                      </Button>
+                      </button>
                     </div>
                   ) : (
-                    <Button 
-                      color="primary" 
-                      variant="flat" 
-                      fullWidth
+                    <button 
+                       
+                       
+                      style={{width: "100%"}}
                       className="heading-font tracking-wider text-sm"
-                      startContent={<Icon icon="lucide:shopping-cart" />}
-                      onPress={() => handleAddToCart(product.product_id)}
+                      
+                      onClick={() => handleAddToCart(product.product_id)}
                     >
                       ADD TO CART
-                    </Button>
+                    </button>
                   )}
                 </div>
-              </CardBody>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
 

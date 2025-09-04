@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardBody, Button } from "@heroui/react";
+// TODO: Replace HeroUI components with Material-UI
 import { Icon } from '@iconify/react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -79,22 +79,22 @@ export const CategoryProducts: React.FC = () => {
             </h1>
             <div className="samurai-divider w-24 mb-6"></div>
           </div>
-          <Button
-            variant="flat"
-            onPress={() => navigate('/')}
-            startContent={<Icon icon="lucide:arrow-left" />}
+          <button
+            
+            onClick={() => navigate('/')}
+            
           >
             Back to Home
-          </Button>
+          </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {products.map((product) => (
-            <Card 
+            <div 
               key={product.product_id}
               className="product-card bg-content1 border border-primary/20 transition-all duration-300"
             >
-              <CardBody className="p-0 overflow-hidden">
+              <div className="p-0 overflow-hidden">
                 <div className="relative aspect-[3/4] overflow-hidden">
                   <img 
                     src={product.image_url ? `${API_BASE_URL.replace('/api', '')}${product.image_url}` : '/placeholder-image.jpg'} 
@@ -112,19 +112,19 @@ export const CategoryProducts: React.FC = () => {
                     <p className="text-primary font-bold font-mono">₹{product.price}</p>
                     <p className="text-xs text-foreground/60">Stock: {product.stock}</p>
                   </div>
-                  <Button 
-                    color="primary" 
-                    variant="flat" 
-                    fullWidth
+                  <button 
+                     
+                     
+                    style={{width: "100%"}}
                     className="heading-font tracking-wider text-sm"
-                    startContent={<Icon icon="lucide:shopping-cart" />}
-                    onPress={() => handleAddToCart(product.product_id)}
+                    
+                    onClick={() => handleAddToCart(product.product_id)}
                   >
                     ADD TO CART
-                  </Button>
+                  </button>
                 </div>
-              </CardBody>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
 

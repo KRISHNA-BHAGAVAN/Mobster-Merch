@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from "@heroui/react";
+// TODO: Replace HeroUI components with Material-UI
 import { Icon } from '@iconify/react';
 
 export const Footer: React.FC = () => {
@@ -10,7 +10,7 @@ export const Footer: React.FC = () => {
           <div>
             
             <div className="flex items-center gap-2 mb-4">
-              <Icon icon="lucide:ghost" className="text-primary h-6 w-6" />
+              <Icon icon="mdi:pistol" className="text-primary h-6 w-6" />
               <span className="title-font text-xl tracking-wider text-white">
                 MOBSTER <span className="heading-font text-primary">MERCH</span>
               </span>
@@ -19,18 +19,18 @@ export const Footer: React.FC = () => {
               Official merchandise store for the epic samurai film "They Call Him OG" starring Pawan Kalyan.
             </p>
             <div className="flex gap-4">
-              <Link href="#" aria-label="Instagram">
+              <a href="#" aria-label="Instagram">
                 <Icon icon="lucide:instagram" className="text-foreground/70 hover:text-primary transition-colors h-5 w-5" />
-              </Link>
-              <Link href="#" aria-label="Twitter">
+              </a>
+              <a href="#" aria-label="Twitter">
                 <Icon icon="lucide:twitter" className="text-foreground/70 hover:text-primary transition-colors h-5 w-5" />
-              </Link>
-              <Link href="#" aria-label="Facebook">
+              </a>
+              <a href="#" aria-label="Facebook">
                 <Icon icon="lucide:facebook" className="text-foreground/70 hover:text-primary transition-colors h-5 w-5" />
-              </Link>
-              <Link href="#" aria-label="YouTube">
+              </a>
+              <a href="#" aria-label="YouTube">
                 <Icon icon="lucide:youtube" className="text-foreground/70 hover:text-primary transition-colors h-5 w-5" />
-              </Link>
+              </a>
             </div>
           </div>
           
@@ -38,19 +38,19 @@ export const Footer: React.FC = () => {
             <h3 className="heading-font text-lg mb-4">SHOP</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="#" className="text-foreground/70 hover:text-primary transition-colors">All Products</Link>
+                <a href="#" className="text-foreground/70 hover:text-primary transition-colors">All Products</a>
               </li>
               <li>
-                <Link href="#" className="text-foreground/70 hover:text-primary transition-colors">Apparel</Link>
+                <a href="#" className="text-foreground/70 hover:text-primary transition-colors">Apparel</a>
               </li>
               <li>
-                <Link href="#" className="text-foreground/70 hover:text-primary transition-colors">Accessories</Link>
+                <a href="#" className="text-foreground/70 hover:text-primary transition-colors">Accessories</a>
               </li>
               <li>
-                <Link href="#" className="text-foreground/70 hover:text-primary transition-colors">Collectibles</Link>
+                <a href="#" className="text-foreground/70 hover:text-primary transition-colors">Collectibles</a>
               </li>
               <li>
-                <Link href="#" className="text-foreground/70 hover:text-primary transition-colors">Limited Editions</Link>
+                <a href="#" className="text-foreground/70 hover:text-primary transition-colors">Limited Editions</a>
               </li>
             </ul>
           </div>
@@ -59,19 +59,19 @@ export const Footer: React.FC = () => {
             <h3 className="heading-font text-lg mb-4">INFORMATION</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="#" className="text-foreground/70 hover:text-primary transition-colors">About the Movie</Link>
+                <a href="#" className="text-foreground/70 hover:text-primary transition-colors">About the Movie</a>
               </li>
               <li>
-                <Link href="#" className="text-foreground/70 hover:text-primary transition-colors">Cast & Crew</Link>
+                <a href="#" className="text-foreground/70 hover:text-primary transition-colors">Cast & Crew</a>
               </li>
               <li>
-                <Link href="#" className="text-foreground/70 hover:text-primary transition-colors">Behind the Scenes</Link>
+                <a href="#" className="text-foreground/70 hover:text-primary transition-colors">Behind the Scenes</a>
               </li>
               <li>
-                <Link href="#" className="text-foreground/70 hover:text-primary transition-colors">News & Updates</Link>
+                <a href="#" className="text-foreground/70 hover:text-primary transition-colors">News & Updates</a>
               </li>
               <li>
-                <Link href="#" className="text-foreground/70 hover:text-primary transition-colors">Press Kit</Link>
+                <a href="#" className="text-foreground/70 hover:text-primary transition-colors">Press Kit</a>
               </li>
             </ul>
           </div>
@@ -80,19 +80,19 @@ export const Footer: React.FC = () => {
             <h3 className="heading-font text-lg mb-4">CUSTOMER SERVICE</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="#" className="text-foreground/70 hover:text-primary transition-colors">Contact Us</Link>
+                <a href="#" className="text-foreground/70 hover:text-primary transition-colors">Contact Us</a>
               </li>
               <li>
-                <Link href="#" className="text-foreground/70 hover:text-primary transition-colors">Shipping Policy</Link>
+                <a href="#" className="text-foreground/70 hover:text-primary transition-colors">Shipping Policy</a>
               </li>
               <li>
-                <Link href="#" className="text-foreground/70 hover:text-primary transition-colors">Returns & Exchanges</Link>
+                <a href="#" className="text-foreground/70 hover:text-primary transition-colors">Returns & Exchanges</a>
               </li>
               <li>
-                <Link href="#" className="text-foreground/70 hover:text-primary transition-colors">FAQ</Link>
+                <a href="#" className="text-foreground/70 hover:text-primary transition-colors">FAQ</a>
               </li>
               <li>
-                <Link href="#" className="text-foreground/70 hover:text-primary transition-colors">Size Guide</Link>
+                <a href="#" className="text-foreground/70 hover:text-primary transition-colors">Size Guide</a>
               </li>
             </ul>
           </div>

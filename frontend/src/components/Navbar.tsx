@@ -1,5 +1,9 @@
 import React from 'react';
-import { Navbar as HeroNavbar, NavbarContent, NavbarItem, NavbarBrand, Button, Link, NavbarMenuToggle, NavbarMenu, NavbarMenuItem, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Avatar } from "@heroui/react";
+import {
+  AppBar, Toolbar, Typography, IconButton, Menu, MenuItem, Avatar,
+  Box, Drawer, List, ListItem, ListItemText, useMediaQuery, useTheme
+} from '@mui/material';
+import { Menu as MenuIcon, ShoppingCart, AccountCircle, Logout, Login, PersonAdd } from '@mui/icons-material';
 import { Icon } from '@iconify/react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -11,9 +15,11 @@ export const Navbar: React.FC = () => {
   const [isProfileOpen, setIsProfileOpen] = React.useState(false);
   const { logout, user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
@@ -25,123 +31,143 @@ export const Navbar: React.FC = () => {
     { name: "Contact", href: "#contact" },
   ];
 
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+
+  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
   return (
-    <HeroNavbar 
-      onMenuOpenChange={setIsMenuOpen}
-      isMenuOpen={isMenuOpen}
-      className="bg-background/80 backdrop-blur-md border-b border-primary/20"
-      maxWidth="xl"
-      isBordered
+    <AppBar
+      position="sticky"
+      sx={{
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        backdropFilter: 'blur(12px)',
+        boxShadow: '0 2px 10px rgba(220, 38, 38, 0.2)',
+      }}
     >
-      <NavbarContent>
-        <NavbarMenuToggle
-          aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-          className="sm:hidden text-primary"
-        />
-        <NavbarBrand>
-          <div className="flex items-center gap-2">
-            <span class="icon-[emojione-monotone--dragon]"></span>
-            <Icon icon="mdi:ninja" className="text-primary h-6 w-6" />
-            <span className="title-font text-xl tracking-wider text-white">
-              MOBSTER <span className="heading-font text-primary">MERCH</span>
-            </span>
-          </div>
-        </NavbarBrand>
-      </NavbarContent>
+      <Toolbar sx={{ width: '100%', py: 1, px: { xs: 2, sm: 4 }, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        
+        {/* Left: Logo */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: { xs: 0, sm: 2 } }}>
+          <Icon icon="mdi:pistol" className="text-red-500" style={{ fontSize: '28px' }} />
+          <Typography
+            variant="h5"
+            sx={{
+              fontFamily: "'Ungai', sans-serif",
+              letterSpacing: '0.1em',
+              fontWeight: 700,
+              background: 'linear-gradient(90deg, #fff 0%, #dc2626 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            MOBSTER MERCH
+          </Typography>
+        </Box>
 
-      <NavbarContent className="hidden sm:flex gap-8" justify="center">
-        {menuItems.map((item) => (
-          <NavbarItem key={item.name}>
-            <Link 
+        {/* Center: Desktop Menu */}
+        <Box sx={{ display: { xs: 'none', sm: 'flex' }, gap: 3, flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}>
+          {menuItems.map((item) => (
+            <Box
+              key={item.name}
+              component="a"
               href={item.href}
-              className="text-foreground/80 hover:text-primary transition-colors duration-200 heading-font tracking-wider"
+              sx={{
+                color: 'rgba(255,255,255,0.9)',
+                fontFamily: "'Ungai', sans-serif",
+                letterSpacing: '0.1em',
+                textDecoration: 'none',
+                px: 2,
+                py: 1,
+                borderRadius: '4px',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  color: '#dc2626',
+                },
+              }}
             >
-              {item.name}
-            </Link>
-          </NavbarItem>
-        ))}
-      </NavbarContent>
+              <Typography variant="button" sx={{ fontFamily: "'Ungai', sans-serif", fontSize: '0.85rem' }}>{item.name}</Typography>
+            </Box>
+          ))}
+        </Box>
 
-      <NavbarContent justify="end">
-        {isAuthenticated ? (
-          <>
-            <NavbarItem className="hidden sm:flex">
-              <span className="text-sm text-foreground/70">Welcome, {user?.name}</span>
-            </NavbarItem>
-            <NavbarItem>
-              <Dropdown placement="bottom-end">
-                <DropdownTrigger>
-                  <Avatar
-                    isBordered
-                    as="button"
-                    className="transition-transform"
-                    color="primary"
-                    name={!user?.image_url ? user?.name?.charAt(0).toUpperCase() : undefined}
-                    size="sm"
-                    src={user?.image_url ? `${API_BASE_URL.replace('/api', '')}${user.image_url}` : undefined}
-                  />
-                </DropdownTrigger>
-                <DropdownMenu aria-label="Profile Actions" variant="flat">
-                  <DropdownItem key="profile" className="h-14 gap-2">
-                    <p className="font-semibold">Signed in as</p>
-                    <p className="font-sans">{user?.email}</p>
-                  </DropdownItem>
-                  <DropdownItem key="settings" onPress={() => setIsProfileOpen(true)}>
-                    My Profile
-                  </DropdownItem>
-                  <DropdownItem key="orders" onPress={() => navigate('/orders')}>
-                    My Orders
-                  </DropdownItem>
-                  <DropdownItem key="notifications" onPress={() => navigate('/notifications')}>
-                    Notifications
-                  </DropdownItem>
-                  <DropdownItem key="logout" color="danger" onPress={handleLogout}>
-                    Log Out
-                  </DropdownItem>
-                </DropdownMenu>
-              </Dropdown>
-            </NavbarItem>
-          </>
-        ) : (
-          <NavbarItem>
-            <Button 
-              variant="flat" 
-              color="primary"
-              className="heading-font tracking-wider mr-2"
-              onPress={() => navigate('/register')}
-            >
-              Register
-            </Button>
-            <Button 
-              variant="flat" 
-              color="primary"
-              className="heading-font tracking-wider"
-              onPress={() => navigate('/login')}
-            >
-              LOGIN
-            </Button>
-          </NavbarItem>
-        )}
-      </NavbarContent>
+        {/* Right: Auth / Profile */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: { xs: 0, sm: 2 } }}>
+          {isAuthenticated ? (
+            <>
+              <Typography variant="body2" sx={{ display: { xs: 'none', sm: 'inline' }, mr: 1, opacity: 0.9, color: 'white', fontFamily: "'Ungai', sans-serif" }}>
+                Welcome, {user?.name}
+              </Typography>
+              <IconButton onClick={handleClick}>
+                <Avatar
+                  sx={{ width: 36, height: 36, border: '2px solid #dc2626', transition: 'transform 0.3s ease', '&:hover': { transform: 'scale(1.05)' } }}
+                  src={user?.image_url ? `${API_BASE_URL.replace('/api','')}${user.image_url}` : undefined}
+                >
+                  {!user?.image_url ? user?.name?.charAt(0).toUpperCase() : undefined}
+                </Avatar>
+              </IconButton>
+              <Menu
+                anchorEl={anchorEl}
+                open={open}
+                onClose={handleClose}
+                PaperProps={{
+                  sx: { backgroundColor: '#1a1a1a', border: '1px solid #dc2626', mt: 0.5, '& .MuiMenuItem-root': { color: 'white', fontFamily: "'Ungai', sans-serif", '&:hover': { backgroundColor: 'rgba(220,38,38,0.1)' } } }
+                }}
+              >
+                <MenuItem onClick={() => { handleClose(); setIsProfileOpen(true); }}>
+                  <AccountCircle sx={{ mr: 1, color: '#dc2626' }} /> My Profile
+                </MenuItem>
+                <MenuItem onClick={() => { handleClose(); navigate('/orders'); }}>
+                  <ShoppingCart sx={{ mr: 1, color: '#dc2626' }} /> My Orders
+                </MenuItem>
+                <MenuItem onClick={() => { handleClose(); navigate('/notifications'); }}>
+                  <Icon icon="mdi:bell" className="text-red-500 mr-2" /> Notifications
+                </MenuItem>
+                <MenuItem onClick={() => { handleClose(); handleLogout(); }} sx={{ color: '#dc2626 !important' }}>
+                  <Logout sx={{ mr: 1 }} /> Log Out
+                </MenuItem>
+              </Menu>
+            </>
+          ) : (
+            <>
+              <IconButton sx={{ border: '1px solid #dc2626', color: '#dc2626', '&:hover': { backgroundColor: 'rgba(220,38,38,0.1)' } }} onClick={() => navigate('/login', { state: { mode: 'register' } })}>
+                <PersonAdd /> Register
+              </IconButton>
+              <IconButton sx={{ backgroundColor: '#dc2626', '&:hover': { backgroundColor: '#b91c1c' } }} onClick={() => navigate('/login')}>
+                <Login sx={{ color: 'white' }} /> Login
+              </IconButton>
+            </>
+          )}
+        </Box>
 
-      <NavbarMenu className="bg-background/95 backdrop-blur-md pt-6">
-        {menuItems.map((item, index) => (
-          <NavbarMenuItem key={`${item.name}-${index}`}>
-            <Link
-              href={item.href}
-              className="w-full heading-font tracking-wider text-lg py-2 text-foreground/80 hover:text-primary"
-              size="lg"
-            >
-              {item.name}
-            </Link>
-          </NavbarMenuItem>
-        ))}
-      </NavbarMenu>
-      
-      <ProfileModal 
-        isOpen={isProfileOpen} 
-        onClose={() => setIsProfileOpen(false)} 
-      />
-    </HeroNavbar>
+        {/* Mobile Drawer */}
+        <Drawer
+          anchor="left"
+          open={isMenuOpen}
+          onClose={() => setIsMenuOpen(false)}
+          PaperProps={{ sx: { backgroundColor: 'rgba(0,0,0,0.98)', backdropFilter: 'blur(12px)', color: 'white', width: 250, borderRight: '1px solid #dc2626' } }}
+        >
+          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1, backgroundColor: 'rgba(220,38,38,0.1)' }}>
+            <Icon icon="mdi:pistol" className="text-red-500" style={{ fontSize: '28px' }} />
+            <Typography variant="h6" sx={{ fontFamily: "'Ungai', sans-serif" }}>MOBSTER MERCH</Typography>
+          </Box>
+          <List sx={{ pt: 1 }}>
+            {menuItems.map(item => (
+              <ListItem key={item.name} component="a" href={item.href} onClick={() => setIsMenuOpen(false)}>
+                <ListItemText primary={<Typography sx={{ fontFamily: "'Ungai', sans-serif" }}>{item.name}</Typography>} />
+              </ListItem>
+            ))}
+          </List>
+        </Drawer>
+
+        <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+      </Toolbar>
+    </AppBar>
   );
 };

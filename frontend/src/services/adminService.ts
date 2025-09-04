@@ -34,9 +34,7 @@ export interface ReportsData {
 }
 
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
   return {
-    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json'
   };
 };
@@ -49,7 +47,8 @@ export const adminService = {
       : `${API_BASE_URL}/orders/admin/all`;
     
     const response = await fetch(url, {
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(),
+      credentials: 'include'
     });
     
     if (!response.ok) throw new Error('Failed to fetch orders');
@@ -60,6 +59,7 @@ export const adminService = {
     const response = await fetch(`${API_BASE_URL}/orders/${orderId}/status`, {
       method: 'PUT',
       headers: getAuthHeaders(),
+      credentials: 'include',
       body: JSON.stringify({ status })
     });
     
@@ -69,7 +69,8 @@ export const adminService = {
   // Payments Management
   getPendingPayments: async (): Promise<PendingPayment[]> => {
     const response = await fetch(`${API_BASE_URL}/payments/pending`, {
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(),
+      credentials: 'include'
     });
     
     if (!response.ok) throw new Error('Failed to fetch pending payments');
@@ -79,7 +80,8 @@ export const adminService = {
   markPaymentComplete: async (paymentId: number): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}/payments/${paymentId}/mark-complete`, {
       method: 'POST',
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(),
+      credentials: 'include'
     });
     
     if (!response.ok) throw new Error('Failed to mark payment as complete');
@@ -88,7 +90,8 @@ export const adminService = {
   // Reports
   getDailyReports: async (): Promise<ReportsData> => {
     const response = await fetch(`${API_BASE_URL}/orders/admin/reports/daily`, {
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(),
+      credentials: 'include'
     });
     
     if (!response.ok) throw new Error('Failed to fetch reports');

@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = false }) => {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
+  const { isAuthenticated, user, loading } = useAuth();
 
   // Show loading while checking authentication
   if (loading) {
@@ -23,7 +23,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminO
     return <Navigate to="/login" replace />;
   }
 
-  if (adminOnly && !isAdmin) {
+  if (adminOnly && !user?.isAdmin) {
     return <Navigate to="/" replace />;
   }
 

@@ -1,6 +1,17 @@
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
+/* Hide scrollbar in most modern browsers */
+body::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+}
+
+body {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
 @font-face {
   font-family: 'Storm Gust';
   src: url('/fonts/Storm Gust.otf') format('opentype');

@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, CardBody, CardFooter, Button, Tabs, Tab } from "@heroui/react";
+// TODO: Replace HeroUI components with Material-UI
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 
@@ -113,7 +113,7 @@ export const MerchandiseSection: React.FC = () => {
         <div className="mb-8">
           <Tabs 
             aria-label="Product Categories" 
-            color="primary" 
+             
             variant="light"
             selectedKey={selectedCategory} 
             onSelectionChange={setSelectedCategory as any}
@@ -135,11 +135,11 @@ export const MerchandiseSection: React.FC = () => {
         >
           {filteredProducts.map((product) => (
             <motion.div key={product.id} variants={item}>
-              <Card 
+              <div 
                 className="product-card bg-content1 border border-primary/10 overflow-visible"
                 shadow="sm"
               >
-                <CardBody className="p-0 overflow-hidden">
+                <div className="p-0 overflow-hidden">
                   <div className="relative h-64 w-full">
                     <img
                       src={product.image}
@@ -147,47 +147,47 @@ export const MerchandiseSection: React.FC = () => {
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute top-2 right-2">
-                      <Button 
-                        isIconOnly 
-                        size="sm" 
-                        color="primary" 
-                        variant="flat" 
+                      <button 
+                         
+                         
+                         
+                         
                         className="bg-background/50 backdrop-blur-sm"
                       >
                         <Icon icon="lucide:heart" />
-                      </Button>
+                      </button>
                     </div>
                   </div>
-                </CardBody>
-                <CardFooter className="flex flex-col items-start gap-2">
+                </div>
+                <div className="flex flex-col items-start gap-2">
                   <div className="flex justify-between w-full">
                     <h3 className="font-ramisa text-foreground">{product.name}</h3>
                     <p className="font-storm text-primary">₹{product.price}</p>
                   </div>
-                  <Button 
-                    color="primary" 
-                    variant="flat" 
-                    size="sm" 
+                  <button 
+                     
+                     
+                     
                     className="w-full font-ramisa"
-                    startContent={<Icon icon="lucide:shopping-bag" />}
+                    
                   >
                     Add to Cart
-                  </Button>
-                </CardFooter>
-              </Card>
+                  </button>
+                </div>
+              </div>
             </motion.div>
           ))}
         </motion.div>
 
         <div className="text-center mt-12">
-          <Button 
-            color="primary" 
-            size="lg"
+          <button 
+             
+            
             className="font-ramisa"
-            endContent={<Icon icon="lucide:external-link" />}
+            
           >
             View All Products
-          </Button>
+          </button>
         </div>
       </div>
     </section>

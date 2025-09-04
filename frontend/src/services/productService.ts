@@ -3,36 +3,40 @@ import { API_BASE_URL } from '../config/api';
 
 export const productService = {
   getAllProducts: () => 
-    apiCall('/products/get-all-products'),
+    apiCall('/products/get-available-products'),
 
-  getProductsByCategory: (category: string) => 
-    apiCall(`/products/category/${category}`),
+  getProductsByCategory: (category_id: number) => {
+    // Validate that category_id is an integer
+    if (!Number.isInteger(category_id)) {
+      throw new Error("category_id must be an integer");
+    }
+    return apiCall(`/products/${category_id}`);
+  },
 
-  getProduct: (id: number) => 
-    apiCall(`/products/${id}`),
+  getProduct: (category_id: number) => 
+    apiCall(`/products/${category_id}`),
 
   // Admin only
   createProduct: (formData: FormData) => 
-    fetch(`${API_BASE_URL}/admin/products`, {
+    fetch(`${API_BASE_URL}/admin/create-product`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      credentials: 'include',
       body: formData
     }).then(res => res.json()),
 
   updateProduct: (id: number, formData: FormData) => 
     fetch(`${API_BASE_URL}/admin/products/${id}`, {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      credentials: 'include',
       body: formData
     }).then(res => res.json()),
 
   deleteProduct: (id: number) => 
     apiCall(`/admin/products/${id}`, { method: 'DELETE' }),
 
-  getAdminProducts: () => 
-    apiCall('/admin/products')
+  getAvailableProducts: () => 
+    apiCall('/products/get-available-products'),
+
+  getUnavailableProducts: () => 
+    apiCall('/products/not-available-products')
 };

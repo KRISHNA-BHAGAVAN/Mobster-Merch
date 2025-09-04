@@ -28,9 +28,7 @@ export const categoryService = {
   createCategoryWithImage: (formData: FormData) => 
     fetch(`${API_BASE_URL}/categories`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      credentials: 'include',
       body: formData
     }).then(res => res.json()),
 
@@ -43,9 +41,7 @@ export const categoryService = {
   updateCategoryWithImage: (categoryName: string, formData: FormData) => 
     fetch(`${API_BASE_URL}/categories/${categoryName}`, {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
+      credentials: 'include',
       body: formData
     }).then(res => res.json()),
 

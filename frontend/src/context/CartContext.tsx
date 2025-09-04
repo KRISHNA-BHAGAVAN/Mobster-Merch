@@ -14,7 +14,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { user, isAuthenticated } = useAuth();
 
   const refreshCart = async () => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user) {
       setCartCount(0);
       return;
     }
@@ -24,7 +24,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const totalItems = data.reduce((sum: number, item: any) => sum + item.quantity, 0);
       setCartCount(totalItems);
     } catch (error) {
-      console.error('Error fetching cart count:', error);
       setCartCount(0);
     }
   };

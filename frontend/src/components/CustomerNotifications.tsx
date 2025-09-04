@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardBody, Button, Chip } from "@heroui/react";
+// TODO: Replace HeroUI components with Material-UI
 import { Icon } from '@iconify/react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -72,24 +72,24 @@ export const CustomerNotifications: React.FC = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-8">
           <h1 className="heading-font text-3xl">My Notifications</h1>
-          <Button variant="flat" onPress={() => navigate('/')}>
+          <button  onClick={() => navigate('/')}>
             Back to Home
-          </Button>
+          </button>
         </div>
 
         {notifications.length === 0 ? (
           <div className="text-center py-20">
             <Icon icon="lucide:bell" className="h-16 w-16 text-foreground/50 mx-auto mb-4" />
             <p className="text-foreground/70 mb-4">No notifications</p>
-            <Button color="primary" onPress={() => navigate('/products')}>
+            <button  onClick={() => navigate('/products')}>
               Start Shopping
-            </Button>
+            </button>
           </div>
         ) : (
           <div className="space-y-4">
             {notifications.map(notification => (
-              <Card key={notification.notification_id} className={!notification.is_read ? 'border-primary' : ''}>
-                <CardBody>
+              <div key={notification.notification_id} className={!notification.is_read ? 'border-primary' : ''}>
+                <div>
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <h3 className="heading-font text-lg flex items-center gap-2">
@@ -103,11 +103,11 @@ export const CustomerNotifications: React.FC = () => {
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <Chip color={getTypeColor(notification.type)} variant="flat" size="sm">
+                      <span color={getTypeColor(notification.type)}  >
                         {notification.type === 'admin_message' ? 'MESSAGE' : 
                          notification.type === 'order_update' ? 'ORDER UPDATE' : 
                          'REFUND REQUEST'}
-                      </Chip>
+                      </span>
                     </div>
                   </div>
                   
@@ -120,18 +120,18 @@ export const CustomerNotifications: React.FC = () => {
                   )}
                   
                   {!notification.is_read && (
-                    <Button 
-                      size="sm"
-                      color="primary"
-                      variant="flat"
-                      onPress={() => markAsRead(notification.notification_id)}
-                      startContent={<Icon icon="lucide:check" />}
+                    <button 
+                      
+                      
+                      
+                      onClick={() => markAsRead(notification.notification_id)}
+                      
                     >
                       Mark as Read
-                    </Button>
+                    </button>
                   )}
-                </CardBody>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         )}

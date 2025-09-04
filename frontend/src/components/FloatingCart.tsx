@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Badge } from "@heroui/react";
+import { Fab, Badge } from '@mui/material';
 import { motion } from "framer-motion";
 import { Icon } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
@@ -27,23 +27,19 @@ export const FloatingCart: React.FC = () => {
       transition={{ delay: 1, duration: 0.3 }}
     >
       <Badge 
-        content={cartCount} 
-        color="#ffffffff" 
-        shape="circle" 
-        showOutline={false}
-        placement="top-right"
-        isInvisible={cartCount === 0}
+        badgeContent={cartCount} 
+        color="primary"
+        invisible={cartCount === 0}
       >
-        <Button
-          isIconOnly
+        <Fab
           color="primary"
           aria-label="Cart"
-          size="lg"
-          className="shadow-lg"
-          onPress={handleCartClick}
+          
+          onClick={handleCartClick}
+          sx={{ boxShadow: 3 }}
         >
           <Icon icon="lucide:shopping-cart" className="h-6 w-6" />
-        </Button>
+        </Fab>
       </Badge>
     </motion.div>
   );

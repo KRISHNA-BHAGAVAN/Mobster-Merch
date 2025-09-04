@@ -1,112 +1,61 @@
 import React from 'react';
-import { Button } from "@heroui/react";
 import { motion } from "framer-motion";
-import { Icon } from '@iconify/react';
 
-export const HeroSection: React.FC = () => {
+export const HeroSection = () => {
   return (
-    <section className="relative h-screen flex items-center justify-center overflow-hidden">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black text-white">
+      {/* Background Image Container */}
       <div 
-        className="absolute inset-0 z-0" 
+        className="absolute inset-0 z-0 opacity-40 transition-opacity duration-500" 
         style={{ 
-          backgroundImage: `url('/images/sword-bg.JPG')`,
+          backgroundImage: `url('/images/mumbai-hotel.jpg')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          filter: 'brightness(2.5) contrast(1)'
+          filter: 'grayscale(100%) brightness(0.6) contrast(1.2)'
         }}
       >
-        <div className="absolute inset-0 hero-gradient"></div>
-        <div className="absolute inset-0 cherry-blossom-overlay"></div>
-        
-        {/* Blue Lightning Effect - Right Side Only */}
-        <motion.div 
-          className="absolute top-10 right-0 left 70 w-1/2 h-full pointer-events-none"
-          style={{
-            background: 'radial-gradient(ellipse at center, rgba(59, 130, 246, 0.3) 0%, transparent 70%)'
-          }}
-          initial={{ opacity: 0 }}
-          animate={{ 
-            opacity: [0, 0.7, 0, 0.5, 0, 0.9, 0] 
-          }}
-          transition={{
-            duration: 0.2,
-            repeat: Infinity,
-            repeatDelay: Math.random() * 2 + 1
-          }}
-        />
-        
-
-        
-
       </div>
 
-      {/* Rain Effect */}
-      <div className="absolute inset-0 z-5 pointer-events-none">
-        {[...Array(50)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-px h-20 bg-gradient-to-b from-transparent via-white/30 to-transparent"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `-20px`
-            }}
-            animate={{
-              y: [0, window.innerHeight + 100]
-            }}
-            transition={{
-              duration: Math.random() * 0.5 + 0.5,
-              repeat: Infinity,
-              delay: Math.random() * 2
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="container mx-auto px-4 z-10 relative">
+      <div className="container mx-auto px-4 z-10 relative py-16">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            
-            
-            <h1 className="heading-font text-5xl md:text-7xl lg:text-8xl mb-6" style={{
-              textShadow: '0 0 5px #4e98ffff, 0 0 10px #6aa2fcff, 0 0 15px #0073ffff',
-              color: '#f2f2f3ff'
-            }}>
-              Mobster <br />
-              <span className="text-primary" style={{
-                textShadow: '0 0 5px #000000ff, 0 0 10px #ff0000, 0 0 15px #ff0000',
-                color: '#ff0000'
-              }}>Merch</span>
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-4 tracking-tight" style={{ color: '#E50000' }}>
+              Mobster
+              <br />
+              <span className="text-white" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>Merch</span>
             </h1>
             
-            <p className="text-lg md:text-xl mb-8 text-foreground/80 max-w-2xl mx-auto">
-              Embrace the spirit of the samurai with our exclusive collection 
+            <p className="text-base sm:text-lg md:text-xl mb-6 max-w-2xl mx-auto font-light text-gray-300">
+              Embrace the spirit of the samurai with our exclusive collection.
             </p>
               
-            <p className="text-lg md:text-xl mb-8 text-foreground/80 max-w-2xl mx-auto">
-            Limited edition merchandise available now
+            <p className="text-sm sm:text-base md:text-lg mb-8 max-w-2xl mx-auto font-light text-gray-400">
+              Limited edition merchandise available now.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                size="lg" 
-                color="primary"
-                className="heading-font tracking-wider text-lg"
-                startContent={<Icon icon="lucide:shopping-bag" />}
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="
+                  heading-font tracking-wide text-lg py-3 px-8 rounded-full font-bold
+                  bg-white text-black border-2 border-white
+                  hover:bg-transparent hover:text-white transition-all duration-300
+                "
                 onClick={() => document.getElementById('featured')?.scrollIntoView({ behavior: 'smooth' })}
               >
                 SHOP NOW
-              </Button>
-             
+              </motion.button>
             </div>
           </motion.div>
         </div>
       </div>
 
-      <div className="absolute bottom-10 left-0 right-0 flex justify-center">
+      <div className="absolute bottom-6 left-0 right-0 flex justify-center z-20">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -117,7 +66,10 @@ export const HeroSection: React.FC = () => {
           }}
         >
           <a href="#featured" aria-label="Scroll down">
-            <Icon icon="lucide:chevron-down" className="w-8 h-8 text-primary" />
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-[#E50000]">
+              <path d="M12 5v14"/>
+              <path d="m19 12-7 7-7-7"/>
+            </svg>
           </a>
         </motion.div>
       </div>

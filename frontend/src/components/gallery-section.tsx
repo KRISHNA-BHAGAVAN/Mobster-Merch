@@ -1,5 +1,5 @@
 import React from "react";
-import { Image } from "@heroui/react";
+// TODO: Replace HeroUI components with Material-UI
 import { motion } from "framer-motion";
 
 export const GallerySection: React.FC = () => {
@@ -59,7 +59,7 @@ export const GallerySection: React.FC = () => {
               className="relative group overflow-hidden rounded-lg"
             >
               <div className="aspect-[4/3] overflow-hidden rounded-lg border border-primary/10">
-                <Image
+                <img
                   src={image}
                   alt={`Gallery image ${index + 1}`}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"

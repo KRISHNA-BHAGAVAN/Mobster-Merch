@@ -6,30 +6,46 @@ export interface AddToCartData {
 }
 
 export const cartService = {
-  getCart: () => 
-    apiCall('/cart'),
+  getCart: async () => {
+    try {
+      const response = await apiCall('/cart');
+      return response.json();
+    } catch (error) {
+      return [];
+    }
+  },
 
-  addToCart: (data: AddToCartData) => 
-    apiCall('/cart', {
+  addToCart: async (data: AddToCartData) => {
+    const response = await apiCall('/cart', {
       method: 'POST',
       body: JSON.stringify(data)
-    }),
+    });
+    return response.json();
+  },
 
-  updateCartItem: (cartId: number, quantity: number) => 
-    apiCall(`/cart/${cartId}`, {
+  updateCartItem: async (cartId: number, quantity: number) => {
+    const response = await apiCall(`/cart/${cartId}`, {
       method: 'PUT',
       body: JSON.stringify({ quantity })
-    }),
+    });
+    return response.json();
+  },
 
-  removeFromCart: (cartId: number) => 
-    apiCall(`/cart/${cartId}`, { method: 'DELETE' }),
+  removeFromCart: async (cartId: number) => {
+    const response = await apiCall(`/cart/${cartId}`, { method: 'DELETE' });
+    return response.json();
+  },
 
-  updateQuantity: (productId: number, quantity: number) => 
-    apiCall(`/cart/product/${productId}`, {
+  updateQuantity: async (productId: number, quantity: number) => {
+    const response = await apiCall(`/cart/product/${productId}`, {
       method: 'PUT',
       body: JSON.stringify({ quantity })
-    }),
+    });
+    return response.json();
+  },
 
-  removeByProductId: (productId: number) => 
-    apiCall(`/cart/product/${productId}`, { method: 'DELETE' })
+  removeByProductId: async (productId: number) => {
+    const response = await apiCall(`/cart/product/${productId}`, { method: 'DELETE' });
+    return response.json();
+  }
 };
