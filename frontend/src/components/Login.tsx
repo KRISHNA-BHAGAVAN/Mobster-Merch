@@ -28,6 +28,13 @@ export const Login: React.FC = () => {
     setErrorMsg(null);
     setSuccessMsg(null);
 
+    // Validate phone number for registration
+    if (!isLogin && !/^\d{10}$/.test(phone)) {
+      setErrorMsg('Phone number must be exactly 10 digits');
+      setLoading(false);
+      return;
+    }
+
     try {
       if (isLogin) {
         const result = await login(username, password);
@@ -223,9 +230,12 @@ export const Login: React.FC = () => {
                   <TextField
                     fullWidth
                     type="tel"
-                    label="Phone"
+                    label="Phone (10 digits)"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setPhone(value);
+                    }}
                     autoComplete="off"
                     InputProps={{
                       startAdornment: <Icon icon="lucide:phone" className="text-red-500 mr-2" />,
