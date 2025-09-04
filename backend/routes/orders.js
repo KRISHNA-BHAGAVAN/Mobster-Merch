@@ -1,6 +1,6 @@
 import express from 'express';
 import pool from '../config/database.js';
-import { verifyToken, verifyAdmin } from './auth.js';
+import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -28,13 +28,13 @@ const generateUniqueOrderId = async (connection) => {
 };
 
 // Create pending order (before payment)
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   const connection = await pool.getConnection();
   
   try {
     await connection.beginTransaction();
     
-    const user_id = req.userId;
+    const user_id = req.session.userId;
     
     // Get cart items
     const [cartItems] = await connection.execute(`
@@ -114,11 +114,11 @@ router.post('/', verifyToken, async (req, res) => {
 });
 
 // Get order status by order_id
-router.get('/:order_id/status', verifyToken, async (req, res) => {
+router.get('/:order_id/status', authMiddleware, async (req, res) => {
   try {
     const [orders] = await pool.execute(
       'SELECT order_id, status FROM orders WHERE order_id = ? AND user_id = ?',
-      [req.params.order_id, req.userId]
+      [req.params.order_id, req.session.userId]
     );
     
     if (orders.length === 0) {
@@ -135,7 +135,7 @@ router.get('/:order_id/status', verifyToken, async (req, res) => {
 });
 
 // Get user orders
-router.get('/user/:user_id', verifyToken, async (req, res) => {
+router.get('/user/:user_id', authMiddleware, async (req, res) => {
   try {
     const [orders] = await pool.execute(`
       SELECT o.order_id, o.total, o.status, o.created_at,
@@ -157,7 +157,7 @@ router.get('/user/:user_id', verifyToken, async (req, res) => {
 });
 
 // Update order status (admin only)
-router.put('/:order_id/status', verifyToken, verifyAdmin, async (req, res) => {
+router.put('/:order_id/status', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { status } = req.body;
     const [result] = await pool.execute(
@@ -176,7 +176,7 @@ router.put('/:order_id/status', verifyToken, verifyAdmin, async (req, res) => {
 });
 
 // Get all orders for admin with filters
-router.get('/admin/all', verifyToken, verifyAdmin, async (req, res) => {
+router.get('/admin/all', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { status } = req.query;
     let query = `
@@ -205,7 +205,7 @@ router.get('/admin/all', verifyToken, verifyAdmin, async (req, res) => {
 });
 
 // Get pending payments for admin
-router.get('/admin/payments/pending', verifyToken, verifyAdmin, async (req, res) => {
+router.get('/admin/payments/pending', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [payments] = await pool.execute(`
       SELECT p.payment_id, p.order_id, p.amount, p.status, p.created_at,
@@ -224,7 +224,7 @@ router.get('/admin/payments/pending', verifyToken, verifyAdmin, async (req, res)
 });
 
 // Daily sales report
-router.get('/admin/reports/daily', verifyToken, verifyAdmin, async (req, res) => {
+router.get('/admin/reports/daily', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [dailySales] = await pool.execute(`
       SELECT DATE(o.created_at) as date, 
@@ -253,10 +253,10 @@ router.get('/admin/reports/daily', verifyToken, verifyAdmin, async (req, res) =>
 });
 
 // Request order cancellation
-router.post('/:order_id/cancel-request', verifyToken, async (req, res) => {
+router.post('/:order_id/cancel-request', authMiddleware, async (req, res) => {
   try {
     const order_id = req.params.order_id;
-    const user_id = req.userId;
+    const user_id = req.session.userId;
     
     // Get user and order details
     const [orderDetails] = await pool.execute(`
@@ -297,10 +297,10 @@ router.post('/:order_id/cancel-request', verifyToken, async (req, res) => {
 });
 
 // Request refund
-router.post('/:order_id/refund-request', verifyToken, async (req, res) => {
+router.post('/:order_id/refund-request', authMiddleware, async (req, res) => {
   try {
     const order_id = req.params.order_id;
-    const user_id = req.userId;
+    const user_id = req.session.userId;
     
     // Get user and order details
     const [orderDetails] = await pool.execute(`
@@ -335,7 +335,7 @@ router.post('/:order_id/refund-request', verifyToken, async (req, res) => {
 });
 
 // Get notifications (admin only)
-router.get('/admin/notifications', verifyToken, verifyAdmin, async (req, res) => {
+router.get('/admin/notifications', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [notifications] = await pool.execute(`
       SELECT notification_id, type, title, message, order_id, user_id, is_read, created_at
@@ -350,7 +350,7 @@ router.get('/admin/notifications', verifyToken, verifyAdmin, async (req, res) =>
 });
 
 // Mark notification as read (admin only)
-router.put('/admin/notifications/:notification_id/read', verifyToken, verifyAdmin, async (req, res) => {
+router.put('/admin/notifications/:notification_id/read', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     await pool.execute(
       'UPDATE notifications SET is_read = TRUE WHERE notification_id = ?',
@@ -364,7 +364,7 @@ router.put('/admin/notifications/:notification_id/read', verifyToken, verifyAdmi
 });
 
 // Send message to customer (admin only)
-router.post('/admin/send-message', verifyToken, verifyAdmin, async (req, res) => {
+router.post('/admin/send-message', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { user_id, title, message } = req.body;
     
@@ -380,14 +380,14 @@ router.post('/admin/send-message', verifyToken, verifyAdmin, async (req, res) =>
 });
 
 // Get customer notifications
-router.get('/notifications', verifyToken, async (req, res) => {
+router.get('/notifications', authMiddleware, async (req, res) => {
   try {
     const [notifications] = await pool.execute(`
       SELECT notification_id, type, title, message, order_id, is_read, created_at
       FROM notifications
       WHERE user_id = ?
       ORDER BY created_at DESC
-    `, [req.userId]);
+    `, [req.session.userId]);
     
     res.json(notifications);
   } catch (error) {
@@ -396,11 +396,11 @@ router.get('/notifications', verifyToken, async (req, res) => {
 });
 
 // Mark customer notification as read
-router.put('/notifications/:notification_id/read', verifyToken, async (req, res) => {
+router.put('/notifications/:notification_id/read', authMiddleware, async (req, res) => {
   try {
     await pool.execute(
       'UPDATE notifications SET is_read = TRUE WHERE notification_id = ? AND user_id = ?',
-      [req.params.notification_id, req.userId]
+      [req.params.notification_id, req.session.userId]
     );
     
     res.json({ message: 'Notification marked as read' });
@@ -410,7 +410,7 @@ router.put('/notifications/:notification_id/read', verifyToken, async (req, res)
 });
 
 // Get all users (admin only)
-router.get('/admin/users', verifyToken, verifyAdmin, async (req, res) => {
+router.get('/admin/users', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [users] = await pool.execute(`
       SELECT user_id, name, email, phone, created_at
@@ -425,7 +425,7 @@ router.get('/admin/users', verifyToken, verifyAdmin, async (req, res) => {
 });
 
 // Admin approve/decline cancellation
-router.post('/admin/cancellation/:notification_id/:action', verifyToken, verifyAdmin, async (req, res) => {
+router.post('/admin/cancellation/:notification_id/:action', authMiddleware, adminMiddleware, async (req, res) => {
   const connection = await pool.getConnection();
   
   try {

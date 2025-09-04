@@ -1,14 +1,14 @@
 import express from 'express';
 import pool from '../config/database.js';
-import { verifyToken } from './auth.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // Add to cart
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
     const { product_id, quantity } = req.body;
-    const user_id = req.userId;
+    const user_id = req.session.userId;
 
     // Check if item already in cart
     const [existing] = await pool.execute(
@@ -38,9 +38,9 @@ router.post('/', verifyToken, async (req, res) => {
 });
 
 // Get cart items
-router.get('/', verifyToken, async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
-    const user_id = req.userId;
+    const user_id = req.session.userId;
     const [rows] = await pool.execute(`
       SELECT c.cart_id, c.quantity, p.product_id, p.name, p.price, p.image_url, p.stock,
              (c.quantity * p.price) AS subtotal
@@ -57,7 +57,7 @@ router.get('/', verifyToken, async (req, res) => {
 });
 
 // Update cart quantity
-router.put('/:cart_id', verifyToken, async (req, res) => {
+router.put('/:cart_id', authMiddleware, async (req, res) => {
   try {
     const { quantity } = req.body;
     const [result] = await pool.execute(
@@ -76,7 +76,7 @@ router.put('/:cart_id', verifyToken, async (req, res) => {
 });
 
 // Remove from cart
-router.delete('/:cart_id', verifyToken, async (req, res) => {
+router.delete('/:cart_id', authMiddleware, async (req, res) => {
   try {
     const [result] = await pool.execute('DELETE FROM cart WHERE cart_id = ?', [req.params.cart_id]);
     
@@ -91,10 +91,10 @@ router.delete('/:cart_id', verifyToken, async (req, res) => {
 });
 
 // Update cart quantity by product_id
-router.put('/product/:product_id', verifyToken, async (req, res) => {
+router.put('/product/:product_id', authMiddleware, async (req, res) => {
   try {
     const { quantity } = req.body;
-    const user_id = req.userId;
+    const user_id = req.session.userId;
     const product_id = req.params.product_id;
     
     const [result] = await pool.execute(
@@ -113,9 +113,9 @@ router.put('/product/:product_id', verifyToken, async (req, res) => {
 });
 
 // Remove from cart by product_id
-router.delete('/product/:product_id', verifyToken, async (req, res) => {
+router.delete('/product/:product_id', authMiddleware, async (req, res) => {
   try {
-    const user_id = req.userId;
+    const user_id = req.session.userId;
     const product_id = req.params.product_id;
     
     const [result] = await pool.execute(

@@ -1,26 +1,52 @@
 import express from 'express';
 import pool from '../config/database.js';
+import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// GET all products
-router.get('/get-all-products', async (req, res) => {
+// GET all active products
+router.get('/get-avaliable-products', async (req, res) => {
   try {
-    const [rows] = await pool.execute('SELECT * FROM products ORDER BY created_at DESC');
+    const [rows] = await pool.execute(`
+      SELECT p.*, c.name as category_name 
+      FROM products p 
+      LEFT JOIN categories c ON p.category_id = c.category_id 
+      WHERE p.is_deleted = FALSE 
+      ORDER BY p.created_at DESC
+    `);
     res.json(rows);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching products' });
   }
 });
 
-// GET products by category
-router.get('/category/:category', async (req, res) => {
+// GET soft deleted products (admin only)
+router.get('/not-avaliable-products',  async (req, res) => {
   try {
-    const category = req.params.category;
-    const [rows] = await pool.execute(
-      'SELECT * FROM products WHERE category = ? ORDER BY created_at DESC',
-      [category]
-    );
+    const [rows] = await pool.execute(`
+      SELECT p.*, c.name as category_name 
+      FROM products p 
+      LEFT JOIN categories c ON p.category_id = c.category_id 
+      WHERE p.is_deleted = TRUE 
+      ORDER BY p.created_at DESC
+    `);
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching deleted products' });
+  }
+});
+
+// GET products by category
+router.get('/:category_id', async (req, res) => {
+  try {
+    const categoryId = req.params.category_id;
+    const [rows] = await pool.execute(`
+      SELECT p.*, c.name as category_name 
+      FROM products p 
+      LEFT JOIN categories c ON p.category_id = c.category_id 
+      WHERE p.category_id = ? AND p.is_deleted = FALSE 
+      ORDER BY p.created_at DESC
+    `, [categoryId]);
     res.json(rows);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching products by category' });
@@ -30,7 +56,12 @@ router.get('/category/:category', async (req, res) => {
 // GET single product
 router.get('/:id', async (req, res) => {
   try {
-    const [rows] = await pool.execute('SELECT * FROM products WHERE product_id = ?', [req.params.id]);
+    const [rows] = await pool.execute(`
+      SELECT p.*, c.name as category_name 
+      FROM products p 
+      LEFT JOIN categories c ON p.category_id = c.category_id 
+      WHERE p.product_id = ? AND p.is_deleted = FALSE
+    `, [req.params.id]);
     if (rows.length === 0) {
       return res.status(404).json({ message: 'Product not found' });
     }
@@ -40,48 +71,5 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST create product
-router.post('/add-product', async (req, res) => {
-  try {
-    const { name, description, price, stock, category } = req.body;
-    const [result] = await pool.execute(
-      'INSERT INTO products (name, description, price, stock, category) VALUES (?, ?, ?, ?, ?)',
-      [name, description, price, stock, category]
-    );
-    res.status(201).json({ message: 'Product created', product_id: result.insertId });
-  } catch (error) {
-    res.status(500).json({ message: 'Error creating product' });
-  }
-});
-
-// PUT update product
-router.put('/update-product/:id', async (req, res) => {
-  try {
-    const { name, description, price, stock, category } = req.body;
-    const [result] = await pool.execute(
-      'UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category = ? WHERE product_id = ?',
-      [name, description, price, stock, category, req.params.id]
-    );
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
-    res.json({ message: 'Product updated' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating product' });
-  }
-});
-
-// DELETE product
-router.delete('/delete-product/:id', async (req, res) => {
-  try {
-    const [result] = await pool.execute('DELETE FROM products WHERE product_id = ?', [req.params.id]);
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
-    res.json({ message: 'Product deleted' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error deleting product' });
-  }
-});
 
 export default router;

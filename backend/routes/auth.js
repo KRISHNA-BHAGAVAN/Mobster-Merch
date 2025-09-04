@@ -1,267 +1,256 @@
 import express from 'express';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import multer from 'multer';
-import path from 'path';
-import pool from '../config/database.js';
+import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import db from '../config/database.js';
+import { redisClient } from '../config/redis.js';
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET;
 
-// Multer configuration for profile image uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, '/var/www/uploads/profiles/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Session / refresh token TTL in seconds
+const REFRESH_TTL = 7 * 24 * 60 * 60; // 7 days
 
-const upload = multer({ 
-  storage,
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  },
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
-});
+// ---------------------
+// Helper: Generate random token
+// ---------------------
+function generateToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
 
-// Generate unique 4-digit user ID
-const generateUniqueUserId = async () => {
-  let userId;
-  let exists = true;
-  
-  while (exists) {
-    userId = Math.floor(1000 + Math.random() * 9000); // 4-digit random number
-    const [result] = await pool.execute('SELECT user_id FROM users WHERE user_id = ?', [userId]);
-    exists = result.length > 0;
-  }
-  
-  return userId;
-};
-
-// Register route
+// ---------------------
+// Register
+// ---------------------
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
-    console.log('Register request:', { name, email, password: '***', phone });
-    
-    // Validate required fields
-    if (!name || !email || !password || !phone) {
-      console.log('Validation failed:', { name: !!name, email: !!email, password: !!password, phone: !!phone });
-      return res.status(400).json({ message: 'Name, email, password, and phone are required' });
+    const { name, email, phone, password, is_admin } = req.body;
+
+    if (!name || !email || !phone || !password) {
+      return res.status(400).json({ error: 'Name, email, phone, and password are required' });
     }
-    
-    // Check if user exists
-    const [existing] = await pool.execute('SELECT user_id FROM users WHERE email = ?', [email]);
-    if (existing.length > 0) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
-    
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
-    
-    // Generate unique 4-digit user ID
-    const userId = await generateUniqueUserId();
-    
-    // Create user with custom user_id
-    await pool.execute(
-      'INSERT INTO users (user_id, name, email, password, phone) VALUES (?, ?, ?, ?, ?)',
-      [userId, name, email, hashedPassword, phone]
+
+    // Check for existing user
+    const [existing] = await db.query(
+      'SELECT user_id FROM users WHERE email = ? OR phone = ? OR name = ?',
+      [email, phone, name]
     );
-    
-    const token = jwt.sign({ userId }, JWT_SECRET, { expiresIn: '24h' });
-    
-    res.status(201).json({
-      message: 'User created successfully',
-      token,
-      user: { id: userId, name, email }
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'Email, phone, or username already exists' });
+    }
+
+    // Hash password
+    const hash = await bcrypt.hash(password, 10);
+
+    // Insert user
+    const [result] = await db.query(
+      'INSERT INTO users (name, email, password, phone, is_admin) VALUES (?, ?, ?, ?, ?)',
+      [name, email, hash, phone, is_admin ? 1 : 0]
+    );
+
+    const userId = result.insertId;
+
+    // Create session
+    req.session.userId = userId;
+    req.session.isAdmin = is_admin ? true : false;
+
+    // Create refresh token
+    const refreshToken = generateToken();
+    await redisClient.set(`refresh_${refreshToken}`, userId, 'EX', REFRESH_TTL);
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: REFRESH_TTL * 1000
     });
+
+    console.log('✅ User registration successful:', name);
+
+    res.json({ 
+      success: true, 
+      user: { id: userId, name, email, phone, isAdmin: Boolean(is_admin) }, 
+      isAdmin: Boolean(is_admin) 
+    });
+
   } catch (error) {
-    console.error('Register error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Registration error:', error);
+    res.status(500).json({ error: 'Registration failed' });
   }
 });
 
-
-// Login route
+// ---------------------
+// Login
+// ---------------------
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    console.log(`Email: ${email}, Password: ${password}`);
-    // Find user by email or username (using email field for both)
-    const [users] = await pool.execute('SELECT * FROM users WHERE email = ? OR name = ?', [email, email]);
-    if (users.length === 0) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+    const { identifier, password } = req.body;
+
+    if (!identifier || !password) {
+      return res.status(400).json({ error: 'Email/username and password are required' });
     }
-    
-    const user = users[0];
-    
-    // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-    
-    // Check if admin credentials (either hardcoded admin or user with admin role)
-    const isAdmin = (email === 'admin' && password === 'password') || user.role === 'admin';
-    
-    const token = jwt.sign({ userId: user.user_id, isAdmin }, JWT_SECRET, { expiresIn: '15m' });
-    const refreshToken = jwt.sign({ userId: user.user_id, isAdmin }, JWT_SECRET, { expiresIn: '7d' });
-    
+
+    const [rows] = await db.query(
+      'SELECT * FROM users WHERE email = ? OR name = ?', 
+      [identifier, identifier]
+    );
+
+    if (!rows.length) return res.status(401).json({ error: 'Invalid credentials' });
+    const hash = await bcrypt.hash(password, 10);
+    const user = rows[0];
+    console.log(`User found: ${user.name}`);
+    console.log(`Password from request: "${password}"`);
+    console.log(`Password from request in hash: "${hash}"`);
+    console.log(`Stored hashed password: "${user.password}"`);
+
+    const match = await bcrypt.compare(password, user.password);
+
+    if (!match) return res.status(401).json({ error: 'Invalid credentials' });
+
+    // Create session
+    req.session.userId = user.user_id;
+    req.session.isAdmin = Boolean(user.is_admin);
+
+    // Create refresh token
+    const refreshToken = generateToken();
+    await redisClient.set(`refresh_${refreshToken}`, user.user_id, 'EX', REFRESH_TTL);
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: REFRESH_TTL * 1000
+    });
+
     res.json({
-      message: 'Login successful',
-      token,
-      refreshToken,
-      user: { id: user.user_id, name: user.name, email: user.email },
-      isAdmin
+      success: true,
+      user: {
+        id: user.user_id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        image_url: user.image_url || null,
+        isAdmin: Boolean(user.is_admin)
+      },
+      isAdmin: Boolean(user.is_admin)
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ error: 'Login failed' });
   }
 });
 
-// Verify token middleware
-export const verifyToken = (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-  
-  if (!token) {
-    return res.status(401).json({ message: 'Access denied' });
-  }
-  
+// ---------------------
+// Refresh Token
+// ---------------------
+router.post('/refresh', async (req, res) => {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    console.log('Token decoded:', { userId: decoded.userId, isAdmin: decoded.isAdmin });
-    req.userId = decoded.userId;
-    req.isAdmin = decoded.isAdmin;
-    next();
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) return res.status(401).json({ error: 'No refresh token provided' });
+
+    const userId = await redisClient.get(`refresh_${refreshToken}`);
+    if (!userId) return res.status(401).json({ error: 'Invalid or expired refresh token' });
+
+    // Create new session and check if user is admin
+    req.session.userId = userId;
+
+    const [userRows] = await db.query('SELECT is_admin FROM users WHERE user_id = ?', [userId]);
+    req.session.isAdmin = userRows.length > 0 ? Boolean(userRows[0].is_admin) : false;
+
+    // Generate a new refresh token
+    const newToken = generateToken();
+
+    // Atomically delete old token & set new one
+    await redisClient.multi()
+      .del(`refresh_${refreshToken}`)
+      .set(`refresh_${newToken}`, userId, 'EX', REFRESH_TTL)
+      .exec();
+
+    res.cookie('refreshToken', newToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: REFRESH_TTL * 1000
+    });
+
+    res.json({ success: true });
   } catch (error) {
-    console.log('Token verification error:', error.message);
-    res.status(401).json({ message: 'Invalid token' });
+    console.error('Refresh error:', error);
+    res.status(500).json({ error: 'Could not refresh session' });
   }
-};
-
-// Admin verification middleware
-export const verifyAdmin = (req, res, next) => {
-  console.log('Admin verification - isAdmin:', req.isAdmin, 'userId:', req.userId);
-  if (!req.isAdmin) {
-    return res.status(403).json({ message: 'Admin access required' });
-  }
-  next();
-};
-
-// Logout route
-router.post('/logout', verifyToken, (req, res) => {
-  res.json({ message: 'Logout successful' });
 });
 
-// Refresh token route
-router.post('/refresh', (req, res) => {
-  const { refreshToken } = req.body;
-  
-  if (!refreshToken) {
-    return res.status(401).json({ message: 'Refresh token required' });
-  }
-  
+// ---------------------
+// Get Current User
+// ---------------------
+router.get('/me', async (req, res) => {
   try {
-    const decoded = jwt.verify(refreshToken, JWT_SECRET);
-    const newToken = jwt.sign({ userId: decoded.userId, isAdmin: decoded.isAdmin }, JWT_SECRET, { expiresIn: '15m' });
-    const newRefreshToken = jwt.sign({ userId: decoded.userId, isAdmin: decoded.isAdmin }, JWT_SECRET, { expiresIn: '7d' });
-    
+    let userId = req.session.userId;
+
+    if (!userId && req.cookies.refreshToken) {
+      const redisUserId = await redisClient.get(`refresh_${req.cookies.refreshToken}`);
+      if (redisUserId) {
+        userId = redisUserId;
+        req.session.userId = userId;
+      }
+    }
+
+    if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+
+    const [rows] = await db.query(
+      'SELECT user_id, name, email, phone, image_url, is_admin FROM users WHERE user_id = ?',
+      [userId]
+    );
+
+    if (!rows.length) return res.status(401).json({ error: 'User not found' });
+
+    const user = rows[0];
     res.json({
-      token: newToken,
-      refreshToken: newRefreshToken
+      id: user.user_id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      image_url: user.image_url || null,
+      isAdmin: Boolean(user.is_admin)
     });
   } catch (error) {
-    res.status(401).json({ message: 'Invalid refresh token' });
+    console.error('Get user error:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
-// Get current user
-router.get('/me', verifyToken, async (req, res) => {
+// ---------------------
+// Logout
+// ---------------------
+router.post('/logout', async (req, res) => {
   try {
-    const [users] = await pool.execute(
-      'SELECT user_id, name, email, phone, created_at FROM users WHERE user_id = ?',
-      [req.userId]
-    );
-    
-    if (users.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
+    const refreshToken = req.cookies.refreshToken;
+    if (refreshToken) {
+      await redisClient.del(`refresh_${refreshToken}`);
     }
-    
-    res.json(users[0]);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
-  }
-});
 
-// Get user profile
-router.get('/profile', verifyToken, async (req, res) => {
-  try {
-    const [users] = await pool.execute(
-      'SELECT user_id, name, email, phone, image_url FROM users WHERE user_id = ?',
-      [req.userId]
-    );
-    
-    if (users.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    res.json(users[0]);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching profile' });
-  }
-});
+    req.session.destroy(err => {
+      if (err) {
+        console.error('Logout error:', err);
+        return res.status(500).json({ error: 'Logout failed' });
+      }
 
-// Update user profile
-router.put('/profile', verifyToken, upload.single('image'), async (req, res) => {
-  try {
-    const { name, phone } = req.body;
-    let updateFields = [];
-    let values = [];
-    
-    if (name) {
-      updateFields.push('name = ?');
-      values.push(name);
-    }
-    
-    if (phone) {
-      updateFields.push('phone = ?');
-      values.push(phone);
-    }
-    
-    if (req.file) {
-      const imageUrl = `/uploads/profiles/${req.file.filename}`;
-      updateFields.push('image_url = ?');
-      values.push(imageUrl);
-    }
-    
-    if (updateFields.length === 0) {
-      return res.status(400).json({ message: 'No fields to update' });
-    }
-    
-    values.push(req.userId);
-    
-    await pool.execute(
-      `UPDATE users SET ${updateFields.join(', ')} WHERE user_id = ?`,
-      values
-    );
-    
-    // Get updated user data
-    const [users] = await pool.execute(
-      'SELECT user_id, name, email, phone, image_url FROM users WHERE user_id = ?',
-      [req.userId]
-    );
-    
-    res.json({ message: 'Profile updated successfully', user: users[0] });
+      res.clearCookie('sid', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'lax',
+        path: '/',
+      });
+
+      res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'lax',
+        path: '/',
+      });
+
+      return res.json({ success: true, message: 'Logged out successfully' });
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error updating profile' });
+    console.error('Logout error:', error);
+    res.status(500).json({ error: 'Logout failed' });
   }
 });
 

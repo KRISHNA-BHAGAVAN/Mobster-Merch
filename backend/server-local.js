@@ -3,13 +3,15 @@ import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
 import cookieParser from 'cookie-parser';
-import { RedisStore } from 'connect-redis';
-import Redis from 'ioredis';
+import { RedisStore } from 'connect-redis'; 
+import { redisClient } from './config/redis.js';
+
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import dotenv from 'dotenv';
 
+// Import routes
 import authRoutes from './routes/auth.js';
 import profileRoutes from './routes/profile.js';
 import productRoutes from './routes/product.js';
@@ -27,22 +29,13 @@ dotenv.config({ override: true });
 // ---------------------
 const __dirname = import.meta.dirname;
 const app = express();
-const PORT = process.env.PORT || 5000;
-const NODE_ENV = process.env.NODE_ENV || 'development';
+const PORT = process.env.PORT;
+const NODE_ENV = process.env.NODE_ENV;
 
-// ---------------------
-// Redis (for session store)
-// ---------------------
-const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 
-// Redis connection debugging
-redisClient.on('connect', () => {
-  console.log('✅ Redis connected successfully');
-});
-
-redisClient.on('error', (err) => {
-  console.error('❌ Redis connection error:', err);
-});
+// Debug Redis connection
+redisClient.on('connect', () => console.log('✅ Redis connected successfully'));
+redisClient.on('error', (err) => console.error('❌ Redis connection error:', err));
 
 const redisStore = new RedisStore({
   client: redisClient,
@@ -52,14 +45,37 @@ const redisStore = new RedisStore({
 // ---------------------
 // Security Middleware
 // ---------------------
-app.use(helmet({
-  crossOriginResourcePolicy: false,
-  crossOriginEmbedderPolicy: false
-})); // sets security headers
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+    crossOriginEmbedderPolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
+        connectSrc: [
+          "'self'",
+          "https://api.iconify.design",
+          "https://api.simplesvg.com",
+          "https://api.unisvg.com",
+        ],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "https://cdn.jsdelivr.net",
+          "https://img.heroui.chat",
+        ],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+        fontSrc: ["'self'", "https://cdn.jsdelivr.net"],
+      },
+    },
+  })
+);
+
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000, // 15 min
-    max: 200, // limit each IP
+    max: 200,
     standardHeaders: true,
     legacyHeaders: false,
   })
@@ -71,9 +87,9 @@ app.use(
 app.use(
   cors({
     credentials: true,
-    origin: true,
+    origin: true, // allow dev frontend + prod
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
@@ -91,28 +107,25 @@ app.use(
   session({
     store: redisStore,
     name: 'sid',
-    secret: process.env.SESSION_SECRET || 'your-secret-key',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      // secure: NODE_ENV === 'production', // only over HTTPS in prod
-      // sameSite: NODE_ENV === 'production' ? 'None' : 'Lax', // allow cross-site cookies in prod
-      secure: false, 
-      sameSite: 'Lax', 
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'lax',
       maxAge: 1000 * 60 * 60 * 24, // 1 day
     },
   })
 );
 
-
 // ---------------------
-// Static file serving
+// Static uploads
 // ---------------------
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/uploads/profiles', express.static(path.join(__dirname, 'uploads/profiles')));
-app.use('/uploads/products', express.static(path.join(__dirname, 'uploads/products')));
-app.use('/uploads/categories', express.static(path.join(__dirname, 'uploads/categories')));
+app.use('/uploads', express.static(process.env.UPLOADS_DIR));
+app.use('/uploads/profiles', express.static(process.env.PROFILE_UPLOADS));
+app.use('/uploads/products', express.static(process.env.PRODUCT_UPLOADS));
+app.use('/uploads/categories', express.static(process.env.CATEGORY_UPLOADS));
 
 // ---------------------
 // API Routes
@@ -128,10 +141,20 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/settings', settingsRoutes);
 
 // ---------------------
-// Health check route
+// Health check
 // ---------------------
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Your Merchandise API is running fine' });
+});
+
+// ---------------------
+// Serve React frontend (Reverse Proxy)
+// ---------------------
+const frontendPath = path.join(__dirname, '..', 'frontend', 'dist');
+app.use(express.static(frontendPath));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
 // ---------------------
@@ -139,9 +162,9 @@ app.get('/health', (req, res) => {
 // ---------------------
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res
-    .status(err.status || 500)
-    .json({ error: err.message || 'Internal Server Error' });
+  if (!res.headersSent) {
+    res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
+  }
 });
 
 // ---------------------

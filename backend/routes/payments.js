@@ -1,18 +1,18 @@
 import express from 'express';
 import pool from '../config/database.js';
-import { verifyToken, verifyAdmin } from './auth.js';
+import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // Confirm payment (user-triggered)
-router.post('/confirm', verifyToken, async (req, res) => {
+router.post('/confirm', authMiddleware, async (req, res) => {
   try {
     const { order_id, transaction_ref } = req.body;
     
     // Verify order belongs to user
     const [orders] = await pool.execute(
       'SELECT order_id FROM orders WHERE order_id = ? AND user_id = ?',
-      [order_id, req.userId]
+      [order_id, req.session.userId]
     );
     
     if (orders.length === 0) {
@@ -35,7 +35,7 @@ router.post('/confirm', verifyToken, async (req, res) => {
 });
 
 // Admin: Mark payment as complete
-router.post('/:payment_id/mark-complete', verifyToken, verifyAdmin, async (req, res) => {
+router.post('/:payment_id/mark-complete', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const payment_id = req.params.payment_id;
     
@@ -100,7 +100,7 @@ router.post('/:payment_id/mark-complete', verifyToken, verifyAdmin, async (req, 
 });
 
 // Admin: Get pending payments
-router.get('/pending', verifyToken, verifyAdmin, async (req, res) => {
+router.get('/pending', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [payments] = await pool.execute(`
       SELECT p.payment_id, p.order_id, p.amount, p.transaction_ref, p.status,

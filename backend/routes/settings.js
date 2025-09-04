@@ -1,7 +1,7 @@
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
-import { verifyToken, verifyAdmin } from './auth.js';
+import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 const settingsFile = path.join(process.cwd(), 'settings.json');
@@ -21,7 +21,7 @@ router.get('/status', async (req, res) => {
 });
 
 // Toggle website status (admin only)
-router.post('/toggle', verifyToken, verifyAdmin, async (req, res) => {
+router.post('/toggle', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { isOpen } = req.body;
     const settings = { isOpen };
