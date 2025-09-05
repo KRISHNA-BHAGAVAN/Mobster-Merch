@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noCheck && vite build",
+    "deploy": "npm run build && sudo cp -r dist/* /var/www/og_frontend/",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
@@ -39,7 +40,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "postcss": "8.5.6",
     "tailwindcss": "4.1.11",
-    "typescript": "5.7.3",
+    "typescript": "^5.7.3",
     "vite": "^6.0.11"
   }
 }

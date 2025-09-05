@@ -7,7 +7,6 @@ import { RedisStore } from "connect-redis";
 import { redisClient } from "./config/redis.js";
 
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
 import path from "path";
 import dotenv from "dotenv";
 
@@ -21,6 +20,9 @@ import orderRoutes from "./routes/orders.js";
 import categoryRoutes from "./routes/categories.js";
 import paymentRoutes from "./routes/payments.js";
 import settingsRoutes from "./routes/settings.js";
+
+// Import corrected middleware
+import { authMiddleware, adminMiddleware } from "./middleware/auth.js";
 
 dotenv.config({ path: "../.env", override: true });
 
@@ -74,18 +76,6 @@ app.use(
 );
 
 // ---------------------
-// Rate Limiting
-// ---------------------
-// app.use(
-//   rateLimit({
-//     windowMs: 15 * 60 * 1000, // 15 min
-//     max: 200,
-//     standardHeaders: true,
-//     legacyHeaders: false,
-//   })
-// );
-
-// ---------------------
 // CORS
 // ---------------------
 app.use(
@@ -104,6 +94,9 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
+app.set("trust proxy", 1);
+
+
 // ---------------------
 // Session configuration
 // ---------------------
@@ -116,8 +109,9 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
+      domain: ".duckdns.org",
       secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "Strict" : "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "lax",
       maxAge: 1000 * 60 * 60 * 24, // 1 day
     },
   })
@@ -143,15 +137,15 @@ app.use(
 // ---------------------
 // API Routes
 // ---------------------
-app.use("/api/auth", authRoutes);
-app.use("/api/profile", profileRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/cart", cartRoutes);
-app.use("/api/orders", orderRoutes);
+app.use("/api/auth", authRoutes); // Auth routes don't need the middleware
+app.use("/api/profile", authMiddleware, profileRoutes);
+app.use("/api/products", productRoutes); // Assuming some routes are public
+app.use("/api/admin", adminMiddleware, adminRoutes);
+app.use("/api/cart", authMiddleware, cartRoutes); // 👈 Corrected
+app.use("/api/orders", authMiddleware, orderRoutes);
 app.use("/api/categories", categoryRoutes);
-app.use("/api/payments", paymentRoutes);
-app.use("/api/settings", settingsRoutes);
+app.use("/api/payments", authMiddleware, paymentRoutes);
+app.use("/api/settings", authMiddleware, settingsRoutes);
 
 // ---------------------
 // Health check
@@ -167,7 +161,7 @@ app.get("/health", (req, res) => {
 // app.use(express.static(frontendPath));
 
 // app.get("*", (req, res) => {
-//   res.sendFile(path.join(frontendPath, "index.html"));
+//    res.sendFile(path.join(frontendPath, "index.html"));
 // });
 
 // ---------------------
@@ -185,8 +179,6 @@ app.use((err, req, res, next) => {
 // ---------------------
 // Start server
 // ---------------------
-app.listen(PORT, () => {
-  console.log(
-    `🚀 Server running in ${NODE_ENV} mode on http://localhost:${PORT}`
-  );
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
 });

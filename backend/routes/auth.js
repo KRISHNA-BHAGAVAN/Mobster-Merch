@@ -16,6 +16,17 @@ function generateToken() {
   return crypto.randomBytes(32).toString("hex");
 }
 
+// Shared cookie config
+function cookieOptions() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "None" : "lax",
+    path: "/",
+    maxAge: REFRESH_TTL * 1000,
+  };
+}
+
 // ---------------------
 // Register
 // ---------------------
@@ -59,12 +70,7 @@ router.post("/register", async (req, res) => {
     const refreshToken = generateToken();
     await redisClient.set(`refresh_${refreshToken}`, userId, "EX", REFRESH_TTL);
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: REFRESH_TTL * 1000,
-    });
+    res.cookie("refreshToken", refreshToken, cookieOptions());
 
     console.log("✅ User registration successful:", name);
 
@@ -99,13 +105,8 @@ router.post("/login", async (req, res) => {
 
     if (!rows.length)
       return res.status(401).json({ error: "Invalid credentials" });
-    const hash = await bcrypt.hash(password, 10);
-    const user = rows[0];
-    console.log(`User found: ${user.name}`);
-    console.log(`Password from request: "${password}"`);
-    console.log(`Password from request in hash: "${hash}"`);
-    console.log(`Stored hashed password: "${user.password}"`);
 
+    const user = rows[0];
     const match = await bcrypt.compare(password, user.password);
 
     if (!match) return res.status(401).json({ error: "Invalid credentials" });
@@ -123,12 +124,7 @@ router.post("/login", async (req, res) => {
       REFRESH_TTL
     );
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: REFRESH_TTL * 1000,
-    });
+    res.cookie("refreshToken", refreshToken, cookieOptions());
 
     res.json({
       success: true,
@@ -151,6 +147,7 @@ router.post("/login", async (req, res) => {
 // ---------------------
 // Refresh Token
 // ---------------------
+// This route is now mostly redundant but can be kept as a fallback or for specific refresh logic.
 router.post("/refresh", async (req, res) => {
   try {
     const refreshToken = req.cookies.refreshToken;
@@ -163,15 +160,14 @@ router.post("/refresh", async (req, res) => {
         .status(401)
         .json({ error: "Invalid or expired refresh token" });
 
-    // Create new session and check if user is admin
+    // Re-create session
     req.session.userId = userId;
 
     const [userRows] = await db.query(
       "SELECT is_admin FROM users WHERE user_id = ?",
       [userId]
     );
-    req.session.isAdmin =
-      userRows.length > 0 ? Boolean(userRows[0].is_admin) : false;
+    req.session.isAdmin = userRows.length > 0 ? Boolean(userRows[0].is_admin) : false;
 
     // Generate a new refresh token
     const newToken = generateToken();
@@ -183,12 +179,7 @@ router.post("/refresh", async (req, res) => {
       .set(`refresh_${newToken}`, userId, "EX", REFRESH_TTL)
       .exec();
 
-    res.cookie("refreshToken", newToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: REFRESH_TTL * 1000,
-    });
+    res.cookie("refreshToken", newToken, cookieOptions());
 
     res.json({ success: true });
   } catch (error) {
@@ -200,21 +191,14 @@ router.post("/refresh", async (req, res) => {
 // ---------------------
 // Get Current User
 // ---------------------
+// This route is now protected by the new authMiddleware in server.js, so the internal checks are simplified.
 router.get("/me", async (req, res) => {
   try {
-    let userId = req.session.userId;
-
-    if (!userId && req.cookies.refreshToken) {
-      const redisUserId = await redisClient.get(
-        `refresh_${req.cookies.refreshToken}`
-      );
-      if (redisUserId) {
-        userId = redisUserId;
-        req.session.userId = userId;
-      }
+    // authMiddleware has already ensured req.session.userId is populated
+    const userId = req.session.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
     }
-
-    if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
     const [rows] = await db.query(
       "SELECT user_id, name, email, phone, image_url, is_admin FROM users WHERE user_id = ?",
@@ -248,26 +232,19 @@ router.post("/logout", async (req, res) => {
       await redisClient.del(`refresh_${refreshToken}`);
     }
 
+    // Explicitly clear both cookies
+    res.clearCookie("sid", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "None" : "lax",
+    });
+    res.clearCookie("refreshToken", cookieOptions());
+
     req.session.destroy((err) => {
       if (err) {
-        console.error("Logout error:", err);
+        console.error("Session destroy error:", err);
         return res.status(500).json({ error: "Logout failed" });
       }
-
-      res.clearCookie("sid", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "Strict" : "lax",
-        path: "/",
-      });
-
-      res.clearCookie("refreshToken", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "Strict" : "lax",
-        path: "/",
-      });
-
       return res.json({ success: true, message: "Logged out successfully" });
     });
   } catch (error) {
