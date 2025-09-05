@@ -18,6 +18,7 @@ interface AuthContextType {
   register: (name: string, identifier: string, password: string, phone: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  checkAuthStatus: () => Promise<boolean>;
   loading: boolean;
 }
 
@@ -44,6 +45,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         image_url: data.user.image_url,
         isAdmin: data.user.isAdmin || data.isAdmin
       };
+      
+      // Store user data in localStorage
+      localStorage.setItem('user', JSON.stringify(mappedUser));
+      
       setUser(mappedUser);
       setIsAuthenticated(true);
       setLoading(false);
@@ -67,6 +72,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         image_url: data.user.image_url,
         isAdmin: data.user.isAdmin || data.isAdmin
       };
+      
+      // Store user data in localStorage
+      localStorage.setItem('user', JSON.stringify(mappedUser));
+      
       setUser(mappedUser);
       setIsAuthenticated(true);
       setLoading(false);
@@ -81,59 +90,76 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true);
       await authService.logout();
+      
+      // Clear all auth-related data
+      localStorage.removeItem('user');
+      localStorage.removeItem('accessToken');
+      
       setUser(undefined);
       setIsAuthenticated(false);
       setLoading(false);
     } catch (err) {
       setLoading(false);
       console.error("Logout error:", err);
+      
+      // Even if logout fails, clear local state
+      localStorage.removeItem('user');
+      localStorage.removeItem('accessToken');
+      setUser(undefined);
+      setIsAuthenticated(false);
+      
       throw err;
+    }
+  };
+
+  const checkAuthStatus = async (): Promise<boolean> => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/status`, {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      
+      if (data.isAuthenticated && data.user) {
+        const mappedUser = {
+          userId: data.user.id,
+          name: data.user.name,
+          email: data.user.email,
+          phone: data.user.phone,
+          image_url: data.user.image_url,
+          isAdmin: data.user.isAdmin
+        };
+        
+        // Store user data in localStorage
+        localStorage.setItem('user', JSON.stringify(mappedUser));
+        
+        setUser(mappedUser);
+        setIsAuthenticated(true);
+        return true;
+      } else {
+        setIsAuthenticated(false);
+        setUser(undefined);
+        return false;
+      }
+    } catch (err) {
+      console.error("Auth status check error:", err);
+      setIsAuthenticated(false);
+      setUser(undefined);
+      return false;
     }
   };
 
   const checkAuth = async () => {
     try {
       setLoading(true);
-      // Attempt to get user first
-      const user = await authService.getCurrentUser();
+      // First try quick status check
+      const isAuth = await checkAuthStatus();
       
-      if (user) {
-        const mappedUser = {
-          userId: user.id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          image_url: user.image_url,
-          isAdmin: user.isAdmin
-        };
-        setUser(mappedUser);
-        setIsAuthenticated(true);
-      } else {
-        // If no user, try to refresh the token
+      if (!isAuth) {
+        // If not authenticated, try to refresh the token
         const refreshRes = await authService.refreshToken();
         if (refreshRes) {
-          // If refresh token is valid, get the new user data
-          const refreshedUser = await authService.getCurrentUser();
-          if (refreshedUser) {
-            const mappedRefreshedUser = {
-              userId: refreshedUser.id,
-              name: refreshedUser.name,
-              email: refreshedUser.email,
-              phone: refreshedUser.phone,
-              image_url: refreshedUser.image_url,
-              isAdmin: refreshedUser.isAdmin
-            };
-            setUser(mappedRefreshedUser);
-            setIsAuthenticated(true);
-          } else {
-            // Something went wrong after refresh, clear state
-            setIsAuthenticated(false);
-            setUser(undefined);
-          }
-        } else {
-          // Refresh token is also invalid, clear state
-          setIsAuthenticated(false);
-          setUser(undefined);
+          // If refresh token is valid, check status again
+          await checkAuthStatus();
         }
       }
     } catch (err) {
@@ -146,7 +172,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, register, logout, checkAuth, loading }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, register, logout, checkAuth, checkAuthStatus, loading }}>
       {children}
     </AuthContext.Provider>
   );

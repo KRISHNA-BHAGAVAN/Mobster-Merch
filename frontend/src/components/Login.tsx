@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, TextField, Button, Alert, Box, Typography } from '@mui/material';
 import { Icon } from '@iconify/react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { settingsService } from '../services/settingsService';
+
 import { motion } from "framer-motion";
 import '../styles/admin.css';
 
@@ -17,8 +17,7 @@ export const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [showMaintenanceDialog, setShowMaintenanceDialog] = useState(false);
-  const [websiteOpen, setWebsiteOpen] = useState(true);
+
   const { login, register, user } = useAuth();
   const navigate = useNavigate();
 
@@ -41,33 +40,16 @@ export const Login: React.FC = () => {
         console.log('🔍 DEBUG - isAdmin value:', result?.user?.isAdmin);
         
         if (result?.user?.isAdmin) {
-          navigate('/admin');
+          navigate('/admin', { replace: true });
         } else {
-          // Check if website is open after login
-          const statusData = await settingsService.getWebsiteStatus();
-          setWebsiteOpen(statusData.isOpen);
-          
-          if (!statusData.isOpen) {
-            setShowMaintenanceDialog(true);
-          } else {
-            navigate('/');
-          }
+          navigate('/', { replace: true });
         }
       } else {
         await register(name, username, password, phone);
-        
-        // Always show maintenance dialog after registration when site is closed
-        const statusData = await settingsService.getWebsiteStatus();
-        setWebsiteOpen(statusData.isOpen);
-        
-        if (!statusData.isOpen) {
-          setShowMaintenanceDialog(true);
-        } else {
-          setSuccessMsg('Registration successful! You are now logged in.');
-          setTimeout(() => {
-            navigate('/');
-          }, 1000);
-        }
+        setSuccessMsg('Registration successful! You are now logged in.');
+        setTimeout(() => {
+          navigate('/', { replace: true });
+        }, 1000);
       }
     } catch (error: any) {
       console.error('Auth error:', error);
@@ -298,23 +280,7 @@ export const Login: React.FC = () => {
         </motion.div>
       </motion.div>
       
-      {showMaintenanceDialog && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-80 flex items-center justify-center p-4">
-          <div className="bg-gray-800 p-6 rounded-xl max-w-md w-full border border-gray-700">
-            <div className="text-center">
-              <Icon icon="lucide:check-circle" className="w-12 h-12 text-green-500 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-white mb-4">Welcome!</h3>
-              <p className="text-gray-300 mb-6">The website will open soon and you'll receive a notification when it's available!</p>
-              <button
-                onClick={() => setShowMaintenanceDialog(false)}
-                className="w-full py-3 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition-colors"
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };

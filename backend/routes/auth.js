@@ -22,8 +22,7 @@ function cookieOptions() {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: process.env.NODE_ENV === "production" ? "None" : "lax",
-    path: "/",
-    maxAge: REFRESH_TTL * 1000,
+    path: "/"
   };
 }
 
@@ -185,6 +184,43 @@ router.post("/refresh", async (req, res) => {
   } catch (error) {
     console.error("Refresh error:", error);
     res.status(500).json({ error: "Could not refresh session" });
+  }
+});
+
+// ---------------------
+// Check Auth Status (no middleware required)
+// ---------------------
+router.get("/status", async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) {
+      return res.json({ isAuthenticated: false });
+    }
+
+    const [rows] = await db.query(
+      "SELECT user_id, name, email, phone, image_url, is_admin FROM users WHERE user_id = ?",
+      [userId]
+    );
+
+    if (!rows.length) {
+      return res.json({ isAuthenticated: false });
+    }
+
+    const user = rows[0];
+    res.json({
+      isAuthenticated: true,
+      user: {
+        id: user.user_id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        image_url: user.image_url || null,
+        isAdmin: Boolean(user.is_admin),
+      },
+    });
+  } catch (error) {
+    console.error("Auth status check error:", error);
+    res.json({ isAuthenticated: false });
   }
 });
 

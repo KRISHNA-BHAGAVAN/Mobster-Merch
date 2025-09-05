@@ -19,7 +19,7 @@ import cartRoutes from "./routes/cart.js";
 import orderRoutes from "./routes/orders.js";
 import categoryRoutes from "./routes/categories.js";
 import paymentRoutes from "./routes/payments.js";
-import settingsRoutes from "./routes/settings.js";
+
 
 // Import corrected middleware
 import { authMiddleware, adminMiddleware } from "./middleware/auth.js";
@@ -66,7 +66,7 @@ app.use(
           "'self'",
           "data:",
           "https://cdn.jsdelivr.net",
-          "https://img.heroui.chat",
+          "https://img.heroui.chat"
         ],
         styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
         fontSrc: ["'self'", "https://cdn.jsdelivr.net"],
@@ -81,7 +81,7 @@ app.use(
 app.use(
   cors({
     credentials: true,
-    origin: true, // allow dev frontend + prod
+    origin: true, 
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
@@ -109,7 +109,9 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      domain: ".duckdns.org",
+      ...(process.env.NODE_ENV === "production"
+    ? { domain: ".duckdns.org" } 
+    : {}),                       
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "None" : "lax",
       maxAge: 1000 * 60 * 60 * 24, // 1 day
@@ -135,6 +137,25 @@ app.use(
 );
 
 // ---------------------
+// Auth redirect middleware for login/register pages
+// ---------------------
+app.get("/login", (req, res) => {
+  if (req.session.userId) {
+    const isAdmin = req.session.isAdmin;
+    return res.redirect(isAdmin ? "/admin" : "/");
+  }
+  res.redirect("/"); // Let frontend handle routing
+});
+
+app.get("/register", (req, res) => {
+  if (req.session.userId) {
+    const isAdmin = req.session.isAdmin;
+    return res.redirect(isAdmin ? "/admin" : "/");
+  }
+  res.redirect("/"); // Let frontend handle routing
+});
+
+// ---------------------
 // API Routes
 // ---------------------
 app.use("/api/auth", authRoutes); // Auth routes don't need the middleware
@@ -145,7 +166,7 @@ app.use("/api/cart", authMiddleware, cartRoutes); // 👈 Corrected
 app.use("/api/orders", authMiddleware, orderRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/payments", authMiddleware, paymentRoutes);
-app.use("/api/settings", authMiddleware, settingsRoutes);
+
 
 // ---------------------
 // Health check

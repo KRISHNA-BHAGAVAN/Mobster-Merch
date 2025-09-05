@@ -69,7 +69,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
     // Find the category name from the product's category field or category_name
-    const categoryName = product.category || product.category_name || '';
+    const categoryName = product.category_name || '';
     setFormData({
       name: product.name,
       description: product.description,

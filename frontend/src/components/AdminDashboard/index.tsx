@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { productService, categoryService, Category } from '../../services';
 import { adminService, Order, PendingPayment, ReportsData } from '../../services/adminService';
 import { orderService } from '../../services/orderService';
-import { settingsService } from '../../services/settingsService';
+
 import { ProductsTab } from './ProductsTab';
 import { CategoriesTab } from './CategoriesTab';
 import { OrdersTab } from './OrdersTab';
@@ -25,7 +25,7 @@ export const AdminDashboard: React.FC = () => {
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageForm, setMessageForm] = useState({ user_id: '', title: '', message: '' });
   const [allUsers, setAllUsers] = useState<any[]>([]);
-  const [websiteOpen, setWebsiteOpen] = useState(true);
+
   const [activeTab, setActiveTab] = useState('products');
   const [orderStatusFilter, setOrderStatusFilter] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -70,41 +70,7 @@ export const AdminDashboard: React.FC = () => {
     }
   }, [activeTab, orderStatusFilter]);
 
-  useEffect(() => {
-    fetchWebsiteStatus();
-  }, []);
 
-  const fetchWebsiteStatus = async () => {
-    try {
-      const data = await settingsService.getWebsiteStatus();
-      setWebsiteOpen(data.isOpen);
-    } catch (error) {
-      console.error('Error fetching website status:', error);
-    }
-  };
-
-  const toggleWebsiteStatus = async () => {
-    try {
-      const newStatus = !websiteOpen;
-      await settingsService.toggleWebsiteStatus(newStatus);
-      setWebsiteOpen(newStatus);
-      
-      if (newStatus) {
-        try {
-          await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/settings/notify-all-users`, {
-            method: 'POST',
-            credentials: 'include'
-          });
-        } catch (error) {
-          console.error('Error notifying users:', error);
-        }
-      }
-      
-      toast.success(`Website ${newStatus ? 'opened' : 'closed'} successfully!`);
-    } catch (error) {
-      toast.error('Error updating website status');
-    }
-  };
 
   const fetchAvailableProducts = async () => {
     try {
@@ -256,18 +222,7 @@ export const AdminDashboard: React.FC = () => {
             <p className="text-sm text-gray-400 mt-1">Welcome, {user?.name}</p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <button 
-              onClick={toggleWebsiteStatus}
-              className={`flex items-center gap-2 py-2 px-4 rounded-full font-semibold transition-colors duration-200 ${
-                websiteOpen ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
-              }`}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
-                <line x1="12" x2="12" y1="2" y2="12"/>
-              </svg>
-              {websiteOpen ? 'Close Website' : 'Open Website'}
-            </button>
+
             <button 
               onClick={handleLogout}
               className="flex items-center gap-2 py-2 px-4 rounded-full border border-white/20 text-white font-semibold hover:bg-white/10 transition-colors duration-200"
