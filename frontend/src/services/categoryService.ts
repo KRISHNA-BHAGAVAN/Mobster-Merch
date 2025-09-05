@@ -33,19 +33,19 @@ export const categoryService = {
       body: formData
     }).then(res => res.json()),
 
-  updateCategory: (categoryName: string, data: CreateCategoryData) => 
-    apiCall(`/categories/${categoryName}`, {
+  updateCategory: (categoryId: number, data: CreateCategoryData) => 
+    apiCall(`/categories/${categoryId}`, {
       method: 'PUT',
       body: JSON.stringify(data)
     }),
 
-  updateCategoryWithImage: (categoryName: string, formData: FormData) => 
-    fetch(`${API_BASE_URL}/categories/${categoryName}`, {
+  updateCategoryWithImage: (categoryId: number, formData: FormData) => 
+    fetch(`${API_BASE_URL}/categories/${categoryId}`, {
       method: 'PUT',
       credentials: 'include',
       body: formData
     }).then(res => res.json()),
 
-  deleteCategory: (categoryName: string) => 
-    apiCall(`/categories/${categoryName}`, { method: 'DELETE' })
+  deleteCategory: (categoryId: number) => 
+    apiCall(`/categories/${categoryId}`, { method: 'DELETE' })
 };

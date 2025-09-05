@@ -108,4 +108,52 @@ router.delete('/products/:id', authMiddleware, adminMiddleware, async (req, res)
   }
 });
 
+// PUT restore product
+router.put('/products/:id/restore', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const productId = req.params.id;
+    
+    // Check if product exists and is deleted
+    const [product] = await pool.execute('SELECT * FROM products WHERE product_id = ? AND is_deleted = TRUE', [productId]);
+    if (product.length === 0) {
+      return res.status(404).json({ message: 'Deleted product not found' });
+    }
+    
+    // Restore product - mark as not deleted
+    await pool.execute('UPDATE products SET is_deleted = FALSE WHERE product_id = ?', [productId]);
+    
+    res.json({ message: 'Product restored successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error restoring product' });
+  }
+});
+
+// DELETE product permanently
+router.delete('/products/:id/permanent', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const productId = req.params.id;
+    
+    // Check if product exists and is soft deleted
+    const [product] = await pool.execute('SELECT * FROM products WHERE product_id = ? AND is_deleted = TRUE', [productId]);
+    if (product.length === 0) {
+      return res.status(404).json({ message: 'Deleted product not found' });
+    }
+    
+    // Delete image file if exists
+    if (product[0].image_url) {
+      const imagePath = path.join(process.env.PRODUCT_UPLOADS, path.basename(product[0].image_url));
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
+    }
+    
+    // Permanently delete from database
+    await pool.execute('DELETE FROM products WHERE product_id = ?', [productId]);
+    
+    res.json({ message: 'Product permanently deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error permanently deleting product' });
+  }
+});
+
 export default router;

@@ -38,5 +38,11 @@ export const productService = {
     apiCall('/products/get-available-products'),
 
   getUnavailableProducts: () => 
-    apiCall('/products/not-available-products')
+    apiCall('/products/not-available-products'),
+
+  restoreProduct: (id: number) => 
+    apiCall(`/admin/products/${id}/restore`, { method: 'PUT' }),
+
+  permanentDeleteProduct: (id: number) => 
+    apiCall(`/admin/products/${id}/permanent`, { method: 'DELETE' })
 };

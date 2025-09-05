@@ -34,8 +34,14 @@ router.get('/', async (req, res) => {
   try {
     // Note: The new table has 'category_id', 'name', 'description', and 'image_url'
     const [categories] = await pool.execute('SELECT category_id, name, description, image_url, created_at FROM categories ORDER BY name');
+    
+    if (categories.length === 0) {
+      return res.json({ message: 'No categories added in the database', categories: [] });
+    }
+    
     res.json(categories);
   } catch (error) {
+    console.error('Error fetching categories:', error);
     res.status(500).json({ message: 'Error fetching categories' });
   }
 });
@@ -44,13 +50,12 @@ router.get('/', async (req, res) => {
 router.post('/', authMiddleware, adminMiddleware, upload.single('image'), async (req, res) => {
   try {
     const { name, description } = req.body;
-    const image_url = req.file ? `${process.env.CATEGORY_UPLOADS}/${req.file.filename}` : null;
+    const image_url = req.file ? `${process.env.CATEGORY_UPLOADS?.replace(/^\//, '')}/${req.file.filename}` : null;
     
     if (!name) {
       return res.status(400).json({ message: 'Category name is required' });
     }
     
-    // The new 'categories' table has 'name', 'description', and 'image_url' columns
     const [result] = await pool.execute(
       'INSERT INTO categories (name, description, image_url) VALUES (?, ?, ?)',
       [name, description || null, image_url]
@@ -69,13 +74,12 @@ router.post('/', authMiddleware, adminMiddleware, upload.single('image'), async 
   }
 });
 
-// Update category (admin only)
-// Note: We'll update by 'category_id' which is the primary key
+
 router.put('/:category_id', authMiddleware, adminMiddleware, upload.single('image'), async (req, res) => {
   try {
     const { name, description } = req.body;
     const categoryId = req.params.category_id;
-    const image_url = req.file ? `${process.env.CATEGORY_UPLOADS || 'uploads/categories'}/${req.file.filename}` : undefined;
+    const image_url = req.file ? `${(process.env.CATEGORY_UPLOADS)?.replace(/^\//, '')}/${req.file.filename}` : undefined;
     
     if (!name) {
       return res.status(400).json({ message: 'Category name is required' });
@@ -113,17 +117,11 @@ router.delete('/:category_id', authMiddleware, adminMiddleware, async (req, res)
   try {
     const categoryId = req.params.category_id;
     
-    // The products table uses 'category_id' as a foreign key
-    const [products] = await pool.execute(
-      'SELECT COUNT(*) as count FROM products WHERE category_id = ?',
+    // Set category_id to NULL for products using this category
+    await pool.execute(
+      'UPDATE products SET category_id = NULL WHERE category_id = ?',
       [categoryId]
     );
-    
-    if (products[0].count > 0) {
-      return res.status(400).json({ 
-        message: 'Cannot delete category. It is being used by products.' 
-      });
-    }
     
     const [result] = await pool.execute('DELETE FROM categories WHERE category_id = ?', [categoryId]);
     
@@ -133,6 +131,7 @@ router.delete('/:category_id', authMiddleware, adminMiddleware, async (req, res)
     
     res.json({ message: 'Category deleted successfully' });
   } catch (error) {
+    console.error('Error deleting category:', error);
     res.status(500).json({ message: 'Error deleting category' });
   }
 });
