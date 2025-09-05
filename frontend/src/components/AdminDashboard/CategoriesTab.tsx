@@ -142,7 +142,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
           <div key={category.category_id} className="bg-gray-900 p-4 rounded-xl shadow-md border border-gray-700">
             {category.image_url && (
               <img 
-                src={`${API_BASE_URL.replace('/api', '')}${category.image_url}`}
+                src={`${API_BASE_URL.replace('/api', '')}/${category.image_url}`}
                 alt={category.name}
                 className="w-full h-32 object-cover rounded-lg mb-4"
               />

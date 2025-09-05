@@ -19,18 +19,16 @@ export const ProductCategories: React.FC = () => {
 
   const fetchCategoriesWithCount = async () => {
     try {
-      const response = await categoryService.getAllCategories();
-      const categoriesData = response.categories || [];
+      const categoriesData = await categoryService.getAllCategories();
       
       // Get product count for each category
       const categoriesWithCount = await Promise.all(
         categoriesData.map(async (category) => {
           try {
-            const products = await productService.getProductsByCategory(category.category_name);
-            const productsArray = products.products || [];
+            const products = await productService.getProductsByCategory(category.category_id);
             return {
               ...category,
-              count: productsArray.length
+              count: Array.isArray(products) ? products.length : 0
             };
           } catch (error) {
             return {
@@ -97,16 +95,16 @@ export const ProductCategories: React.FC = () => {
             ))
           ) : (
             categories.map((category) => (
-              <motion.div key={category.category_name} variants={item}>
+              <motion.div key={category.category_id} variants={item}>
                 <div 
                   className="overflow-hidden border border-primary/20 h-[300px] cursor-pointer"
-                  onClick={() => navigate(`/category/${category.category_name}`)}
+                  onClick={() => navigate(`/category/${category.category_id}`)}
                 >
                   <div className="p-0 overflow-hidden">
                    <div className="relative w-full h-full">
                       <img 
-                        src={category.image_url ? `${API_BASE_URL.replace('/api', '')}${category.image_url}` : '/placeholder-image.jpg'} 
-                        alt={category.category_name} 
+                        src={category.image_url ? `${API_BASE_URL.replace('/api', '')}/${category.image_url}` : '/placeholder-image.jpg'} 
+                        alt={category.name} 
                         className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
                       />
 
@@ -117,7 +115,7 @@ export const ProductCategories: React.FC = () => {
 
                       {/* bottom gradient overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-6">
-                        <h3 className="heading-font text-2xl mb-1 text-white">{category.category_name}</h3>
+                        <h3 className="heading-font text-2xl mb-1 text-white">{category.name}</h3>
                         {category.description && (
                           <p className="text-white/80 text-sm mb-2 line-clamp-2">{category.description}</p>
                         )}

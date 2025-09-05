@@ -49,7 +49,8 @@ export const CategoryProducts: React.FC = () => {
 
   const fetchProducts = async () => {
     try {
-      const data = await productService.getProductsByCategory(category!);
+      const categoryId = parseInt(category!);
+      const data = await productService.getProductsByCategory(categoryId);
       setProducts(data);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -75,7 +76,7 @@ export const CategoryProducts: React.FC = () => {
         <div className="flex items-center justify-between mb-12">
           <div>
             <h1 className="heading-font text-3xl md:text-4xl mb-4">
-              {category} <span className="text-primary">PRODUCTS</span>
+              CATEGORY <span className="text-primary">PRODUCTS</span>
             </h1>
             <div className="samurai-divider w-24 mb-6"></div>
           </div>

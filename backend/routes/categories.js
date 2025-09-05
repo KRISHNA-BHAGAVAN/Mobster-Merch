@@ -32,8 +32,8 @@ const router = express.Router();
 // Get all categories
 router.get('/', async (req, res) => {
   try {
-    // Note: The new table has 'category_id', 'name', 'description', and 'image_url'
-    const [categories] = await pool.execute('SELECT category_id, name, description, image_url, created_at FROM categories ORDER BY name');
+    
+    const [categories] = await pool.execute('SELECT * FROM categories ORDER BY name');
     
     if (categories.length === 0) {
       return res.json({ message: 'No categories added in the database', categories: [] });
