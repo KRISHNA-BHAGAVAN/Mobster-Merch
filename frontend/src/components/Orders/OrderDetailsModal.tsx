@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { API_BASE_URL, UPLOAD_BASE_URL } from '../../config/api';
 
 interface OrderDetailsModalProps {
   orderId: string;
@@ -44,7 +45,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ orderId, o
 
   const fetchOrderDetails = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/orders/${orderId}/details`, {
+      const response = await fetch(`${API_BASE_URL}/orders/${orderId}/details`, {
         credentials: 'include'
       });
       
@@ -159,7 +160,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ orderId, o
                   <div>
                     <p className="font-semibold mb-2">Payment Screenshot:</p>
                     <img 
-                      src={`http://localhost:5000/uploads/payments/${orderDetails.order.screenshot_url.split('/').pop()}`}
+                      src={`${UPLOAD_BASE_URL}/uploads/payments/${orderDetails.order.screenshot_url.split('/').pop()}`}
                       alt="Payment Screenshot"
                       className="max-w-xs rounded border"
                     />
@@ -176,7 +177,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ orderId, o
               {orderDetails.items.map((item, index) => (
                 <div key={index} className="flex items-center gap-4 p-3 bg-gray-600 rounded">
                   <img 
-                    src={item.image_url ? `http://localhost:5000/${item.image_url}` : '/placeholder.jpg'}
+                    src={item.image_url ? `${UPLOAD_BASE_URL}/${item.image_url}` : '/placeholder.jpg'}
                     alt={item.name}
                     className="w-16 h-16 object-cover rounded"
                   />

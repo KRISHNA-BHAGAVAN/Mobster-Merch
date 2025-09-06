@@ -1,6 +1,7 @@
 // src/context/AuthContext.tsx
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { authService } from '../services/authService';
+import { API_BASE_URL } from '../config/api';
 
 interface User {
   userId: number | string;
@@ -114,7 +115,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const checkAuthStatus = async (): Promise<boolean> => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/status`, {
+      const response = await fetch(`${API_BASE_URL}/auth/status`, {
         credentials: 'include'
       });
       const data = await response.json();

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { API_BASE_URL } from '../../config/api';
 
 interface AnalyticsData {
   totalStats: {
@@ -38,7 +39,7 @@ export const AnalyticsTab: React.FC = () => {
 
   const fetchAnalytics = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/orders/admin/reports/analytics', {
+      const response = await fetch(`${API_BASE_URL}/orders/admin/reports/analytics`, {
         credentials: 'include'
       });
       

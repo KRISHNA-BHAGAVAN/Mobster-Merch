@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { productService, categoryService, Category } from '../../services';
 import { adminService, Order, PendingPayment, ReportsData } from '../../services/adminService';
 import { orderService } from '../../services/orderService';
+import { API_BASE_URL } from '../../config/api';
 
 import { ProductsTab } from './ProductsTab';
 import { CategoriesTab } from './CategoriesTab';
@@ -147,7 +148,7 @@ export const AdminDashboard: React.FC = () => {
 
   const fetchAnalytics = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/settings/analytics`, {
+      const response = await fetch(`${API_BASE_URL}/settings/analytics`, {
         credentials: 'include'
       });
       const data = await response.json();

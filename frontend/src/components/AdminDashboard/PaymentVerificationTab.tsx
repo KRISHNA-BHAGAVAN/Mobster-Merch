@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { paymentVerificationService, PaymentVerification } from '../../services';
+import { UPLOAD_BASE_URL } from '../../config/api';
 
 
 
@@ -109,7 +110,7 @@ export const PaymentVerificationTab: React.FC = () => {
             <div className="mb-6">
               <h4 className="text-white font-semibold mb-2">Payment Screenshot:</h4>
               <img
-                src={`http://localhost:5000/uploads/payments/${selectedVerification.screenshot_url.split('/').pop()}`}
+                src={`${UPLOAD_BASE_URL}/uploads/payments/${selectedVerification.screenshot_url.split('/').pop()}`}
                 alt="Payment Screenshot"
                 className="max-w-full h-72 rounded-lg border border-gray-600"
               />
