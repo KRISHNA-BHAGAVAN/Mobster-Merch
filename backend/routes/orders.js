@@ -134,6 +134,41 @@ router.get('/:order_id/status', authMiddleware, async (req, res) => {
   }
 });
 
+// Get single order details
+router.get('/:order_id/details', authMiddleware, async (req, res) => {
+  try {
+    const [orderDetails] = await pool.execute(`
+      SELECT o.*, u.name, u.email, u.phone,
+             a.address_line1, a.address_line2, a.city, a.state, a.pincode,
+             pv.transaction_id, pv.screenshot_url, pv.status as payment_status, pv.admin_notes
+      FROM orders o
+      JOIN users u ON o.user_id = u.user_id
+      LEFT JOIN addresses a ON u.user_id = a.user_id AND a.is_default = 1
+      LEFT JOIN payment_verifications pv ON o.order_id = pv.order_id
+      WHERE o.order_id = ?
+    `, [req.params.order_id]);
+    
+    if (orderDetails.length === 0) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    
+    const [orderItems] = await pool.execute(`
+      SELECT oi.*, p.name, p.image_url
+      FROM order_items oi
+      JOIN products p ON oi.product_id = p.product_id
+      WHERE oi.order_id = ?
+    `, [req.params.order_id]);
+    
+    res.json({
+      order: orderDetails[0],
+      items: orderItems
+    });
+  } catch (error) {
+    console.error('Error fetching order details:', error);
+    res.status(500).json({ message: 'Error fetching order details' });
+  }
+});
+
 // Get user orders
 router.get('/user/:user_id', authMiddleware, async (req, res) => {
   try {
@@ -141,17 +176,18 @@ router.get('/user/:user_id', authMiddleware, async (req, res) => {
       SELECT o.order_id, o.total, o.status, o.created_at,
              oi.product_id, oi.quantity, oi.price,
              p.name, p.image_url,
-             pay.status as payment_status, pay.method as payment_method
+             pv.status as payment_status
       FROM orders o
       LEFT JOIN order_items oi ON o.order_id = oi.order_id
       LEFT JOIN products p ON oi.product_id = p.product_id
-      LEFT JOIN payments pay ON o.order_id = pay.order_id
+      LEFT JOIN payment_verifications pv ON o.order_id = pv.order_id
       WHERE o.user_id = ?
       ORDER BY o.created_at DESC
     `, [req.params.user_id]);
     
     res.json(orders);
   } catch (error) {
+    console.error('Error fetching orders:', error);
     res.status(500).json({ message: 'Error fetching orders' });
   }
 });
@@ -223,32 +259,74 @@ router.get('/admin/payments/pending', authMiddleware, adminMiddleware, async (re
   }
 });
 
-// Daily sales report
-router.get('/admin/reports/daily', authMiddleware, adminMiddleware, async (req, res) => {
+// Comprehensive analytics report
+router.get('/admin/reports/analytics', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const [dailySales] = await pool.execute(`
-      SELECT DATE(o.created_at) as date, 
-             COUNT(*) as total_orders,
-             SUM(o.total) as total_revenue
-      FROM orders o
-      WHERE o.status = 'paid'
-      GROUP BY DATE(o.created_at)
-      ORDER BY date DESC
-      LIMIT 30
+    // Total revenue and orders
+    const [totalStats] = await pool.execute(`
+      SELECT 
+        COUNT(*) as total_orders,
+        COALESCE(SUM(total), 0) as total_revenue,
+        COALESCE(AVG(total), 0) as average_order_value
+      FROM orders
     `);
     
-    const [failedPayments] = await pool.execute(`
-      SELECT COUNT(*) as failed_count
-      FROM payments
-      WHERE status IN ('failed', 'pending')
+    // Orders by status
+    const [statusStats] = await pool.execute(`
+      SELECT 
+        status,
+        COUNT(*) as count,
+        COALESCE(SUM(total), 0) as revenue
+      FROM orders
+      GROUP BY status
+    `);
+    
+    // Payment verification stats
+    const [paymentStats] = await pool.execute(`
+      SELECT 
+        pv.status,
+        COUNT(*) as count
+      FROM payment_verifications pv
+      GROUP BY pv.status
+    `);
+    
+    // Daily sales (last 30 days)
+    const [dailySales] = await pool.execute(`
+      SELECT 
+        DATE(created_at) as date,
+        COUNT(*) as orders,
+        COALESCE(SUM(total), 0) as revenue
+      FROM orders
+      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+      GROUP BY DATE(created_at)
+      ORDER BY date DESC
+    `);
+    
+    // Top products
+    const [topProducts] = await pool.execute(`
+      SELECT 
+        p.name,
+        SUM(oi.quantity) as total_sold,
+        SUM(oi.quantity * oi.price) as revenue
+      FROM order_items oi
+      JOIN products p ON oi.product_id = p.product_id
+      JOIN orders o ON oi.order_id = o.order_id
+      WHERE o.status IN ('paid', 'shipped', 'delivered')
+      GROUP BY p.product_id, p.name
+      ORDER BY total_sold DESC
+      LIMIT 10
     `);
     
     res.json({
+      totalStats: totalStats[0],
+      statusStats,
+      paymentStats,
       dailySales,
-      failedPaymentsCount: failedPayments[0].failed_count
+      topProducts
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching reports' });
+    console.error('Error fetching analytics:', error);
+    res.status(500).json({ message: 'Error fetching analytics' });
   }
 });
 
@@ -490,6 +568,35 @@ router.post('/admin/cancellation/:notification_id/:action', authMiddleware, admi
     res.status(500).json({ message: 'Error processing cancellation request' });
   } finally {
     connection.release();
+  }
+});
+
+// Daily sales report (legacy endpoint)
+router.get('/admin/reports/daily', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const [dailySales] = await pool.execute(`
+      SELECT DATE(o.created_at) as date, 
+             COUNT(*) as total_orders,
+             SUM(o.total) as total_revenue
+      FROM orders o
+      WHERE o.status IN ('paid', 'shipped', 'delivered')
+      GROUP BY DATE(o.created_at)
+      ORDER BY date DESC
+      LIMIT 30
+    `);
+    
+    const [failedPayments] = await pool.execute(`
+      SELECT COUNT(*) as failed_count
+      FROM payment_verifications
+      WHERE status = 'rejected'
+    `);
+    
+    res.json({
+      dailySales,
+      failedPaymentsCount: failedPayments[0].failed_count
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching reports' });
   }
 });
 

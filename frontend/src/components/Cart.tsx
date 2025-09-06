@@ -72,14 +72,8 @@ export const Cart: React.FC = () => {
     }
   };
 
-  const checkout = async () => {
-    try {
-      const orderData = await orderService.placeOrder();
-      showToast('Order created successfully!', 'success');
-      navigate('/checkout', { state: { orderData } });
-    } catch (error) {
-      showToast('Error creating order', 'error');
-    }
+  const checkout = () => {
+    navigate('/checkout');
   };
 
   const total = cartItems.reduce((sum, item) => sum + Number(item.subtotal), 0);

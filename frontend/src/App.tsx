@@ -19,6 +19,8 @@ const CategoryProducts = lazy(() => import('./components/CategoryProducts').then
 const Cart = lazy(() => import('./components/Cart').then(m => ({ default: m.Cart })));
 const Orders = lazy(() => import('./components/Orders').then(m => ({ default: m.Orders })));
 const CustomerNotifications = lazy(() => import('./components/CustomerNotifications').then(m => ({ default: m.CustomerNotifications })));
+const CheckoutPage = lazy(() => import('./components/Checkout/CheckoutPage').then(m => ({ default: m.CheckoutPage })));
+const OrdersPage = lazy(() => import('./components/Orders/OrdersPage').then(m => ({ default: m.OrdersPage })));
 
 function App() {
 
@@ -51,10 +53,18 @@ function App() {
                   } 
                 />
                 <Route 
+                  path="/checkout" 
+                  element={
+                    <ProtectedRoute>
+                      <CheckoutPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
                   path="/orders" 
                   element={
                     <ProtectedRoute>
-                      <Orders />
+                      <OrdersPage />
                     </ProtectedRoute>
                   } 
                 />

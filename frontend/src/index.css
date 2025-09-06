@@ -13,27 +13,27 @@ body {
 }
 
 @font-face {
-  font-family: 'Storm Gust';
-  src: url('/fonts/Storm Gust.otf') format('opentype');
+  font-family: "Storm Gust";
+  src: url("/fonts/Storm Gust.otf") format("opentype");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Ungai';
-  src: url('/fonts/Ungai.ttf') format('truetype');
+  font-family: "Ungai";
+  src: url("/fonts/Ungai.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
 @utility heading-font {
-  font-family: 'Storm Gust', sans-serif;
+  font-family: "Storm Gust", sans-serif;
 }
 
 @utility title-font {
-  font-family: 'Storm Gust', sans-serif;
+  font-family: "Storm Gust", sans-serif;
 }
 
 @utility text-shadow-red {
@@ -45,13 +45,14 @@ body {
 }
 
 @utility cherry-blossom-bg {
-  background-image: url('/images/cherry-blossom-pattern.png');
+  background-image: url("/images/cherry-blossom-pattern.png");
   background-size: 200px;
   background-repeat: repeat;
   background-attachment: fixed;
 }
 
-html, body {
+html,
+body {
   scroll-behavior: smooth;
 }
 
@@ -59,17 +60,22 @@ body {
   background-color: #0a0a0a;
   color: #ffffff;
   overflow-x: hidden;
-  font-family: 'Ungai', sans-serif;
+  font-family: "Ungai", sans-serif;
   font-size: 14px;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Storm Gust', sans-serif;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Storm Gust", sans-serif;
 }
 
 .hero-gradient {
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.9)), 
-              linear-gradient(45deg, rgba(139, 0, 0, 0.8), rgba(0, 0, 0, 0.8));
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.9)),
+    linear-gradient(45deg, rgba(139, 0, 0, 0.8), rgba(0, 0, 0, 0.8));
 }
 
 .product-card:hover {
@@ -78,7 +84,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .japanese-pattern {
-  background-image: url('/images/japanese-pattern.png');
+  background-image: url("/images/japanese-pattern.png");
   background-size: 100px;
   background-repeat: repeat;
   opacity: 0.1;
@@ -90,11 +96,11 @@ h1, h2, h3, h4, h5, h6 {
 
 .samurai-divider {
   height: 2px;
-  background: linear-gradient(90deg, transparent, #FF0000, transparent);
+  background: linear-gradient(90deg, transparent, #ff0000, transparent);
 }
 
 .cherry-blossom-overlay {
-  background-image: url('/images/cherry-blossom-overlay.png');
+  background-image: url("/images/cherry-blossom-overlay.png");
   background-size: cover;
   background-position: center;
   opacity: 0.1;
@@ -102,8 +108,15 @@ h1, h2, h3, h4, h5, h6 {
 }
 /* Thunderstorm Effects */
 @keyframes lightning {
-  0%, 90%, 100% { opacity: 0; }
-  5%, 10% { opacity: 0.8; }
+  0%,
+  90%,
+  100% {
+    opacity: 0;
+  }
+  5%,
+  10% {
+    opacity: 0.8;
+  }
 }
 
 .lightning-flash {
@@ -111,9 +124,23 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @keyframes thunder-shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
-  20%, 40%, 60%, 80% { transform: translateX(2px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-2px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(2px);
+  }
 }
 
 .thunder-shake {

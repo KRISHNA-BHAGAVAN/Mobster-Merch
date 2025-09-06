@@ -10,6 +10,8 @@ import { orderService } from '../../services/orderService';
 import { ProductsTab } from './ProductsTab';
 import { CategoriesTab } from './CategoriesTab';
 import { OrdersTab } from './OrdersTab';
+import { PaymentVerificationTab } from './PaymentVerificationTab';
+import { AnalyticsTab } from './AnalyticsTab';
 import { Product, Notification } from './types';
 import '../../styles/admin.css';
 
@@ -59,11 +61,7 @@ export const AdminDashboard: React.FC = () => {
       fetchCategories();
     } else if (activeTab === 'orders') {
       fetchOrders();
-    } else if (activeTab === 'payments') {
-      fetchPendingPayments();
-    } else if (activeTab === 'reports') {
-      fetchReports();
-    } else if (activeTab === 'notifications') {
+    }  else if (activeTab === 'notifications') {
       fetchNotifications();
     } else if (activeTab === 'analytics') {
       fetchAnalytics();
@@ -208,6 +206,10 @@ export const AdminDashboard: React.FC = () => {
             handleOrderStatusUpdate={handleOrderStatusUpdate}
           />
         );
+      case 'payment-verification':
+        return <PaymentVerificationTab />;
+      case 'analytics':
+        return <AnalyticsTab />;
       default:
         return <div className="text-center py-8 text-gray-400">Tab content not implemented yet</div>;
     }
@@ -239,7 +241,7 @@ export const AdminDashboard: React.FC = () => {
 
         <div className="border-b border-gray-700 mb-6">
           <div className="flex flex-wrap space-x-4">
-            {['products', 'categories', 'orders', 'payments', 'reports', 'notifications', 'analytics'].map((tab, i) => (
+            {['products', 'categories', 'orders', 'payment-verification', 'notifications', 'analytics'].map((tab, i) => (
               <button
                 key={i}
                 onClick={() => setActiveTab(tab)}

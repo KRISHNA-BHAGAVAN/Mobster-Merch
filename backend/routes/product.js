@@ -5,7 +5,6 @@ const router = express.Router();
 
 // GET all active products
 router.get("/get-available-products", async (req, res) => {
-  console.log("Available products fetched successfully");
   try {
     const [rows] = await pool.execute(`
       SELECT p.*, c.name as category_name 

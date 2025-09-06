@@ -227,10 +227,8 @@ router.get("/status", async (req, res) => {
 // ---------------------
 // Get Current User
 // ---------------------
-// This route is now protected by the new authMiddleware in server.js, so the internal checks are simplified.
 router.get("/me", async (req, res) => {
   try {
-    // authMiddleware has already ensured req.session.userId is populated
     const userId = req.session.userId;
     if (!userId) {
       return res.status(401).json({ error: "Not authenticated" });
@@ -245,6 +243,7 @@ router.get("/me", async (req, res) => {
 
     const user = rows[0];
     res.json({
+      user_id: user.user_id,
       id: user.user_id,
       name: user.name,
       email: user.email,

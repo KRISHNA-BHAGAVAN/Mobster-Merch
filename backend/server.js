@@ -19,6 +19,8 @@ import cartRoutes from "./routes/cart.js";
 import orderRoutes from "./routes/orders.js";
 import categoryRoutes from "./routes/categories.js";
 import paymentRoutes from "./routes/payment-gateway.js";
+import checkoutRoutes from "./routes/checkout.js";
+import paymentVerificationRoutes from "./routes/payment-verification.js";
 
 
 // Import corrected middleware
@@ -135,6 +137,10 @@ app.use(
   "/uploads/categories",
   express.static(path.join(__dirname, "uploads/categories"))
 );
+app.use(
+  "/uploads/payments",
+  express.static(path.join(__dirname, "uploads/payments"))
+);
 
 // ---------------------
 // Auth redirect middleware for login/register pages
@@ -166,6 +172,8 @@ app.use("/api/cart", authMiddleware, cartRoutes);
 app.use("/api/orders", authMiddleware, orderRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/payments", authMiddleware, paymentRoutes);
+app.use("/api/checkout", checkoutRoutes);
+app.use("/api/payment-verification", paymentVerificationRoutes);
 
 
 // ---------------------
