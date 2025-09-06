@@ -18,7 +18,7 @@ import adminRoutes from "./routes/admin.js";
 import cartRoutes from "./routes/cart.js";
 import orderRoutes from "./routes/orders.js";
 import categoryRoutes from "./routes/categories.js";
-import paymentRoutes from "./routes/payments.js";
+import paymentRoutes from "./routes/payment-gateway.js";
 
 
 // Import corrected middleware
@@ -162,7 +162,7 @@ app.use("/api/auth", authRoutes); // Auth routes don't need the middleware
 app.use("/api/profile", authMiddleware, profileRoutes);
 app.use("/api/products", productRoutes); // Assuming some routes are public
 app.use("/api/admin", adminMiddleware, adminRoutes);
-app.use("/api/cart", authMiddleware, cartRoutes); // 👈 Corrected
+app.use("/api/cart", authMiddleware, cartRoutes); 
 app.use("/api/orders", authMiddleware, orderRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/payments", authMiddleware, paymentRoutes);

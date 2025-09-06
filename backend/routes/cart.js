@@ -5,7 +5,7 @@ import { authMiddleware } from '../middleware/auth.js';
 const router = express.Router();
 
 // Add to cart
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/',  async (req, res) => {
   try {
     const { product_id, quantity } = req.body;
     const user_id = req.session.userId;
@@ -57,7 +57,7 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 // Update cart quantity
-router.put('/:cart_id', authMiddleware, async (req, res) => {
+router.put('/:cart_id',  async (req, res) => {
   try {
     const { quantity } = req.body;
     const [result] = await pool.execute(
@@ -76,7 +76,7 @@ router.put('/:cart_id', authMiddleware, async (req, res) => {
 });
 
 // Remove from cart
-router.delete('/:cart_id', authMiddleware, async (req, res) => {
+router.delete('/:cart_id',  async (req, res) => {
   try {
     const [result] = await pool.execute('DELETE FROM cart WHERE cart_id = ?', [req.params.cart_id]);
     
@@ -91,7 +91,7 @@ router.delete('/:cart_id', authMiddleware, async (req, res) => {
 });
 
 // Update cart quantity by product_id
-router.put('/product/:product_id', authMiddleware, async (req, res) => {
+router.put('/product/:product_id', async (req, res) => {
   try {
     const { quantity } = req.body;
     const user_id = req.session.userId;
@@ -113,7 +113,7 @@ router.put('/product/:product_id', authMiddleware, async (req, res) => {
 });
 
 // Remove from cart by product_id
-router.delete('/product/:product_id', authMiddleware, async (req, res) => {
+router.delete('/product/:product_id', async (req, res) => {
   try {
     const user_id = req.session.userId;
     const product_id = req.params.product_id;

@@ -201,10 +201,7 @@ export const AllProducts: React.FC = () => {
                   {getCartQuantity(product.product_id) > 0 ? (
                     <div className="flex items-center justify-between bg-primary/10 rounded-lg p-2">
                       <button
-                        
-                        
-                        
-                        
+                         
                         onClick={() => updateQuantity(product.product_id, getCartQuantity(product.product_id) - 1)}
                       >
                         <Icon icon="lucide:minus" />
