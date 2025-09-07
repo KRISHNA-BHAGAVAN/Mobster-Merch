@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import pool from '../config/database.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
+import { redisClient } from '../config/redis.js';
 
 const router = express.Router();
 
@@ -28,6 +29,19 @@ const upload = multer({
     }
   },
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+
+
+router.post('/toggle-site', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { closed } = req.body; // true or false
+    await redisClient.set('site_closed', closed ? '1' : '0');
+    // res.json({ message: `Site mode set to ${closed ? 'closed' : 'open'}` });
+    res.json({ closed })
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error toggling site mode' });
+  }
 });
 
 

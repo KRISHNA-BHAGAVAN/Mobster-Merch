@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-// TODO: Replace HeroUI components with Material-UI
+
 import { Icon } from "@iconify/react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -50,8 +50,15 @@ export const Cart: React.FC = () => {
     quantity: number,
     maxStock: number
   ) => {
-    if (quantity < 1) return;
-
+    if (quantity < 1) {
+      try{
+        await cartService.removeFromCart(cartId);
+        await Promise.all([fetchCart(), refreshCart()]);
+      } catch (error) {
+        console.error("Error removing item:", error);
+      }
+      return;
+    }
     if (quantity > maxStock) {
       showToast(`Only ${maxStock} items available in stock`, "error");
       return;
@@ -77,6 +84,7 @@ export const Cart: React.FC = () => {
 
     const checkout = () => {
     navigate('/checkout');
+    }
 
   const total = cartItems.reduce((sum, item) => sum + Number(item.subtotal), 0);
 
@@ -145,7 +153,7 @@ export const Cart: React.FC = () => {
                         </p>
                         <div className="flex items-center gap-2 mt-2">
                           <button
-                            className="bg-gray-800 text-white hover:bg-gray-700"
+                            className="bg-red-800 text-white hover:bg-red-700 cursor-pointer px-3 py-1 text-xl"
                             onClick={() =>
                               updateQuantity(
                                 item.cart_id,
@@ -171,7 +179,7 @@ export const Cart: React.FC = () => {
                           />
 
                           <button
-                            className="bg-gray-800 text-white hover:bg-gray-700"
+                            className="bg-red-800 text-white hover:bg-red-700 cursor-pointer px-3 py-1 text-xl"
                             onClick={() =>
                               updateQuantity(
                                 item.cart_id,

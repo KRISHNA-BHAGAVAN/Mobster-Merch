@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import db from "../config/database.js";
 import { redisClient } from "../config/redis.js";
+import { siteClosedMiddleware } from "../middleware/site-status.js";
 
 const router = express.Router();
 
@@ -87,7 +88,7 @@ router.post("/register", async (req, res) => {
 // ---------------------
 // Login
 // ---------------------
-router.post("/login", async (req, res) => {
+router.post("/login",  async (req, res) => {
   try {
     const { identifier, password } = req.body;
 
@@ -97,19 +98,21 @@ router.post("/login", async (req, res) => {
         .json({ error: "Email/username and password are required" });
     }
 
+    const closed = await redisClient.get('site_closed');
+    
     const [rows] = await db.query(
       "SELECT * FROM users WHERE email = ? OR name = ?",
       [identifier, identifier]
     );
-
+    
     if (!rows.length)
       return res.status(401).json({ error: "Invalid credentials" });
 
     const user = rows[0];
     const match = await bcrypt.compare(password, user.password);
-
+    
     if (!match) return res.status(401).json({ error: "Invalid credentials" });
-
+    
     // Create session
     req.session.userId = user.user_id;
     req.session.isAdmin = Boolean(user.is_admin);
@@ -124,6 +127,10 @@ router.post("/login", async (req, res) => {
     );
 
     res.cookie("refreshToken", refreshToken, cookieOptions());
+    
+    if (closed === '1' && !user.is_admin) {
+      return res.json({ message: "Site is under maintainance" });
+    }
 
     res.json({
       success: true,

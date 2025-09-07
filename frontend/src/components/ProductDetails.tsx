@@ -154,18 +154,18 @@ export const ProductDetails: React.FC = () => {
               <div className="flex items-center border border-gray-400 rounded">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="px-3 py-1 hover:bg-gray-700"
+                  className="px-3 py-1 hover:bg-gray-700 hover: cursor-pointer"
                 >
                   -
                 </button>
-                <span className="px-4 py-1 border-x border-gray-400">
+                <span className="px-4 py-1 border-x border-gray-400 hover: cursor-pointer">
                   {quantity}
                 </span>
                 <button
                   onClick={() =>
                     setQuantity(Math.min(product.stock, quantity + 1))
                   }
-                  className="px-3 py-1 hover:bg-gray-700"
+                  className="px-3 py-1 hover:bg-gray-700 hover: cursor-pointer"
                 >
                   +
                 </button>
@@ -176,7 +176,7 @@ export const ProductDetails: React.FC = () => {
             <button
               onClick={handleAddToCart}
               disabled={product.stock === 0}
-              className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white py-3 rounded-md font-semibold transition-colors"
+              className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white py-3 rounded-md font-semibold transition-colors hover: cursor-pointer"
             >
               {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
             </button>

@@ -292,7 +292,7 @@ export const AllProducts: React.FC = () => {
                         {getCartQuantity(product.product_id) > 0 ? (
                           <div className="flex items-center justify-between bg-primary/10 rounded-lg p-2 gap-2">
                             <button
-                              className="hover:text-red-500 p-1  border border-gray-400 rounded-sm"
+                              className="hover:text-red-500 p-1  border border-gray-400 rounded-sm hover:cursor-pointer"
                               onClick={() =>
                                 updateQuantity(
                                   product.product_id,
@@ -306,7 +306,7 @@ export const AllProducts: React.FC = () => {
                               {getCartQuantity(product.product_id)}
                             </span>
                             <button
-                              className="hover:text-red-500 p-1 border border-gray-400 rounded-sm"
+                              className="hover:text-red-500 cursor-pointer p-1 border border-gray-400 rounded-sm"
                               disabled={
                                 getCartQuantity(product.product_id) >=
                                 product.stock
@@ -323,11 +323,11 @@ export const AllProducts: React.FC = () => {
                           </div>
                         ) : (
                           <button
-                            className="heading-font tracking-wider text-sm bg-red-600 p-3 rounded-md"
+                            className="heading-font tracking-wider hover: cursor-pointer text-sm bg-red-600 p-3 rounded-md"
                             style={{ width: "100%" }}
                           >
                             {product.is_deleted < 1 ? (
-                              <button
+                              <button className="hover:cursor-pointer"
                                 onClick={() =>
                                   handleAddToCart(product.product_id)
                                 }

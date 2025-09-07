@@ -113,7 +113,7 @@ router.put('/product/:product_id', async (req, res) => {
 });
 
 // Remove from cart by product_id
-router.delete('/product/:product_id', async (req, res) => {
+router.delete('/product/:product_id', authMiddleware, async (req, res) => {
   try {
     const user_id = req.session.userId;
     const product_id = req.params.product_id;

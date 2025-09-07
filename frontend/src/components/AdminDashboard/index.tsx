@@ -34,6 +34,8 @@ export const AdminDashboard: React.FC = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
   const [confirmMessage, setConfirmMessage] = useState('');
+  const [siteClosed, setSiteClosed] = useState(false);
+
   
   const { logout, user } = useAuth();
   const navigate = useNavigate();
@@ -42,6 +44,37 @@ export const AdminDashboard: React.FC = () => {
     await logout();
     navigate('/login');
   };
+
+  useEffect(() => {
+    const fetchSiteStatus = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/site-status`, { credentials: 'include' });
+        const data = await res.json();
+        setSiteClosed(data.closed);
+      } catch (error) {
+        console.error("Error fetching site status:", error);
+      }
+    };
+    fetchSiteStatus();
+  }, []);
+
+  const handleToggleSiteStatus = async () => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/admin/toggle-site`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ closed: !siteClosed }),
+    });
+
+    const data = await res.json();
+    setSiteClosed(data.closed);
+    toast.success(`Site is now ${data.closed ? "Closed" : "Open"}`);
+  } catch (error) {
+    console.error("Error toggling site status:", error);
+    toast.error("Failed to update site status");
+  }
+};
 
   const showConfirmation = (message: string, action: () => void) => {
     setConfirmMessage(message);
@@ -217,6 +250,7 @@ export const AdminDashboard: React.FC = () => {
   };
 
   return (
+    
     <div className="min-h-screen bg-gray-900 text-white p-6 md:p-10">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
@@ -225,7 +259,16 @@ export const AdminDashboard: React.FC = () => {
             <p className="text-sm text-gray-400 mt-1">Welcome, {user?.name}</p>
           </div>
           <div className="flex flex-wrap gap-3">
-
+            <button 
+              onClick={handleToggleSiteStatus}
+              className={`flex items-center gap-2 py-2 px-4 rounded-full font-semibold transition-colors duration-200 
+                ${siteClosed 
+                  ? "bg-yellow-600 text-white hover:bg-yellow-700" 
+                  : "bg-green-600 text-white hover:bg-green-700"
+                }`}
+            >
+              {siteClosed ? "Reopen Site" : "Close Site"}
+            </button>
             <button 
               onClick={handleLogout}
               className="flex items-center gap-2 py-2 px-4 rounded-full border border-white/20 text-white font-semibold hover:bg-white/10 transition-colors duration-200"

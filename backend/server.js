@@ -167,7 +167,7 @@ app.get("/register", (req, res) => {
 app.use("/api/auth", authRoutes); // Auth routes don't need the middleware
 app.use("/api/profile", authMiddleware, profileRoutes);
 app.use("/api/products", productRoutes); // Assuming some routes are public
-app.use("/api/admin", adminMiddleware, adminRoutes);
+app.use("/api/admin", authMiddleware, adminMiddleware, adminRoutes);
 app.use("/api/cart", authMiddleware, cartRoutes); 
 app.use("/api/orders", authMiddleware, orderRoutes);
 app.use("/api/categories", categoryRoutes);
@@ -202,6 +202,16 @@ app.use((err, req, res, next) => {
     res
       .status(err.status || 500)
       .json({ error: err.message || "Internal Server Error" });
+  }
+});
+
+app.get('/api/site-status', async (req, res) => {
+  try {
+    const closed = await redisClient.get('site_closed');
+    res.json({ closed: closed === '1' });
+  } catch (err) {
+    console.error('Error fetching site status:', err);
+    res.status(500).json({ closed: false });
   }
 });
 
