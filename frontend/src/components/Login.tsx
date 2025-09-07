@@ -26,6 +26,16 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
     setErrorMsg(null);
     setSuccessMsg(null);
 
+    // Check maintenance mode before attempting auth
+    if (siteClosed) {
+      if (!isLogin) {
+        setErrorMsg('Registration is currently unavailable due to maintenance.');
+        setLoading(false);
+        setTimeout(() => navigate('/', { replace: true }), 2000);
+        return;
+      }
+    }
+
     // Validate phone number for registration
     if (!isLogin && !/^\d{10}$/.test(phone)) {
       setErrorMsg('Phone number must be exactly 10 digits');
@@ -36,28 +46,28 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
     try {
       if (isLogin) {
         const result = await login(username, password);
-        console.log('🔍 DEBUG - isAdmin value:', result?.user?.isAdmin);
-        console.log('🔍 DEBUG - user value:', result?.user);
-        console.log('🔍 DEBUG - siteClosed value:', siteClosed);
         
-        if (result?.user?.isAdmin) {
+        // Check if backend returned maintenance message
+        if (result?.message && result.message.includes('maintainance')) {
+          setErrorMsg('Site is under maintenance. Please try again later.');
+          setTimeout(() => navigate('/', { replace: true }), 2000);
+        } else if (result?.user?.isAdmin) {
           navigate('/admin', { replace: true });
-        } 
-        else if(result?.user && !result.user.isAdmin && siteClosed) {
-          setErrorMsg('The site is currently under maintenance. Please try again later.');
-          await new Promise(res => setTimeout(res, 2000));
-          navigate('/', { replace: true });
-        }
-          
-        else {
+        } else if (siteClosed) {
+          setErrorMsg('Site is under maintenance. Please try again later.');
+          setTimeout(() => navigate('/', { replace: true }), 2000);
+        } else {
           navigate('/', { replace: true });
         }
       } else {
         await register(name, username, password, phone);
-        setSuccessMsg('Registration successful! You are now logged in.');
-        setTimeout(() => {
-          navigate('/', { replace: true });
-        }, 1000);
+        if (siteClosed) {
+          setSuccessMsg('Registration successful! Site is under maintenance.');
+          setTimeout(() => navigate('/', { replace: true }), 2000);
+        } else {
+          setSuccessMsg('Registration successful! You are now logged in.');
+          setTimeout(() => navigate('/', { replace: true }), 1000);
+        }
       }
     } catch (error: any) {
       console.error('Auth error:', error);

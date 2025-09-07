@@ -38,20 +38,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true);
       const data = await authService.login(identifier, password);
-      const mappedUser = {
-        userId: data.user.id,
-        name: data.user.name,
-        email: data.user.email,
-        phone: data.user.phone,
-        image_url: data.user.image_url,
-        isAdmin: data.user.isAdmin || data.isAdmin
-      };
       
-      // Store user data in localStorage
-      localStorage.setItem('user', JSON.stringify(mappedUser));
+      // Check if response has user data (not maintenance message)
+      if (data.user) {
+        const mappedUser = {
+          userId: data.user.id,
+          name: data.user.name,
+          email: data.user.email,
+          phone: data.user.phone,
+          image_url: data.user.image_url,
+          isAdmin: data.user.isAdmin || data.isAdmin
+        };
+        
+        // Store user data in localStorage
+        localStorage.setItem('user', JSON.stringify(mappedUser));
+        
+        setUser(mappedUser);
+        setIsAuthenticated(true);
+      }
       
-      setUser(mappedUser);
-      setIsAuthenticated(true);
       setLoading(false);
       return data;
     } catch (err) {
