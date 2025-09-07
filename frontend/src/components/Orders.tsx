@@ -113,17 +113,30 @@ export const Orders: React.FC = () => {
     <div className="min-h-screen bg-background py-20">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="heading-font text-3xl">My Orders</h1>
-          <button  onClick={() => navigate('/products')}>
-            Continue Shopping
-          </button>
+          <div>
+            <h1 className="heading-font text-3xl">My Orders</h1>
+            <div className="samurai-divider w-24 mb-6"></div>
+          </div>
+
+          <div className="flex justify-end mb-6 mt-7">
+            <button
+              onClick={() => navigate("/products")}
+              className="flex items-center justify-items-end gap-2 mb-8 hover:text-red-500 cursor-pointer"
+            >
+              <Icon icon="lucide:arrow-left" />
+              Continue Shopping
+            </button>
+          </div>
         </div>
 
         {orders.length === 0 ? (
           <div className="text-center py-20">
-            <Icon icon="lucide:package" className="h-16 w-16 text-foreground/50 mx-auto mb-4" />
+            <Icon
+              icon="lucide:package"
+              className="h-16 w-16 text-foreground/50 mx-auto mb-4"
+            />
             <p className="text-foreground/70 mb-4">No orders found</p>
-            <button  onClick={() => navigate('/products')}>
+            <button onClick={() => navigate("/products")}>
               Start Shopping
             </button>
           </div>
@@ -134,7 +147,9 @@ export const Orders: React.FC = () => {
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h3 className="font-semibold text-lg">Order #{order.order_id}</h3>
+                      <h3 className="font-semibold text-lg">
+                        Order #{order.order_id}
+                      </h3>
                       <p className="text-sm text-foreground/70">
                         {new Date(order.created_at).toLocaleString()}
                       </p>
@@ -146,14 +161,18 @@ export const Orders: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <div className="flex gap-2 mb-2">
-                        <span color={getStatusColor(order.status)}  >
+                        <span color={getStatusColor(order.status)}>
                           {order.status.toUpperCase()}
                         </span>
                         {order.payment_status && (
-                          <span 
-                            color={order.payment_status === 'completed' ? 'success' : order.payment_status === 'pending' ? 'warning' : 'danger'} 
-                             
-                            
+                          <span
+                            color={
+                              order.payment_status === "completed"
+                                ? "success"
+                                : order.payment_status === "pending"
+                                ? "warning"
+                                : "danger"
+                            }
                           >
                             {order.payment_status.toUpperCase()}
                           </span>
@@ -164,12 +183,21 @@ export const Orders: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-3">
                     {order.items.map((item, index) => (
-                      <div key={index} className="flex gap-4 p-3 bg-content2 rounded">
-                        <img 
-                          src={item.image_url ? `${API_BASE_URL.replace('/api', '')}${item.image_url}` : '/placeholder.jpg'}
+                      <div
+                        key={index}
+                        className="flex gap-4 p-3 bg-content2 rounded"
+                      >
+                        <img
+                          src={
+                            item.image_url
+                              ? `${API_BASE_URL.replace("/api", "")}${
+                                  item.image_url
+                                }`
+                              : "/placeholder.jpg"
+                          }
                           alt={item.name}
                           className="w-16 h-16 object-cover rounded"
                         />
@@ -181,22 +209,19 @@ export const Orders: React.FC = () => {
                         </div>
                         <div className="text-right">
                           <p className="font-semibold">
-                            ₹{(Number(item.quantity) * Number(item.price)).toFixed(2)}
+                            ₹
+                            {(
+                              Number(item.quantity) * Number(item.price)
+                            ).toFixed(2)}
                           </p>
                         </div>
                       </div>
                     ))}
                   </div>
-                  
+
                   {canCancelOrder(order.status) && (
                     <div className="mt-4 pt-4 border-t">
-                      <button
-                        
-                        
-                        
-                        
-                        onClick={() => handleCancelOrder(order.order_id)}
-                      >
+                      <button onClick={() => handleCancelOrder(order.order_id)}>
                         Request Cancellation
                       </button>
                     </div>
@@ -206,8 +231,6 @@ export const Orders: React.FC = () => {
             ))}
           </div>
         )}
-        
-
       </div>
     </div>
   );

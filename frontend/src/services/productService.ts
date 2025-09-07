@@ -16,6 +16,14 @@ export const productService = {
   getProduct: (category_id: number) => 
     apiCall(`/products/${category_id}`),
 
+  getProductById: (id: number) => 
+    apiCall(`/products/get-available-products`).then(response => {
+      const products = Array.isArray(response) ? response : response.products || [];
+      const product = products.find((p: any) => p.product_id === id);
+      if (!product) throw new Error('Product not found');
+      return product;
+    }),
+
   // Admin only
   createProduct: (formData: FormData) => 
     fetch(`${API_BASE_URL}/admin/create-product`, {

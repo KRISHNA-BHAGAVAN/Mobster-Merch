@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 // TODO: Replace HeroUI components with Material-UI
-import { Icon } from '@iconify/react';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '../context/ToastContext';
-import { useCart } from '../context/CartContext';
-import { cartService, orderService, API_BASE_URL } from '../services';
-
+import { Icon } from "@iconify/react";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "../context/ToastContext";
+import { useCart } from "../context/CartContext";
+import { cartService, orderService, API_BASE_URL } from "../services";
 
 interface CartItem {
   cart_id: number;
@@ -37,29 +36,33 @@ export const Cart: React.FC = () => {
   const fetchCart = async () => {
     try {
       const data = await cartService.getCart();
-      console.log('Cart data:', data);
+      console.log("Cart data:", data);
       setCartItems(data);
     } catch (error) {
-      console.error('Error fetching cart:', error);
+      console.error("Error fetching cart:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const updateQuantity = async (cartId: number, quantity: number, maxStock: number) => {
+  const updateQuantity = async (
+    cartId: number,
+    quantity: number,
+    maxStock: number
+  ) => {
     if (quantity < 1) return;
-    
+
     if (quantity > maxStock) {
-      showToast(`Only ${maxStock} items available in stock`, 'error');
+      showToast(`Only ${maxStock} items available in stock`, "error");
       return;
     }
-    
+
     try {
       await cartService.updateCartItem(cartId, quantity);
       await Promise.all([fetchCart(), refreshCart()]);
     } catch (error) {
-      console.error('Error updating quantity:', error);
-      showToast('Error updating quantity', 'error');
+      console.error("Error updating quantity:", error);
+      showToast("Error updating quantity", "error");
     }
   };
 
@@ -68,13 +71,12 @@ export const Cart: React.FC = () => {
       await cartService.removeFromCart(cartId);
       await Promise.all([fetchCart(), refreshCart()]);
     } catch (error) {
-      console.error('Error removing item:', error);
+      console.error("Error removing item:", error);
     }
   };
 
-  const checkout = () => {
+    const checkout = () => {
     navigate('/checkout');
-  };
 
   const total = cartItems.reduce((sum, item) => sum + Number(item.subtotal), 0);
 
@@ -90,17 +92,30 @@ export const Cart: React.FC = () => {
     <div className="min-h-screen bg-background py-20">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="heading-font text-3xl">Shopping Cart</h1>
-          <button  onClick={() => navigate('/products')}>
-            Continue Shopping
-          </button>
+          <div>
+            <h1 className="heading-font text-3xl">Shopping Cart</h1>
+            <div className="samurai-divider w-24 mb-6"></div>
+          </div>
+
+          <div className="flex justify-end mb-6 mt-7">
+            <button
+              onClick={() => navigate("/products")}
+              className="flex items-center justify-items-end gap-2 mb-8 hover:text-red-500 cursor-pointer"
+            >
+              <Icon icon="lucide:arrow-left" />
+              Continue Shopping
+            </button>
+          </div>
         </div>
 
         {cartItems.length === 0 ? (
           <div className="text-center py-20">
-            <Icon icon="lucide:shopping-cart" className="h-16 w-16 text-foreground/50 mx-auto mb-4" />
+            <Icon
+              icon="lucide:shopping-cart"
+              className="h-16 w-16 text-foreground/50 mx-auto mb-4"
+            />
             <p className="text-foreground/70 mb-4">Your cart is empty</p>
-            <button  onClick={() => navigate('/products')}>
+            <button onClick={() => navigate("/products")}>
               Start Shopping
             </button>
           </div>
@@ -111,55 +126,72 @@ export const Cart: React.FC = () => {
                 <div key={item.cart_id}>
                   <div className="p-4">
                     <div className="flex gap-4">
-                      <img 
-                        src={item.image_url ? `${API_BASE_URL.replace('api', '')}${item.image_url}` : '/placeholder.jpg'}
+                      <img
+                        src={
+                          item.image_url
+                            ? `${API_BASE_URL.replace("api", "")}${
+                                item.image_url
+                              }`
+                            : "/placeholder.jpg"
+                        }
                         alt={item.name}
                         className="w-20 h-20 object-cover rounded"
                       />
                       <div className="flex-1">
                         <h3 className="font-semibold mb-2">{item.name}</h3>
                         <p className="text-primary font-mono">₹{item.price}</p>
-                        <p className="text-xs text-foreground/60">Stock: {item.stock}</p>
+                        <p className="text-xs text-foreground/60">
+                          Stock: {item.stock}
+                        </p>
                         <div className="flex items-center gap-2 mt-2">
                           <button
-                            
                             className="bg-gray-800 text-white hover:bg-gray-700"
-                            onClick={() => updateQuantity(item.cart_id, item.quantity - 1, item.stock)}
+                            onClick={() =>
+                              updateQuantity(
+                                item.cart_id,
+                                item.quantity - 1,
+                                item.stock
+                              )
+                            }
                           >
                             -
                           </button>
-                         <input
+                          <input
                             type="number"
                             value={item.quantity.toString()}
                             onChange={(e) => {
                               const newQuantity = parseInt(e.target.value) || 1;
-                              updateQuantity(item.cart_id, newQuantity, item.stock);
+                              updateQuantity(
+                                item.cart_id,
+                                newQuantity,
+                                item.stock
+                              );
                             }}
                             className="w-20 text-center bg-black border border-gray-600 rounded text-white font-semibold text-lg focus:border-primary [-webkit-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
 
-
                           <button
-                            
                             className="bg-gray-800 text-white hover:bg-gray-700"
-                            onClick={() => updateQuantity(item.cart_id, item.quantity + 1, item.stock)}
+                            onClick={() =>
+                              updateQuantity(
+                                item.cart_id,
+                                item.quantity + 1,
+                                item.stock
+                              )
+                            }
                             disabled={item.quantity >= item.stock}
                           >
                             +
                           </button>
-                          <button
-                            
-                            
-                            
-                            onClick={() => removeItem(item.cart_id)}
-                            
-                          >
+                          <button onClick={() => removeItem(item.cart_id)}>
                             Remove
                           </button>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold">₹{Number(item.subtotal).toFixed(2)}</p>
+                        <p className="font-semibold">
+                          ₹{Number(item.subtotal).toFixed(2)}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -181,13 +213,7 @@ export const Cart: React.FC = () => {
                       <span>₹{total.toFixed(2)}</span>
                     </div>
                   </div>
-                  <button
-                    
-                    style={{width: "100%"}}
-                    
-                    onClick={checkout}
-                    
-                  >
+                  <button style={{ width: "100%" }} onClick={checkout}>
                     Checkout
                   </button>
                 </div>
@@ -195,8 +221,6 @@ export const Cart: React.FC = () => {
             </div>
           </div>
         )}
-        
-
       </div>
     </div>
   );

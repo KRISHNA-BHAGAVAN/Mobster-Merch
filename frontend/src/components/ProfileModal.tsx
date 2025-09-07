@@ -65,64 +65,90 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
   };
 
   return (
-    <Dialog open={isOpen} onClose={onClose} maxWidth="sm" style={{width: "100%"}}>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="sm"
+      style={{ width: "100%" }}
+      className="bg-black/50"
+    >
+      <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
         <Icon icon="lucide:user" />
         Profile
       </DialogTitle>
       <DialogContent>
         {profile && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 3, pt: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 2,
+              }}
+            >
               <Avatar
                 src={getAvatarSrc()}
-                sx={{ width: 80, height: 80, fontSize: '2rem' }}
+                sx={{ width: 70, height: 70, fontSize: "2rem" }}
               >
                 {!profile?.image_url ? getInitials() : undefined}
               </Avatar>
-              
+
               {isEditing && (
                 <TextField
                   type="file"
-                  inputProps={{ accept: 'image/*' }}
+                  inputProps={{ accept: "image/*" }}
                   onChange={(e) => {
                     const target = e.target as HTMLInputElement;
                     setImageFile(target.files?.[0] || null);
                   }}
                   InputProps={{
-                    startAdornment: <Icon icon="lucide:camera" className="mr-2" />,
+                    startAdornment: (
+                      <Icon icon="lucide:camera" className="mr-2" />
+                    ),
                   }}
-                  style={{width: "100%"}}
+                  style={{ width: "100%" }}
                 />
               )}
             </Box>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <TextField
                 label="Name"
                 value={isEditing ? formData.name : profile.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 InputProps={{ readOnly: !isEditing }}
+                className="bg-black/30"
                 variant={isEditing ? "outlined" : "filled"}
-                style={{width: "100%"}}
+                style={{ width: "100%" }}
               />
-              
+
               <TextField
                 label="Email"
                 value={isEditing ? formData.email : profile.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
                 InputProps={{ readOnly: !isEditing }}
+                className="bg-black/30"
                 variant={isEditing ? "outlined" : "filled"}
-                style={{width: "100%"}}
+                style={{ width: "100%" }}
               />
-              
+
               <TextField
                 label="Phone"
-                value={isEditing ? formData.phone : (profile.phone || 'Not provided')}
-                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                value={
+                  isEditing ? formData.phone : profile.phone || "Not provided"
+                }
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
                 InputProps={{ readOnly: !isEditing }}
+                className="bg-black/30"
                 variant={isEditing ? "outlined" : "filled"}
-                style={{width: "100%"}}
+                style={{ width: "100%" }}
               />
             </Box>
           </Box>
@@ -130,23 +156,38 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
       </DialogContent>
       <DialogActions>
         {isEditing ? (
-          <>
-            <button onClick={() => setIsEditing(false)}>
+          <div className="flex gap-5">
+            <button
+              onClick={() => setIsEditing(false)}
+              className="hover:text-red-500 cursor-pointer"
+            >
               Cancel
             </button>
-            <button variant="contained" onClick={handleSave} disabled={loading}>
-              {loading ? 'Saving...' : 'Save Changes'}
+            <button
+              variant="contained"
+              onClick={handleSave}
+              className="hover:text-red-500 cursor-pointer"
+              disabled={loading}
+            >
+              {loading ? "Saving..." : "Save Changes"}
             </button>
-          </>
+          </div>
         ) : (
-          <>
-            <button onClick={onClose}>
+          <div className="flex gap-5 ">
+            <button
+              onClick={onClose}
+              className="hover:text-red-500 cursor-pointer"
+            >
               Close
             </button>
-            <button variant="contained" onClick={() => setIsEditing(true)}>
+            <button
+              variant="contained"
+              className="hover:text-red-500 cursor-pointer"
+              onClick={() => setIsEditing(true)}
+            >
               Edit Profile
             </button>
-          </>
+          </div>
         )}
       </DialogActions>
     </Dialog>

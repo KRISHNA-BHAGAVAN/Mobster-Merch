@@ -19,8 +19,21 @@ const CategoryProducts = lazy(() => import('./components/CategoryProducts').then
 const Cart = lazy(() => import('./components/Cart').then(m => ({ default: m.Cart })));
 const Orders = lazy(() => import('./components/Orders').then(m => ({ default: m.Orders })));
 const CustomerNotifications = lazy(() => import('./components/CustomerNotifications').then(m => ({ default: m.CustomerNotifications })));
-const CheckoutPage = lazy(() => import('./components/Checkout/CheckoutPage').then(m => ({ default: m.CheckoutPage })));
-const OrdersPage = lazy(() => import('./components/Orders/OrdersPage').then(m => ({ default: m.OrdersPage })));
+const ProductDetails = lazy(() =>
+  import("./components/ProductDetails").then((m) => ({
+    default: m.ProductDetails,
+  }))
+);
+const CheckoutPage = lazy(() =>
+  import("./components/Checkout/CheckoutPage").then((m) => ({
+    default: m.CheckoutPage,
+  }))
+);
+const OrdersPage = lazy(() =>
+  import("./components/Orders/OrdersPage").then((m) => ({
+    default: m.OrdersPage,
+  }))
+);
 
 function App() {
 
@@ -34,59 +47,72 @@ function App() {
         <ToastProvider>
           <CartProvider>
             <Router>
-            <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div></div>}>
-              <Routes>
-                <Route path="/login" element={
-                  <AuthPageProtection>
-                    <Login />
-                  </AuthPageProtection>
-                } />
-                <Route path="/" element={<MainWebsite />} />
-                <Route path="/products" element={<AllProducts />} />
-                <Route path="/category/:category" element={<CategoryProducts />} />
-                <Route 
-                  path="/cart" 
-                  element={
-                    <ProtectedRoute>
-                      <Cart />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/checkout" 
-                  element={
-                    <ProtectedRoute>
-                      <CheckoutPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/orders" 
-                  element={
-                    <ProtectedRoute>
-                      <OrdersPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/notifications" 
-                  element={
-                    <ProtectedRoute>
-                      <CustomerNotifications />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/admin" 
-                  element={
-                    <ProtectedRoute adminOnly>
-                      <AdminDashboard />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Suspense>
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center min-h-screen">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                  </div>
+                }
+              >
+                <Routes>
+                  <Route
+                    path="/login"
+                    element={
+                      <AuthPageProtection>
+                        <Login />
+                      </AuthPageProtection>
+                    }
+                  />
+                  <Route path="/" element={<MainWebsite />} />
+                  <Route path="/products" element={<AllProducts />} />
+                  <Route path="/product/:id" element={<ProductDetails />} />
+                  <Route
+                    path="/category/:category"
+                    element={<CategoryProducts />}
+                  />
+                  <Route
+                    path="/cart"
+                    element={
+                      <ProtectedRoute>
+                        <Cart />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/checkout"
+                    element={
+                      <ProtectedRoute>
+                        <CheckoutPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/orders"
+                    element={
+                      <ProtectedRoute>
+                        <OrdersPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/notifications"
+                    element={
+                      <ProtectedRoute>
+                        <CustomerNotifications />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin"
+                    element={
+                      <ProtectedRoute adminOnly>
+                        <AdminDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Suspense>
             </Router>
           </CartProvider>
         </ToastProvider>

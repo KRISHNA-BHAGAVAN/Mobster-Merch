@@ -69,18 +69,30 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="fixed top-4 right-4 z-50 space-y-2">
+      <div className="fixed top-20 right-4 z-50 space-y-2">
         <AnimatePresence>
           {toasts.map((toast) => (
             <motion.div
               key={toast.id}
               initial={{ opacity: 0, x: 300, scale: 0.3 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 300, scale: 0.5, transition: { duration: 0.2 } }}
-              className={`flex items-center gap-3 p-4 rounded-lg border backdrop-blur-sm min-w-[300px] ${getToastStyles(toast.type)}`}
+              exit={{
+                opacity: 0,
+                x: 300,
+                scale: 0.5,
+                transition: { duration: 0.2 },
+              }}
+              className={`flex items-center gap-3 p-4 rounded-lg border backdrop-blur-sm min-w-[300px] ${getToastStyles(
+                toast.type
+              )}`}
             >
-              <Icon icon={getIcon(toast.type)} className="h-5 w-5 flex-shrink-0" />
-              <span className="flex-1 text-sm font-medium">{toast.message}</span>
+              <Icon
+                icon={getIcon(toast.type)}
+                className="h-5 w-5 flex-shrink-0"
+              />
+              <span className="flex-1 text-sm font-medium">
+                {toast.message}
+              </span>
               <button
                 onClick={() => removeToast(toast.id)}
                 className="text-current hover:opacity-70 transition-opacity"
