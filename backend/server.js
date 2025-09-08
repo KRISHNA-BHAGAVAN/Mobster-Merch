@@ -18,12 +18,11 @@ import adminRoutes from "./routes/admin.js";
 import cartRoutes from "./routes/cart.js";
 import orderRoutes from "./routes/orders.js";
 import categoryRoutes from "./routes/categories.js";
-import paymentRoutes from "./routes/payment-gateway.js";
 import checkoutRoutes from "./routes/checkout.js";
 import paymentVerificationRoutes from "./routes/payment-verification.js";
 import phonepeRoutes from "./routes/phonepe-sdk.js";
 import settingsRoutes from "./routes/settings.js";
-import paymentModeRoutes from "./routes/paymentMode.js"; 
+import paymentModeRoutes from "./routes/paymentMode.js";
 
 // Import corrected middleware
 import { authMiddleware, adminMiddleware } from "./middleware/auth.js";
@@ -70,7 +69,7 @@ app.use(
           "'self'",
           "data:",
           "https://cdn.jsdelivr.net",
-          "https://img.heroui.chat"
+          "https://img.heroui.chat",
         ],
         styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
         fontSrc: ["'self'", "https://cdn.jsdelivr.net"],
@@ -85,7 +84,7 @@ app.use(
 app.use(
   cors({
     credentials: true,
-    origin: true, 
+    origin: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
@@ -100,7 +99,6 @@ app.use(express.urlencoded({ extended: true }));
 
 app.set("trust proxy", 1);
 
-
 // ---------------------
 // Session configuration
 // ---------------------
@@ -114,8 +112,8 @@ app.use(
     cookie: {
       httpOnly: true,
       ...(process.env.NODE_ENV === "production"
-    ? { domain: ".duckdns.org" } 
-    : {}),                       
+        ? { domain: ".duckdns.org" }
+        : {}),
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "None" : "lax",
       maxAge: 1000 * 60 * 60 * 24, // 1 day
@@ -170,10 +168,9 @@ app.use("/api/auth", authRoutes); // Auth routes don't need the middleware
 app.use("/api/profile", authMiddleware, profileRoutes);
 app.use("/api/products", productRoutes); // Assuming some routes are public
 app.use("/api/admin", authMiddleware, adminMiddleware, adminRoutes);
-app.use("/api/cart", authMiddleware, cartRoutes); 
+app.use("/api/cart", authMiddleware, cartRoutes);
 app.use("/api/orders", authMiddleware, orderRoutes);
 app.use("/api/categories", categoryRoutes);
-app.use("/api/payments", authMiddleware, paymentRoutes);
 app.use("/api/checkout", checkoutRoutes);
 app.use("/api/payment-verification", paymentVerificationRoutes);
 app.use("/api/phonepe", phonepeRoutes);
@@ -209,12 +206,12 @@ app.use((err, req, res, next) => {
   }
 });
 
-app.get('/api/site-status', async (req, res) => {
+app.get("/api/site-status", async (req, res) => {
   try {
-    const closed = await redisClient.get('site_closed');
-    res.json({ closed: closed === '1' });
+    const closed = await redisClient.get("site_closed");
+    res.json({ closed: closed === "1" });
   } catch (err) {
-    console.error('Error fetching site status:', err);
+    console.error("Error fetching site status:", err);
     res.status(500).json({ closed: false });
   }
 });
@@ -222,6 +219,6 @@ app.get('/api/site-status', async (req, res) => {
 // ---------------------
 // Start server
 // ---------------------
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port http://localhost:${PORT}`);
 });

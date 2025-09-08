@@ -193,7 +193,7 @@ export const Orders: React.FC = () => {
                         <img
                           src={
                             item.image_url
-                              ? `${API_BASE_URL.replace("/api", "")}${
+                              ? `${
                                   item.image_url
                                 }`
                               : "/placeholder.jpg"

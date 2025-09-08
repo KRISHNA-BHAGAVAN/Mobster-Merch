@@ -37,20 +37,30 @@ export const PaymentSuccess: React.FC = () => {
       
       const statusResult = await statusResponse.json();
       
-      if (statusResponse.ok && statusResult.orderStatus?.state === 'COMPLETED') {
-        // Payment successful, just show order details
-        setOrderDetails({
-          order_id: orderId,
-          total: statusResult.orderStatus.amount / 100, // Convert from paisa
-          payment_status: 'success',
-          transaction_id: statusResult.orderStatus.paymentDetails?.[0]?.transactionId,
-          payment_mode: statusResult.orderStatus.paymentDetails?.[0]?.paymentMode,
-          items: [] // Will be populated from existing order
-        });
-        toast.success('Payment successful!');
+      if (statusResponse.ok) {
+        const orderState = statusResult.orderStatus?.data?.state || statusResult.orderStatus?.state;
+        
+        if (orderState === 'COMPLETED') {
+          // Payment successful, show order details
+          setOrderDetails({
+            order_id: orderId,
+            total: (statusResult.orderStatus?.data?.amount || statusResult.orderStatus?.amount) / 100,
+            payment_status: 'completed',
+            transaction_id: statusResult.orderStatus?.data?.transactionId || statusResult.orderStatus?.paymentDetails?.[0]?.transactionId,
+            payment_mode: statusResult.orderStatus?.data?.paymentMode || statusResult.orderStatus?.paymentDetails?.[0]?.paymentMode,
+            items: []
+          });
+          toast.success('Payment successful!');
+        } else if (orderState === 'FAILED') {
+          setError('Payment failed');
+          toast.error('Payment failed');
+        } else {
+          setError(`Payment status: ${orderState || 'Pending'}`);
+          toast.error('Payment not completed');
+        }
       } else {
-        setError(`Payment status: ${statusResult.orderStatus?.state || 'Unknown'}`);
-        toast.error('Payment not completed');
+        setError('Error checking payment status');
+        toast.error('Error checking payment status');
       }
     } catch (error) {
       setError('Error processing payment');

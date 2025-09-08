@@ -77,18 +77,6 @@ router.post('/', authMiddleware, async (req, res) => {
       );
     }
     
-    // Generate auto-increment payment_id
-    const [paymentResult] = await connection.execute(
-      'SELECT COALESCE(MAX(payment_id), 0) + 1 as next_id FROM payments'
-    );
-    const payment_id = paymentResult[0].next_id;
-    
-    // Create payment record
-    await connection.execute(
-      'INSERT INTO payments (payment_id, order_id, user_id, amount, status) VALUES (?, ?, ?, ?, ?)',
-      [payment_id, order_id, user_id, total, 'pending']
-    );
-    
     // Get payment method setting
     const [paymentSettings] = await connection.execute(
       'SELECT setting_value FROM settings WHERE setting_key = ?',
@@ -96,18 +84,26 @@ router.post('/', authMiddleware, async (req, res) => {
     );
     const paymentMethod = paymentSettings.length > 0 ? paymentSettings[0].setting_value : 'manual';
     
+    // Don't create payment record here for PhonePe - will be created after redirect
+    // Only create for manual payment method
+    if (paymentMethod === 'manual') {
+      const [paymentResult] = await connection.execute(
+        'SELECT COALESCE(MAX(payment_id), 0) + 1 as next_id FROM payments'
+      );
+      const payment_id = paymentResult[0].next_id;
+      
+      await connection.execute(
+        'INSERT INTO payments (payment_id, order_id, user_id, amount, method, status) VALUES (?, ?, ?, ?, ?, ?)',
+        [payment_id, order_id, user_id, total, 'upi', 'pending']
+      );
+    }
+    
     // Clear cart
     await connection.execute('DELETE FROM cart WHERE user_id = ?', [user_id]);
     
     await connection.commit();
     
     if (paymentMethod === 'phonepe') {
-      // Update payment method to phonepe
-      await connection.execute(
-        'UPDATE payments SET payment_method = ? WHERE order_id = ?',
-        ['phonepe', order_id]
-      );
-      
       res.status(201).json({ 
         message: 'Order created successfully', 
         order_id,
