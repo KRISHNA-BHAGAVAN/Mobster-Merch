@@ -21,7 +21,7 @@ import categoryRoutes from "./routes/categories.js";
 import paymentRoutes from "./routes/payment-gateway.js";
 import checkoutRoutes from "./routes/checkout.js";
 import paymentVerificationRoutes from "./routes/payment-verification.js";
-
+import phonepeRoutes from "./routes/phonepe-sdk.js";
 
 // Import corrected middleware
 import { authMiddleware, adminMiddleware } from "./middleware/auth.js";
@@ -174,7 +174,7 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/payments", authMiddleware, paymentRoutes);
 app.use("/api/checkout", checkoutRoutes);
 app.use("/api/payment-verification", paymentVerificationRoutes);
-
+app.use("/api/phonepe", phonepeRoutes);
 
 // ---------------------
 // Health check
@@ -219,5 +219,5 @@ app.get('/api/site-status', async (req, res) => {
 // Start server
 // ---------------------
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port http://localhost:${PORT}`);
 });
