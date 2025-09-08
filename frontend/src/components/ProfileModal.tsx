@@ -53,7 +53,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
 
   const getAvatarSrc = () => {
     if (profile?.image_url) {
-      const url = `${API_BASE_URL.replace('/api', '')}${profile.image_url}`;
+      const url = `${profile.image_url}`;
       console.log('Avatar URL:', url, 'Image URL from profile:', profile.image_url);
       return url;
     }

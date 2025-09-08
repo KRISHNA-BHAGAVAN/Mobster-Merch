@@ -177,7 +177,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ orderId, o
               {orderDetails.items.map((item, index) => (
                 <div key={index} className="flex items-center gap-4 p-3 bg-gray-600 rounded">
                   <img 
-                    src={item.image_url ? `${UPLOAD_BASE_URL}/${item.image_url}` : '/placeholder.jpg'}
+                    src={item.image_url ? `${item.image_url}` : '/placeholder.jpg'}
                     alt={item.name}
                     className="w-16 h-16 object-cover rounded"
                   />

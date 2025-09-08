@@ -241,7 +241,7 @@ export const AllProducts: React.FC = () => {
                         <img
                           src={
                             product.image_url
-                              ? `${API_BASE_URL.replace("api", "")}${
+                              ? `${
                                   product.image_url
                                 }`
                               : "/placeholder-image.jpg"

@@ -283,7 +283,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
             >
               {product.image_url && (
                 <img
-                  src={`${API_BASE_URL.replace("api", "")}${product.image_url}`}
+                  src={`${product.image_url}`}
                   alt={product.name}
                   className="w-full h-48 object-cover rounded-lg mb-4"
                 />
@@ -325,7 +325,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
             >
               {product.image_url && (
                 <img
-                  src={`${API_BASE_URL.replace("api", "")}${product.image_url}`}
+                  src={`${product.image_url}`}
                   alt={product.name}
                   className="w-full h-48 object-cover rounded-lg mb-4 opacity-50"
                 />

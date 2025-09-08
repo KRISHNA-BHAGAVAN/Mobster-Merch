@@ -165,7 +165,7 @@ export const Navbar: React.FC = () => {
                   }}
                   src={
                     user?.image_url
-                      ? `${API_BASE_URL.replace("/api", "")}${user.image_url}`
+                      ? `${user.image_url}`
                       : undefined
                   }
                 >

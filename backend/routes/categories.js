@@ -1,31 +1,7 @@
 import express from 'express';
-import multer from 'multer';
-import path from 'path';
 import pool from '../config/database.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
-
-// Configure multer for category image uploads
-// The destination path is now read from the .env file as you specified
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, process.env.CATEGORY_UPLOADS);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'category-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'), false);
-    }
-  }
-});
+import { upload, uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinaryUpload.js';
 
 const router = express.Router();
 
@@ -50,15 +26,22 @@ router.get('/', async (req, res) => {
 router.post('/', authMiddleware, adminMiddleware, upload.single('image'), async (req, res) => {
   try {
     const { name, description } = req.body;
-    const image_url = req.file ? `${process.env.CATEGORY_UPLOADS?.replace(/^\//, '')}/${req.file.filename}` : null;
+    let image_url = null;
+    let cloudinaryPublicId = null;
+    
+    if (req.file) {
+      const result = await uploadToCloudinary(req.file.buffer, 'categories');
+      image_url = result.secure_url;
+      cloudinaryPublicId = result.public_id;
+    }
     
     if (!name) {
       return res.status(400).json({ message: 'Category name is required' });
     }
     
     const [result] = await pool.execute(
-      'INSERT INTO categories (name, description, image_url) VALUES (?, ?, ?)',
-      [name, description || null, image_url]
+      'INSERT INTO categories (name, description, image_url, cloudinary_public_id) VALUES (?, ?, ?, ?)',
+      [name, description || null, image_url, cloudinaryPublicId]
     );
     
     res.status(201).json({ 
@@ -79,28 +62,34 @@ router.put('/:category_id', authMiddleware, adminMiddleware, upload.single('imag
   try {
     const { name, description } = req.body;
     const categoryId = req.params.category_id;
-    const image_url = req.file ? `${(process.env.CATEGORY_UPLOADS)?.replace(/^\//, '')}/${req.file.filename}` : undefined;
     
     if (!name) {
       return res.status(400).json({ message: 'Category name is required' });
     }
     
-    let query, params;
-    // Check if a new image was uploaded to update the image_url
-    if (image_url) {
-      query = 'UPDATE categories SET name = ?, description = ?, image_url = ? WHERE category_id = ?';
-      params = [name, description || null, image_url, categoryId];
-    } else {
-      // If no new image, update only name and description
-      query = 'UPDATE categories SET name = ?, description = ? WHERE category_id = ?';
-      params = [name, description || null, categoryId];
-    }
-    
-    const [result] = await pool.execute(query, params);
-    
-    if (result.affectedRows === 0) {
+    // Get current category for image handling
+    const [current] = await pool.execute('SELECT image_url, cloudinary_public_id FROM categories WHERE category_id = ?', [categoryId]);
+    if (current.length === 0) {
       return res.status(404).json({ message: 'Category not found' });
     }
+    
+    let image_url = current[0].image_url;
+    let cloudinaryPublicId = current[0].cloudinary_public_id;
+    
+    // If new image uploaded, delete old one and use new
+    if (req.file) {
+      if (current[0].cloudinary_public_id) {
+        await deleteFromCloudinary(current[0].cloudinary_public_id);
+      }
+      const result = await uploadToCloudinary(req.file.buffer, 'categories');
+      image_url = result.secure_url;
+      cloudinaryPublicId = result.public_id;
+    }
+    
+    const [result] = await pool.execute(
+      'UPDATE categories SET name = ?, description = ?, image_url = ?, cloudinary_public_id = ? WHERE category_id = ?',
+      [name, description || null, image_url, cloudinaryPublicId, categoryId]
+    );
     
     res.json({ message: 'Category updated successfully' });
   } catch (error) {

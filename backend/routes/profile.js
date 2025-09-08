@@ -1,34 +1,9 @@
 import express from 'express';
-import multer from 'multer';
-import path from 'path';
-import db from '../config/database.js'; // Assuming this is your db connection pool
+import db from '../config/database.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { upload, uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinaryUpload.js';
 
 const router = express.Router();
-
-// Multer configuration for profile images
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Use the PROFILE_UPLOADS environment variable as specified
-    cb(null, process.env.PROFILE_UPLOADS);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  }
-});
 
 // Get Profile
 router.get('/', authMiddleware, async (req, res) => {
@@ -72,7 +47,9 @@ router.put('/', authMiddleware, upload.single('image'), async (req, res) => {
     let updateFields = [];
     let updateValues = [];
 
-    // All column names (name, phone, image_url) are correct
+    // Get current user for image handling
+    const [currentUser] = await db.query('SELECT image_url, cloudinary_public_id FROM users WHERE user_id = ?', [req.session.userId]);
+    
     if (name) {
       updateFields.push('name = ?');
       updateValues.push(name);
@@ -84,9 +61,15 @@ router.put('/', authMiddleware, upload.single('image'), async (req, res) => {
     }
 
     if (imageFile) {
-      const imagePath = `/uploads/profiles/${imageFile.filename}`;
-      updateFields.push('image_url = ?');
-      updateValues.push(imagePath);
+      // Delete old image from Cloudinary if exists
+      if (currentUser[0]?.cloudinary_public_id) {
+        await deleteFromCloudinary(currentUser[0].cloudinary_public_id);
+      }
+      
+      // Upload new image to Cloudinary
+      const result = await uploadToCloudinary(imageFile.buffer, 'profiles');
+      updateFields.push('image_url = ?', 'cloudinary_public_id = ?');
+      updateValues.push(result.secure_url, result.public_id);
     }
 
     if (updateFields.length === 0) {
@@ -102,7 +85,6 @@ router.put('/', authMiddleware, upload.single('image'), async (req, res) => {
     );
 
     // Get updated user data
-    // Query and column names are correct
     const [rows] = await db.query(
       'SELECT user_id, name, email, phone, image_url FROM users WHERE user_id = ?',
       [req.session.userId]
