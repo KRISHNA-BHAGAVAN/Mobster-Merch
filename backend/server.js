@@ -22,6 +22,7 @@ import paymentRoutes from "./routes/payment-gateway.js";
 import checkoutRoutes from "./routes/checkout.js";
 import paymentVerificationRoutes from "./routes/payment-verification.js";
 import phonepeRoutes from "./routes/phonepe-sdk.js";
+import settingsRoutes from "./routes/settings.js";
 import paymentModeRoutes from "./routes/paymentMode.js"; 
 
 // Import corrected middleware
@@ -176,6 +177,7 @@ app.use("/api/payments", authMiddleware, paymentRoutes);
 app.use("/api/checkout", checkoutRoutes);
 app.use("/api/payment-verification", paymentVerificationRoutes);
 app.use("/api/phonepe", phonepeRoutes);
+app.use("/api/settings", settingsRoutes);
 app.use("/api/payment-mode", paymentModeRoutes);
 
 // ---------------------

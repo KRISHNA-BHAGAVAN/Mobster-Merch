@@ -23,6 +23,7 @@ const CustomerNotifications = lazy(() => import('./components/CustomerNotificati
 const ProductDetails = lazy(() => import("./components/ProductDetails").then(m => ({ default: m.ProductDetails })));
 const CheckoutPage = lazy(() => import("./components/Checkout/CheckoutPage").then(m => ({ default: m.CheckoutPage })));
 const OrdersPage = lazy(() => import("./components/Orders/OrdersPage").then(m => ({ default: m.OrdersPage })));
+const PaymentSuccess = lazy(() => import('./components/PaymentSuccess').then(m => ({ default: m.PaymentSuccess })));
 const TermsAndConditions = lazy(() => import('./components/TermsAndConditions').then(m => ({ default: m.TermsAndConditions })));
 const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
 const RefundPolicy = lazy(() => import('./components/RefundPolicy').then(m => ({ default: m.RefundPolicy })));
@@ -117,6 +118,14 @@ function App() {
                         element={
                           <ProtectedRoute>
                             <CheckoutPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/payment-success"
+                        element={
+                          <ProtectedRoute>
+                            <PaymentSuccess />
                           </ProtectedRoute>
                         }
                       />

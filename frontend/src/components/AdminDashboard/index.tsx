@@ -13,6 +13,7 @@ import { CategoriesTab } from './CategoriesTab';
 import { OrdersTab } from './OrdersTab';
 import { PaymentVerificationTab } from './PaymentVerificationTab';
 import { AnalyticsTab } from './AnalyticsTab';
+import { SettingsTab } from './SettingsTab';
 import { Product, Notification } from './types';
 import '../../styles/admin.css';
 
@@ -278,6 +279,8 @@ export const AdminDashboard: React.FC = () => {
         return <PaymentVerificationTab />;
       case 'analytics':
         return <AnalyticsTab />;
+      case 'settings':
+        return <SettingsTab />;
       default:
         return <div className="text-center py-8 text-gray-400">Tab content not implemented yet</div>;
     }
@@ -293,17 +296,6 @@ export const AdminDashboard: React.FC = () => {
             <p className="text-sm text-gray-400 mt-1">Welcome, {user?.name}</p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <button
-            onClick={handleTogglePaymentMode}
-            className={`flex items-center gap-2 py-2 px-4 rounded-full font-semibold transition-colors duration-200 
-              ${paymentMode === "manual" 
-                ? "bg-purple-600 text-white hover:bg-purple-700" 
-                : "bg-blue-600 text-white hover:bg-blue-700"
-              }`}
-          >
-            {paymentMode === "manual" ? "Switch to PhonePe" : "Switch to Manual"}
-          </button>
-
             <button 
               onClick={handleToggleSiteStatus}
               className={`flex items-center gap-2 py-2 px-4 rounded-full font-semibold transition-colors duration-200 
@@ -330,7 +322,7 @@ export const AdminDashboard: React.FC = () => {
 
         <div className="border-b border-gray-700 mb-6">
           <div className="flex flex-wrap space-x-4">
-            {['products', 'categories', 'orders', 'payment-verification', 'notifications', 'analytics'].map((tab, i) => (
+            {['products', 'categories', 'orders', 'payment-verification', 'notifications', 'analytics', 'settings'].map((tab, i) => (
               <button
                 key={i}
                 onClick={() => setActiveTab(tab)}

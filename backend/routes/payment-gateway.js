@@ -18,10 +18,10 @@ async function getAccessToken() {
         };
         
         const requestBody = new URLSearchParams({
-            client_id: process.env.CLIENT_ID,
-            client_secret: process.env.CLIENT_SECRET,
+            client_id: process.env.PHONEPE_CLIENT_ID,
+            client_secret: process.env.PHONEPE_CLIENT_SECRET,
             grant_type: "client_credentials",
-            client_version: process.env.CLIENT_VERSION,
+            client_version: process.env.PHONEPE_CLIENT_VERSION,
         }).toString();
 
         const options = {
@@ -45,7 +45,8 @@ async function getAccessToken() {
  * Step 2: Create payment order
  */
 router.post("/create-order", async (req, res) => {
-  const { orderId, userId, amount } = req.body;
+  const { orderId, amount } = req.body;
+  const userId = req.session.userId; // Get from session
 
   console.log("details for order id:", orderId, userId, amount);
   // Basic validation to prevent sending null values
@@ -71,7 +72,7 @@ router.post("/create-order", async (req, res) => {
       "paymentFlow": {
         "type": "PG_CHECKOUT",
         "merchantUrls": {
-          "redirectUrl": "http://localhost:5000/api/test"
+          "redirectUrl": "http://localhost:5173/payment-success"
         }
       }
     };
@@ -89,11 +90,18 @@ router.post("/create-order", async (req, res) => {
     // The response.data directly contains the required fields
     const { redirectUrl } = response.data;
     
-    // Save payment record in DB
-    await pool.execute(
-      "INSERT INTO payments (order_id, user_id, amount, status, payment_method) VALUES (?, ?, ?, ?, ?)",
-      [orderId, userId, amount, "pending", "phonepe"]
+    // Store cart items in session for order creation after payment
+    const [cartItems] = await pool.execute(
+      'SELECT c.product_id, c.quantity, p.price, p.name FROM cart c JOIN products p ON c.product_id = p.product_id WHERE c.user_id = ?',
+      [userId]
     );
+    
+    req.session.pendingOrder = {
+      orderId,
+      userId,
+      amount,
+      cartItems
+    };
 
     // Send the redirectUrl to the client
     res.json({ redirectUrl: redirectUrl });
@@ -158,6 +166,88 @@ router.get("/status/:orderId", async (req, res) => {
   } catch (err) {
     console.error("Status Check Error:", err.response?.data || err.message);
     res.status(500).json({ error: "Status check failed" });
+  }
+});
+
+// Create order after successful payment
+router.post("/create-order-after-payment", async (req, res) => {
+  const connection = await pool.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+    
+    const userId = req.session.userId;
+    const pendingOrder = req.session.pendingOrder;
+    
+    if (!pendingOrder) {
+      return res.status(400).json({ message: 'No pending order found' });
+    }
+    
+    const { orderId, amount, cartItems } = pendingOrder;
+    
+    // Check if order already exists
+    const [existingOrder] = await connection.execute(
+      'SELECT order_id FROM orders WHERE order_id = ?',
+      [orderId]
+    );
+    
+    if (existingOrder.length > 0) {
+      // Order already exists, return existing order details
+      await connection.commit();
+      return res.json({
+        message: 'Order already exists',
+        order_id: orderId,
+        total: amount,
+        items: cartItems
+      });
+    }
+    
+    // Create order with paid status
+    await connection.execute(
+      'INSERT INTO orders (order_id, user_id, total, status, payment_status) VALUES (?, ?, ?, ?, ?)',
+      [orderId, userId, amount, 'paid', 'success']
+    );
+    
+    // Insert order items
+    for (const item of cartItems) {
+      await connection.execute(
+        'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)',
+        [orderId, item.product_id, item.quantity, item.price]
+      );
+    }
+    
+    // Create payment record
+    const [paymentResult] = await connection.execute(
+      'SELECT COALESCE(MAX(payment_id), 0) + 1 as next_id FROM payments'
+    );
+    const payment_id = paymentResult[0].next_id;
+    
+    await connection.execute(
+      'INSERT INTO payments (payment_id, order_id, user_id, amount, status, payment_method) VALUES (?, ?, ?, ?, ?, ?)',
+      [payment_id, orderId, userId, amount, 'success', 'phonepe']
+    );
+    
+    // Clear cart
+    await connection.execute('DELETE FROM cart WHERE user_id = ?', [userId]);
+    
+    // Clear session
+    delete req.session.pendingOrder;
+    
+    await connection.commit();
+    
+    res.json({
+      message: 'Order created successfully',
+      order_id: orderId,
+      total: amount,
+      items: cartItems
+    });
+    
+  } catch (error) {
+    console.error('Order creation after payment error:', error);
+    await connection.rollback();
+    res.status(500).json({ message: 'Error creating order after payment' });
+  } finally {
+    connection.release();
   }
 });
 

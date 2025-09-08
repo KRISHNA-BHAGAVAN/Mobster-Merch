@@ -66,22 +66,42 @@ router.post("/prepare-checkout", authMiddleware, async (req, res) => {
     // Calculate total
     const total = cartItems.reduce((sum, item) => sum + item.quantity * item.price, 0);
     
+    // Get payment method setting
+    const [paymentSettings] = await pool.execute(
+      'SELECT setting_value FROM settings WHERE setting_key = ?',
+      ['payment_method']
+    );
+    const paymentMethod = paymentSettings.length > 0 ? paymentSettings[0].setting_value : 'manual';
+    
     // Generate temp order ID for payment
     const temp_order_id = Date.now().toString();
     
-    // Generate UPI payment link
-    const upiId = "9063655788@okbizaxis";
-    const upiLink = `upi://pay?pa=${upiId}&pn=OG Merchandise&am=${total}&cu=INR&tn=Order${temp_order_id}`;
+    if (paymentMethod === 'phonepe') {
+      // Return data for PhonePe gateway
+      res.json({
+        message: "Checkout prepared",
+        temp_order_id,
+        total,
+        payment_method: 'phonepe',
+        address: { address_line1, address_line2, city, state, pincode },
+        cart_items: cartItems
+      });
+    } else {
+      // Generate UPI payment link for manual payment
+      const upiId = "9063655788@okbizaxis";
+      const upiLink = `upi://pay?pa=${upiId}&pn=OG Merchandise&am=${total}&cu=INR&tn=Order${temp_order_id}`;
 
-    res.json({
-      message: "Checkout prepared",
-      temp_order_id,
-      total,
-      upi_link: upiLink,
-      upi_id: upiId,
-      address: { address_line1, address_line2, city, state, pincode },
-      cart_items: cartItems
-    });
+      res.json({
+        message: "Checkout prepared",
+        temp_order_id,
+        total,
+        upi_link: upiLink,
+        upi_id: upiId,
+        payment_method: 'manual',
+        address: { address_line1, address_line2, city, state, pincode },
+        cart_items: cartItems
+      });
+    }
   } catch (error) {
     console.error("Checkout preparation error:", error);
     res.status(500).json({ message: "Error preparing checkout" });

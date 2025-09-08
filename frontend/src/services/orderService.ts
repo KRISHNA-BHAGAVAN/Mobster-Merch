@@ -18,6 +18,17 @@ export const orderService = {
     return response.json();
   },
 
+  createOrder: async () => {
+    const response = await fetch(`${API_BASE_URL}/orders`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
+    
+    if (!response.ok) throw new Error('Failed to create order');
+    return response.json();
+  },
+
   getUserOrders: async (userId: number) => {
     const response = await fetch(`${API_BASE_URL}/orders/user/${userId}`, {
       headers: getAuthHeaders(),

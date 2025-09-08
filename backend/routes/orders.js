@@ -85,24 +85,46 @@ router.post('/', authMiddleware, async (req, res) => {
     
     // Create payment record
     await connection.execute(
-      'INSERT INTO payments (payment_id, order_id, amount, method, status) VALUES (?, ?, ?, ?, ?)',
-      [payment_id, order_id, total, 'upi', 'pending']
+      'INSERT INTO payments (payment_id, order_id, user_id, amount, status) VALUES (?, ?, ?, ?, ?)',
+      [payment_id, order_id, user_id, total, 'pending']
     );
     
-    // Generate UPI link
-    const upiLink = `upi://pay?pa=ogmerch@upi&pn=OG Merchandise&am=${total}&cu=INR&tn=Order${order_id}`;
+    // Get payment method setting
+    const [paymentSettings] = await connection.execute(
+      'SELECT setting_value FROM settings WHERE setting_key = ?',
+      ['payment_method']
+    );
+    const paymentMethod = paymentSettings.length > 0 ? paymentSettings[0].setting_value : 'manual';
     
     // Clear cart
     await connection.execute('DELETE FROM cart WHERE user_id = ?', [user_id]);
     
     await connection.commit();
     
-    res.status(201).json({ 
-      message: 'Order created successfully', 
-      order_id,
-      total,
-      upi_link: upiLink
-    });
+    if (paymentMethod === 'phonepe') {
+      // Update payment method to phonepe
+      await connection.execute(
+        'UPDATE payments SET payment_method = ? WHERE order_id = ?',
+        ['phonepe', order_id]
+      );
+      
+      res.status(201).json({ 
+        message: 'Order created successfully', 
+        order_id,
+        total,
+        payment_method: 'phonepe'
+      });
+    } else {
+      // Generate UPI link for manual payment
+      const upiLink = `upi://pay?pa=ogmerch@upi&pn=OG Merchandise&am=${total}&cu=INR&tn=Order${order_id}`;
+      res.status(201).json({ 
+        message: 'Order created successfully', 
+        order_id,
+        total,
+        upi_link: upiLink,
+        payment_method: 'manual'
+      });
+    }
     
   } catch (error) {
     console.error('Order creation error:', error);

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { checkoutService, paymentVerificationService, AddressData } from '../../services';
+import { checkoutService, paymentVerificationService, orderService, AddressData } from '../../services';
 
 interface AddressForm {
   address_line1: string;
@@ -109,11 +109,55 @@ export const CheckoutPage: React.FC = () => {
         )}
 
         {step === 'payment' && orderData && savedAddress && (
-          <PaymentStep 
-            orderData={orderData}
-            address={savedAddress}
-            onComplete={handlePaymentComplete}
-          />
+          <>
+            {/* Order Summary */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gray-800 p-6 rounded-xl mb-6"
+            >
+              <h2 className="text-xl font-semibold text-white mb-4">Order Summary</h2>
+              
+              <div className="space-y-3 mb-4">
+                <div className="flex justify-between">
+                  <span className="text-gray-300">Total Amount:</span>
+                  <span className="text-white font-semibold text-lg">₹{orderData.total}</span>
+                </div>
+              </div>
+
+              {orderData.cart_items && (
+                <div className="border-t border-gray-700 pt-4">
+                  <h3 className="text-lg font-semibold text-white mb-3">Items ({orderData.cart_items.length})</h3>
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {orderData.cart_items.map((item: any, index: number) => (
+                      <div key={index} className="flex justify-between items-center py-2 border-b border-gray-700">
+                        <div>
+                          <p className="text-white font-medium">{item.name}</p>
+                          <p className="text-gray-400 text-sm">₹{item.price} × {item.quantity}</p>
+                        </div>
+                        <p className="text-white font-semibold">₹{(item.quantity * item.price).toFixed(2)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t border-gray-700 pt-4 mt-4">
+                <h3 className="text-lg font-semibold text-white mb-2">Delivery Address</h3>
+                <div className="text-gray-300 text-sm">
+                  <p>{savedAddress.address_line1}</p>
+                  {savedAddress.address_line2 && <p>{savedAddress.address_line2}</p>}
+                  <p>{savedAddress.city}, {savedAddress.state} - {savedAddress.pincode}</p>
+                </div>
+              </div>
+            </motion.div>
+
+            <PaymentStep 
+              orderData={orderData}
+              address={savedAddress}
+              onComplete={handlePaymentComplete}
+            />
+          </>
         )}
       </div>
     </div>
@@ -130,6 +174,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({ orderData, address, onComplet
   const [transactionId, setTransactionId] = useState('');
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,6 +200,30 @@ const PaymentStep: React.FC<PaymentStepProps> = ({ orderData, address, onComplet
     }
   };
 
+  const handlePhonePePayment = async () => {
+    setSubmitting(true);
+    try {
+      // Create order first
+      const orderResult = await orderService.createOrder();
+      
+      if (orderResult.payment_method === 'phonepe') {
+        // Redirect to PhonePe gateway  
+        const phonepeResult = await checkoutService.createPhonePePayment({
+          orderId: orderResult.order_id,
+          amount: orderResult.total
+        });
+        
+        if (phonepeResult.checkoutUrl) {
+          window.location.href = phonepeResult.checkoutUrl;
+        }
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Error initiating PhonePe payment');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -164,64 +233,79 @@ const PaymentStep: React.FC<PaymentStepProps> = ({ orderData, address, onComplet
       <h2 className="text-xl font-semibold text-white mb-6">Complete Payment</h2>
       
       <div className="mb-6 p-4 bg-gray-700 rounded-lg">
-        <p className="text-white mb-2">Order ID: <span className="font-mono">{orderData.order_id}</span></p>
+        <p className="text-white mb-2">Order ID: <span className="font-mono">{orderData.temp_order_id}</span></p>
         <p className="text-white mb-4">Amount: <span className="font-semibold">₹{orderData.total}</span></p>
         
-        <div className="mb-4">
-          <p className="text-white mb-2">UPI ID: <span className="font-mono">{orderData.upi_id}</span></p>
-          
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            <div className="bg-white p-4 rounded-lg">
-              <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(orderData.upi_link)}`}
-                alt="UPI Payment QR Code"
-                className="w-48 h-48"
-              />
-              <p className="text-gray-800 text-sm text-center mt-2">Scan to Pay</p>
-            </div>
+        {orderData.payment_method === 'phonepe' ? (
+          <div className="text-center">
+            <p className="text-white mb-4">Pay securely with PhonePe Gateway</p>
+            <button
+              onClick={handlePhonePePayment}
+              disabled={submitting}
+              className="py-3 px-6 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50"
+            >
+              {submitting ? 'Processing...' : 'Pay with PhonePe'}
+            </button>
+          </div>
+        ) : (
+          <div className="mb-4">
+            <p className="text-white mb-2">UPI ID: <span className="font-mono">{orderData.upi_id}</span></p>
             
-            <div className="text-center">
-              <p className="text-white mb-2">Or</p>
-              <a 
-                href={orderData.upi_link}
-                className="inline-block py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700"
-              >
-                Pay with UPI App
-              </a>
+            <div className="flex flex-col md:flex-row gap-4 items-center">
+              <div className="bg-white p-4 rounded-lg">
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(orderData.upi_link)}`}
+                  alt="UPI Payment QR Code"
+                  className="w-48 h-48"
+                />
+                <p className="text-gray-800 text-sm text-center mt-2">Scan to Pay</p>
+              </div>
+              
+              <div className="text-center">
+                <p className="text-white mb-2">Or</p>
+                <a 
+                  href={orderData.upi_link}
+                  className="inline-block py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  Pay with UPI App
+                </a>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
-      <form onSubmit={handlePaymentSubmit} className="space-y-4">
-        <input
-          type="text"
-          placeholder="Transaction ID"
-          value={transactionId}
-          onChange={(e) => setTransactionId(e.target.value)}
-          className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
-          required
-        />
-        
-        <div>
-          <label className="block text-white mb-2">Payment Screenshot</label>
+      {orderData.payment_method === 'manual' && (
+        <form onSubmit={handlePaymentSubmit} className="space-y-4">
           <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setScreenshot(e.target.files?.[0] || null)}
-            className="w-full text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-red-600 file:text-white"
+            type="text"
+            placeholder="Transaction ID"
+            value={transactionId}
+            onChange={(e) => setTransactionId(e.target.value)}
+            className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
             required
           />
-        </div>
-        
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50"
-        >
-          {submitting ? 'Submitting...' : 'Submit Payment Proof'}
-        </button>
-      </form>
+          
+          <div>
+            <label className="block text-white mb-2">Payment Screenshot</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setScreenshot(e.target.files?.[0] || null)}
+              className="w-full text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-red-600 file:text-white"
+              required
+            />
+          </div>
+          
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50"
+          >
+            {submitting ? 'Submitting...' : 'Submit Payment Proof'}
+          </button>
+        </form>
+      )}
     </motion.div>
   );
 };

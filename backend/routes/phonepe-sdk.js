@@ -35,14 +35,15 @@ async function ensureOrder(orderId, userId, amount) {
 
 // 2. Initiate Payment
 router.post('/initiate-payment', authMiddleware, async (req, res) => {
-  const { orderId, amount, userId } = req.body;
+  const { orderId, amount } = req.body;
+  const userId = req.session.userId;
   if (!orderId || !amount || amount <= 0 || !userId) {
     return res.status(400).json({ error: 'Invalid orderId, amount or userId' });
   }
 
   const merchantOrderId = orderId;
   const amountPaisa = Math.round(amount * 100);
-  const redirectUrl = process.env.MERCHANT_REDIRECT_URL;
+  const redirectUrl = "http://localhost:5173/payment-success";
 
   const request = StandardCheckoutPayRequest.builder()
     .merchantOrderId(merchantOrderId)
@@ -52,6 +53,10 @@ router.post('/initiate-payment', authMiddleware, async (req, res) => {
 
   try {
     await ensureOrder(merchantOrderId, userId, amount);
+    
+    // Store order ID in session for success page
+    req.session.currentOrderId = merchantOrderId;
+    
     const response = await phonePeClient.pay(request);
 
     await pool.query(
@@ -118,16 +123,29 @@ router.get('/order-status/:orderId', authMiddleware, async (req, res) => {
 
   try {
     const response = await phonePeClient.getOrderStatus(merchantOrderId);
-    const orderState = response?.data?.state || 'unknown';
+    const orderState = response?.data?.state || 'PENDING';
+    
+    console.log(`Order Status Check - OrderId: ${merchantOrderId}, State: ${orderState}`);
+    
+    // Map PhonePe states to our enum values
+    let dbStatus = 'pending';
+    if (orderState === 'COMPLETED') dbStatus = 'success';
+    else if (orderState === 'FAILED') dbStatus = 'failed';
+    else if (orderState === 'PENDING') dbStatus = 'pending';
 
-    await pool.query(
+    console.log(`Updating database - OrderId: ${merchantOrderId}, Status: ${dbStatus}`);
+
+    const paymentUpdate = await pool.query(
       'UPDATE payments SET status = ? WHERE order_id = ?',
-      [orderState.toLowerCase(), merchantOrderId]
+      [dbStatus, merchantOrderId]
     );
-    await pool.query(
-      'UPDATE orders SET payment_status = ? WHERE order_id = ?',
-      [orderState.toLowerCase(), merchantOrderId]
+    const orderUpdate = await pool.query(
+      'UPDATE orders SET payment_status = ?, status = ? WHERE order_id = ?',
+      [dbStatus, dbStatus === 'success' ? 'paid' : 'pending', merchantOrderId]
     );
+    
+    console.log(`Payment update affected rows: ${paymentUpdate[0].affectedRows}`);
+    console.log(`Order update affected rows: ${orderUpdate[0].affectedRows}`);
 
     res.json({ orderStatus: response });
   } catch (err) {
@@ -236,6 +254,15 @@ router.post('/webhook', express.json({ type: '*/*' }), async (req, res) => {
     console.error('Webhook error:', err);
     res.status(500).json({ error: 'Webhook handling failed', details: err.message });
   }
+});
+
+// Get current order ID from session
+router.get('/current-order', authMiddleware, async (req, res) => {
+  const orderId = req.session.currentOrderId;
+  if (!orderId) {
+    return res.status(404).json({ error: 'No current order found' });
+  }
+  res.json({ orderId });
 });
 
 export default router;
