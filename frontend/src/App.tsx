@@ -10,6 +10,7 @@ import { AuthPageProtection } from './components/AuthPageProtection';
 import { API_BASE_URL } from './config/api';
 import SiteClosedPage from './components/SiteClosedPage';
 import { theme } from './theme/muiTheme';
+import { ProductCategories } from "./components/ProductCategories";
 
 // Lazy load components
 const Login = lazy(() => import('./components/Login').then(m => ({ default: m.Login })));
@@ -73,9 +74,7 @@ function App() {
                       <Route path="*" element={<SiteClosedPage />} />
                       <Route
                         path="/login"
-                        element={
-                          <Login siteClosed={siteClosed} /> 
-                        }
+                        element={<Login siteClosed={siteClosed} />}
                       />
                       <Route
                         path="/admin"
@@ -87,7 +86,6 @@ function App() {
                       />
                     </>
                   ) : (
-
                     <>
                       <Route
                         path="/login"
@@ -100,10 +98,23 @@ function App() {
                       <Route path="/" element={<MainWebsite />} />
                       <Route path="/products" element={<AllProducts />} />
                       <Route path="/product/:id" element={<ProductDetails />} />
-                      <Route path="/category/:category" element={<CategoryProducts />} />
-                      <Route path="/terms_and_conditions" element={<TermsAndConditions />} />
-                      <Route path="/privacy_policy" element={<PrivacyPolicy />} />
+                      <Route
+                        path="/category/:category"
+                        element={<CategoryProducts />}
+                      />
+                      <Route
+                        path="/terms_and_conditions"
+                        element={<TermsAndConditions />}
+                      />
+                      <Route
+                        path="/privacy_policy"
+                        element={<PrivacyPolicy />}
+                      />
                       <Route path="/refund_policy" element={<RefundPolicy />} />
+                      <Route
+                        path="/productcategory"
+                        element={<ProductCategories />}
+                      />
 
                       <Route
                         path="/cart"

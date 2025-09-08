@@ -55,11 +55,10 @@ const Carousel: React.FC = () => {
   }, [paused, currentIndex]);
 
   return (
-    <div className="relative overflow-hidden w-full">
+    <div className="relative overflow-hidden w-[80vw] h-[80vh] mx-auto">
       <div>
-              <h1 className="mx-auto text-4xl text-center">Promotions</h1>
-          <div className="samurai-divider w-24 mx-auto mb-6"></div>
-
+        <h1 className="mx-auto text-4xl text-center">Promotions</h1>
+        <div className="samurai-divider w-24 mx-auto mb-6"></div>
       </div>
       <div
         className="flex transition-transform duration-700 ease-in-out"
@@ -91,7 +90,7 @@ const Carousel: React.FC = () => {
           <button
             key={idx}
             onClick={() => goToSlide(idx)}
-            className={`w-4 h-1 sm:w-6 sm:h-1 md:w-8 md:h-1 rounded border-2 border-white transition-all duration-200 ${
+            className={`w-4 h-1 sm:w-6 sm:h-1 md:w-4 md:h-4 rounded-full border-2 border-white transition-all duration-200 ${
               currentIndex === idx ? "bg-white" : "bg-gray-400 opacity-60"
             }`}
             aria-label={`Go to slide ${idx + 1}`}
