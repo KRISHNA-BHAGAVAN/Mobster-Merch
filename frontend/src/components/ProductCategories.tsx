@@ -102,11 +102,11 @@ export const ProductCategories: React.FC = () => {
                     }
                   >
                     <div className="p-0 overflow-hidden">
-                      <div className="relative w-full h-full">
+                      <div className="relative w-full max-h-[300px]">
                         <img
                           src={
                             category.image_url
-                              ? `${API_BASE_URL.replace("/api", "")}/${
+                              ? `${
                                   category.image_url
                                 }`
                               : "/placeholder-image.jpg"
