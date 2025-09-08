@@ -23,6 +23,9 @@ const CustomerNotifications = lazy(() => import('./components/CustomerNotificati
 const ProductDetails = lazy(() => import("./components/ProductDetails").then(m => ({ default: m.ProductDetails })));
 const CheckoutPage = lazy(() => import("./components/Checkout/CheckoutPage").then(m => ({ default: m.CheckoutPage })));
 const OrdersPage = lazy(() => import("./components/Orders/OrdersPage").then(m => ({ default: m.OrdersPage })));
+const TermsAndConditions = lazy(() => import('./components/TermsAndConditions').then(m => ({ default: m.TermsAndConditions })));
+const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
+const RefundPolicy = lazy(() => import('./components/RefundPolicy').then(m => ({ default: m.RefundPolicy })));
 
 function App() {
   const [siteClosed, setSiteClosed] = useState(false);
@@ -97,6 +100,9 @@ function App() {
                       <Route path="/products" element={<AllProducts />} />
                       <Route path="/product/:id" element={<ProductDetails />} />
                       <Route path="/category/:category" element={<CategoryProducts />} />
+                      <Route path="/terms_and_conditions" element={<TermsAndConditions />} />
+                      <Route path="/privacy_policy" element={<PrivacyPolicy />} />
+                      <Route path="/refund_policy" element={<RefundPolicy />} />
 
                       <Route
                         path="/cart"

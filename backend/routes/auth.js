@@ -265,6 +265,89 @@ router.get("/me", async (req, res) => {
 });
 
 // ---------------------
+// Forgot Password - Send Reset Token
+// ---------------------
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    // Check if user exists
+    const [rows] = await db.query(
+      "SELECT user_id, name FROM users WHERE email = ?",
+      [email]
+    );
+
+    if (!rows.length) {
+      // Don't reveal if email exists or not for security
+      return res.json({ success: true, message: "If the email exists, a reset token has been sent." });
+    }
+
+    const user = rows[0];
+    
+    // Generate reset token (6-digit code)
+    const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Store reset token in Redis with 15 minutes expiry
+    await redisClient.set(`reset_${email}`, resetToken, "EX", 900);
+    
+    console.log(`Reset token for ${email}: ${resetToken}`);
+    
+    res.json({ 
+      success: true, 
+      message: "Reset token generated. Check console for token.",
+      resetToken // Remove this in production - only for development
+    });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    res.status(500).json({ error: "Failed to process request" });
+  }
+});
+
+// ---------------------
+// Reset Password with Token
+// ---------------------
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { email, token, newPassword } = req.body;
+
+    if (!email || !token || !newPassword) {
+      return res.status(400).json({ error: "Email, token, and new password are required" });
+    }
+
+    // Verify reset token
+    const storedToken = await redisClient.get(`reset_${email}`);
+    if (!storedToken || storedToken !== token) {
+      return res.status(400).json({ error: "Invalid or expired reset token" });
+    }
+
+    // Hash new password
+    const hash = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    const [result] = await db.query(
+      "UPDATE users SET password = ? WHERE email = ?",
+      [hash, email]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(400).json({ error: "User not found" });
+    }
+
+    // Delete the reset token
+    await redisClient.del(`reset_${email}`);
+
+    res.json({ success: true, message: "Password reset successfully" });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.status(500).json({ error: "Failed to reset password" });
+  }
+});
+
+// ---------------------
 // Logout
 // ---------------------
 router.post("/logout", async (req, res) => {

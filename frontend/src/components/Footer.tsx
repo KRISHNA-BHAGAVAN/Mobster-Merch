@@ -1,6 +1,7 @@
 import React from 'react';
 // TODO: Replace HeroUI components with Material-UI
 import { Icon } from '@iconify/react';
+import { Link } from 'react-router-dom';
 
 export const Footer: React.FC = () => {
   return (
@@ -103,35 +104,35 @@ export const Footer: React.FC = () => {
 
             <ul className="space-y-2">
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/terms_and_conditions"
                   className="text-foreground/70 hover:text-red-600 transition-colors"
                 >
-                  About the Movie
-                </a>
+                  Terms and conditions
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/privacy_policy"
+                  className="text-foreground/70 hover:text-red-600 transition-colors"
+                >
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/refund_policy"
+                  className="text-foreground/70 hover:text-red-600 transition-colors"
+                >
+                  Refund Policy
+                </Link>
               </li>
               <li>
                 <a
                   href="#"
                   className="text-foreground/70 hover:text-red-600 transition-colors"
                 >
-                  Cast & Crew
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-foreground/70 hover:text-red-600 transition-colors"
-                >
-                  Behind the Scenes
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-foreground/70 hover:text-red-600 transition-colors"
-                >
-                  News & Updates
+                  Shipping Policy
                 </a>
               </li>
               <li>

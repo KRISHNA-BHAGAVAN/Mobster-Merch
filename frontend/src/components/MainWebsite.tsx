@@ -13,11 +13,11 @@ export const MainWebsite: React.FC = () => {
     <div className="min-h-screen bg-background text-foreground">
       <div className="absolute inset-0 japanese-pattern pointer-events-none"></div>
       <Navbar />
-      {/* <HeroSection /> */}
-      <Carousel />
+      <HeroSection />
       <FeaturedProducts />
       <ProductCategories />
       {/* <AboutMovie /> */}
+            <Carousel />
       <Footer />
       <FloatingCart />
     </div>

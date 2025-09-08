@@ -56,6 +56,11 @@ const Carousel: React.FC = () => {
 
   return (
     <div className="relative overflow-hidden w-full">
+      <div>
+              <h1 className="mx-auto text-4xl text-center">Promotions</h1>
+          <div className="samurai-divider w-24 mx-auto mb-6"></div>
+
+      </div>
       <div
         className="flex transition-transform duration-700 ease-in-out"
         style={{

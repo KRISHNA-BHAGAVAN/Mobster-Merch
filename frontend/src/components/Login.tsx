@@ -16,8 +16,20 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [resetStep, setResetStep] = useState<'email' | 'token' | 'password'>('email');
 
   const { login, register, user } = useAuth();
+  const [authService, setAuthService] = useState<any>(null);
+
+  useEffect(() => {
+    import('../services/authService').then(module => {
+      setAuthService(module.authService);
+    });
+  }, []);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,6 +90,47 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!authService) return;
+    
+    setLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      if (resetStep === 'email') {
+        const result = await authService.forgotPassword(resetEmail);
+        setSuccessMsg(`Reset token sent! Token: ${result.resetToken}`);
+        setResetStep('token');
+      } else if (resetStep === 'token') {
+        setResetStep('password');
+      } else if (resetStep === 'password') {
+        await authService.resetPassword(resetEmail, resetToken, newPassword);
+        setSuccessMsg('Password reset successfully! You can now login.');
+        setShowForgotPassword(false);
+        setResetStep('email');
+        setResetEmail('');
+        setResetToken('');
+        setNewPassword('');
+      }
+    } catch (error: any) {
+      setErrorMsg(error.message || 'Failed to process request');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForgotPassword = () => {
+    setShowForgotPassword(false);
+    setResetStep('email');
+    setResetEmail('');
+    setResetToken('');
+    setNewPassword('');
+    setErrorMsg(null);
+    setSuccessMsg(null);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-black relative">
       <video
@@ -123,8 +176,12 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
           className="flex flex-col items-center mb-4"
         >
           {/* <Icon icon="lucide:shield" className="w-10 h-10 text-red-500" />  */}
-          <h1 className="text-xl font-bold text-red-500 mt-2">{isLogin ? 'Login' : 'Register'}</h1>
-          <p className="text-xs text-gray-400">{isLogin ? 'Secure Access' : 'Create Account'}</p>
+          <h1 className="text-xl font-bold text-red-500 mt-2">
+            {showForgotPassword ? 'Reset Password' : (isLogin ? 'Login' : 'Register')}
+          </h1>
+          <p className="text-xs text-gray-400">
+            {showForgotPassword ? 'Enter your details' : (isLogin ? 'Secure Access' : 'Create Account')}
+          </p>
         </motion.div>
 
 
@@ -152,81 +209,144 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
                 </motion.div>
               )}
 
-              <Box component="form" onSubmit={handleSubmit} sx={{ '& > :not(style)': { mb: 2.5 } }}>
-                {!isLogin && (
-                  <TextField
-                    fullWidth
-                    type="text"
-                    label="Full Name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    autoComplete="off"
-                    InputProps={{
-                      startAdornment: <Icon icon="lucide:user" className="text-red-500 mr-2" />,
-                    }}
-                    sx={{
-                      '& .MuiInputLabel-root.Mui-focused': {
-                        color: '#dc2626'
-                      },
-                      '& .MuiOutlinedInput-root': {
-                        '& input:-webkit-autofill': {
-                          WebkitBoxShadow: '0 0 0 1000px transparent inset',
-                          WebkitTextFillColor: 'white'
+              <Box component="form" onSubmit={showForgotPassword ? handleForgotPassword : handleSubmit} sx={{ '& > :not(style)': { mb: 2.5 } }}>
+                {showForgotPassword ? (
+                  <>
+                    {resetStep === 'email' && (
+                      <TextField
+                        fullWidth
+                        type="email"
+                        label="Email"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        autoComplete="off"
+                        InputProps={{
+                          startAdornment: <Icon icon="lucide:mail" className="text-red-500 mr-2" />,
+                        }}
+                        sx={{
+                          '& .MuiInputLabel-root.Mui-focused': {
+                            color: '#dc2626'
+                          }
+                        }}
+                        required
+                      />
+                    )}
+                    {resetStep === 'token' && (
+                      <TextField
+                        fullWidth
+                        type="text"
+                        label="Reset Token (6 digits)"
+                        value={resetToken}
+                        onChange={(e) => setResetToken(e.target.value)}
+                        autoComplete="off"
+                        InputProps={{
+                          startAdornment: <Icon icon="lucide:key" className="text-red-500 mr-2" />,
+                        }}
+                        sx={{
+                          '& .MuiInputLabel-root.Mui-focused': {
+                            color: '#dc2626'
+                          }
+                        }}
+                        required
+                      />
+                    )}
+                    {resetStep === 'password' && (
+                      <TextField
+                        fullWidth
+                        type="password"
+                        label="New Password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        autoComplete="off"
+                        InputProps={{
+                          startAdornment: <Icon icon="lucide:lock" className="text-red-500 mr-2" />,
+                        }}
+                        sx={{
+                          '& .MuiInputLabel-root.Mui-focused': {
+                            color: '#dc2626'
+                          }
+                        }}
+                        required
+                      />
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {!isLogin && (
+                      <TextField
+                        fullWidth
+                        type="text"
+                        label="Full Name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        autoComplete="off"
+                        InputProps={{
+                          startAdornment: <Icon icon="lucide:user" className="text-red-500 mr-2" />,
+                        }}
+                        sx={{
+                          '& .MuiInputLabel-root.Mui-focused': {
+                            color: '#dc2626'
+                          },
+                          '& .MuiOutlinedInput-root': {
+                            '& input:-webkit-autofill': {
+                              WebkitBoxShadow: '0 0 0 1000px transparent inset',
+                              WebkitTextFillColor: 'white'
+                            }
+                          }
+                        }}
+                        required
+                      />
+                    )}
+                    <TextField
+                      fullWidth
+                      type={isLogin ? "text" : "email"}
+                      label={isLogin ? "Email or Username" : "Email"}
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      autoComplete="off"
+                      InputProps={{
+                        startAdornment: <Icon icon="lucide:mail" className="text-red-500 mr-2" />,
+                      }}
+                      sx={{
+                        '& .MuiInputLabel-root.Mui-focused': {
+                          color: '#dc2626'
+                        },
+                        '& .MuiOutlinedInput-root': {
+                          '& input:-webkit-autofill': {
+                            WebkitBoxShadow: '0 0 0 1000px transparent inset',
+                            WebkitTextFillColor: 'white'
+                          }
                         }
-                      }
-                    }}
-                    required
-                  />
+                      }}
+                      required
+                    />
+                    <TextField
+                      fullWidth
+                      type="password"
+                      label="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      autoComplete="off"
+                      InputProps={{
+                        startAdornment: <Icon icon="lucide:lock" className="text-red-500 mr-2" />,
+                      }}
+                      sx={{
+                        '& .MuiInputLabel-root.Mui-focused': {
+                          color: '#dc2626'
+                        },
+                        '& .MuiOutlinedInput-root': {
+                          '& input:-webkit-autofill': {
+                            WebkitBoxShadow: '0 0 0 1000px transparent inset',
+                            WebkitTextFillColor: 'white'
+                          }
+                        }
+                      }}
+                      required
+                    />
+                  </>
                 )}
-                <TextField
-                  fullWidth
-                  type={isLogin ? "text" : "email"}
-                  label={isLogin ? "Email or Username" : "Email"}
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  autoComplete="off"
-                  InputProps={{
-                    startAdornment: <Icon icon="lucide:mail" className="text-red-500 mr-2" />,
-                  }}
-                  sx={{
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#dc2626'
-                    },
-                    '& .MuiOutlinedInput-root': {
-                      '& input:-webkit-autofill': {
-                        WebkitBoxShadow: '0 0 0 1000px transparent inset',
-                        WebkitTextFillColor: 'white'
-                      }
-                    }
-                  }}
-                  required
-                />
 
-                <TextField
-                  fullWidth
-                  type="password"
-                  label="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="off"
-                  InputProps={{
-                    startAdornment: <Icon icon="lucide:lock" className="text-red-500 mr-2" />,
-                  }}
-                  sx={{
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#dc2626'
-                    },
-                    '& .MuiOutlinedInput-root': {
-                      '& input:-webkit-autofill': {
-                        WebkitBoxShadow: '0 0 0 1000px transparent inset',
-                        WebkitTextFillColor: 'white'
-                      }
-                    }
-                  }}
-                  required
-                />
-
-                {!isLogin && (
+                {!showForgotPassword && !isLogin && (
                   <TextField
                     fullWidth
                     type="tel"
@@ -270,23 +390,55 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
                       py: 1.5
                     }}
                   >
-                    {loading ? 'Loading...' : (isLogin ? 'LOGIN' : 'REGISTER')}
+                    {loading ? 'Loading...' : showForgotPassword ? 
+                      (resetStep === 'email' ? 'SEND TOKEN' : resetStep === 'token' ? 'VERIFY TOKEN' : 'RESET PASSWORD') :
+                      (isLogin ? 'LOGIN' : 'REGISTER')
+                    }
                   </Button>
                 </motion.div>
               </Box>
 
               <div className="text-center mt-6">
-                <p className="text-sm text-gray-400" style={{ fontFamily: '"Ungai", sans-serif' }}>
-                  {isLogin ? "Don't have an account? " : "Already have an account? "}
-                  <button
-                    type="button"
-                    onClick={() => setIsLogin(!isLogin)}
-                    className="text-red-500 hover:text-red-400 underline"
-                    style={{ fontFamily: '"Ungai", sans-serif' }}
-                  >
-                    {isLogin ? 'Register' : 'Login'}
-                  </button>
-                </p>
+                {showForgotPassword ? (
+                  <p className="text-sm text-gray-400" style={{ fontFamily: '"Ungai", sans-serif' }}>
+                    Remember your password?
+                    <button
+                      type="button"
+                      onClick={resetForgotPassword}
+                      className="text-red-500 hover:text-red-400 underline ml-1"
+                      style={{ fontFamily: '"Ungai", sans-serif' }}
+                    >
+                      Back to Login
+                    </button>
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-sm text-gray-400" style={{ fontFamily: '"Ungai", sans-serif' }}>
+                      {isLogin ? "Don't have an account? " : "Already have an account? "}
+                      <button
+                        type="button"
+                        onClick={() => setIsLogin(!isLogin)}
+                        className="text-red-500 hover:text-red-400 underline"
+                        style={{ fontFamily: '"Ungai", sans-serif' }}
+                      >
+                        {isLogin ? 'Register' : 'Login'}
+                      </button>
+                    </p>
+                    {isLogin && (
+                      <p className="text-sm text-gray-400 mt-2" style={{ fontFamily: '"Ungai", sans-serif' }}>
+                        Forgot your password?
+                        <button
+                          type="button"
+                          onClick={() => setShowForgotPassword(true)}
+                          className="text-red-500 hover:text-red-400 underline ml-1"
+                          style={{ fontFamily: '"Ungai", sans-serif' }}
+                        >
+                          Reset Password
+                        </button>
+                      </p>
+                    )}
+                  </>
+                )}
               </div>
 
               <div className="flex items-center justify-center mt-4 space-x-2">

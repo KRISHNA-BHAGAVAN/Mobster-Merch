@@ -35,6 +35,20 @@ export const AdminDashboard: React.FC = () => {
   const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
   const [confirmMessage, setConfirmMessage] = useState('');
   const [siteClosed, setSiteClosed] = useState(false);
+  const [paymentMode, setPaymentMode] = useState<"manual" | "phonepe">("manual");
+
+  useEffect(() => {
+    const fetchPaymentMode = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/payment-mode`, { credentials: "include" });
+        const data = await res.json();
+        setPaymentMode(data.payment_mode || "manual");
+      } catch (error) {
+        console.error("Error fetching payment mode:", error);
+      }
+    };
+    fetchPaymentMode();
+  }, []);
 
   
   const { logout, user } = useAuth();
@@ -75,6 +89,26 @@ export const AdminDashboard: React.FC = () => {
     toast.error("Failed to update site status");
   }
 };
+
+  const handleTogglePaymentMode = async () => {
+    try {
+      const newMode = paymentMode === "manual" ? "phonepe" : "manual";
+      const res = await fetch(`${API_BASE_URL}/payment-mode`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ mode: newMode }),
+      });
+
+      const data = await res.json();
+      setPaymentMode(newMode);
+      toast.success(`Payment mode switched to ${newMode === "manual" ? "Manual (UPI)" : "PhonePe Gateway"}`);
+    } catch (error) {
+      console.error("Error toggling payment mode:", error);
+      toast.error("Failed to update payment mode");
+    }
+  };
+
 
   const showConfirmation = (message: string, action: () => void) => {
     setConfirmMessage(message);
@@ -259,6 +293,17 @@ export const AdminDashboard: React.FC = () => {
             <p className="text-sm text-gray-400 mt-1">Welcome, {user?.name}</p>
           </div>
           <div className="flex flex-wrap gap-3">
+            <button
+            onClick={handleTogglePaymentMode}
+            className={`flex items-center gap-2 py-2 px-4 rounded-full font-semibold transition-colors duration-200 
+              ${paymentMode === "manual" 
+                ? "bg-purple-600 text-white hover:bg-purple-700" 
+                : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
+          >
+            {paymentMode === "manual" ? "Switch to PhonePe" : "Switch to Manual"}
+          </button>
+
             <button 
               onClick={handleToggleSiteStatus}
               className={`flex items-center gap-2 py-2 px-4 rounded-full font-semibold transition-colors duration-200 

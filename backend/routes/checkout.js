@@ -1,6 +1,11 @@
 import express from "express";
 import pool from "../config/database.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { redisClient } from "../config/redis.js";
+
+
+const paymentMode = await redisClient.get("payment_mode") || "manual";
+
 
 const router = express.Router();
 
@@ -65,7 +70,7 @@ router.post("/prepare-checkout", authMiddleware, async (req, res) => {
     const temp_order_id = Date.now().toString();
     
     // Generate UPI payment link
-    const upiId = "gollapalli.shanmukpavan@ybl";
+    const upiId = "9063655788@okbizaxis";
     const upiLink = `upi://pay?pa=${upiId}&pn=OG Merchandise&am=${total}&cu=INR&tn=Order${temp_order_id}`;
 
     res.json({

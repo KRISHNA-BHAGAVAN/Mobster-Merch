@@ -203,9 +203,9 @@ export const FeaturedProducts: React.FC = () => {
               ))
             : featuredProducts.map((product) => (
                 <motion.div key={product.product_id} variants={item}>
-                  <div className="product-card bg-content1 border border-red-950 hover:border-none rounded-md overflow-hidden transition-all duration-300">
+                  <div className="product-card bg-content1 border border-red-950 hover:border-none rounded-md overflow-hidden transition-all duration-300 h-full">
                     <div className="p-0 overflow-hidden">
-                      <div className="relative aspect-[6/5]  overflow-hidden">
+                      <div className="relative aspect-[9/10]  overflow-hidden">
                         <img
                           src={
                             product.image_url
@@ -215,7 +215,7 @@ export const FeaturedProducts: React.FC = () => {
                               : "/placeholder-image.jpg"
                           }
                           alt={product.name}
-                          className="w-full h-full object-center transition-transform duration-500 hover:scale-105 cursor-pointer"
+                          className="w-full h-full object-cover transition-transform duration-500 hover:scale-105 cursor-pointer"
                           onClick={() => navigate(`/product/${product.product_id}`)}
                         />
                         <div>
