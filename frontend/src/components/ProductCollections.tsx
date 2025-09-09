@@ -7,7 +7,7 @@ interface CategoryWithCount extends Category {
   count: number;
 }
 
-export const Collections: React.FC = () => {
+export const ProductCollections: React.FC = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState<CategoryWithCount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +62,7 @@ export const Collections: React.FC = () => {
           {loading
             ? Array.from({ length: 3 }).map((_, index) => (
                 <div key={index}>
-                  <div className="overflow-hidden border border-primary/20 h-[300px]">
+                  <div className=" overflow-hidden border border-primary/20 h-[300px]">
                     <div className="p-0">
                       <div className="w-full h-full bg-foreground/10 animate-pulse"></div>
                     </div>
@@ -72,13 +72,13 @@ export const Collections: React.FC = () => {
             : categories.map((category) => (
                 <div key={category.category_id}>
                   <div
-                    className="overflow-hidden border border-gray-300 h-[300px] cursor-pointer rounded-xl"
+                    className="relative overflow-hidden border border-gray-300 h-[300px] cursor-pointer rounded-xl"
                     onClick={() =>
                       navigate(`/category/${category.category_id}`)
                     }
                   >
                     <div className="p-0 overflow-hidden">
-                      <div className="relative w-full max-h-[300px]">
+                      <div className=" w-full max-h-[300px]">
                         <img
                           src={
                             category.image_url
@@ -111,14 +111,14 @@ export const Collections: React.FC = () => {
         </div>
 
         <div className="text-center mt-12">
-          <button
-            className="heading-font tracking-wider hover:text-red-500 text-xl cursor-pointer"
-            onClick={() => navigate("/collections")}
-          >
-            VIEW ALL COLLECTIONS
-          </button>
-          <div className="samurai-divider w-24 mx-auto"></div>
-        </div>
+        <button
+          className="heading-font tracking-wider hover:text-red-500 text-xl cursor-pointer"
+          onClick={() => navigate("/collections", { state: { showNavbar: true } })}
+        >
+          VIEW ALL COLLECTIONS
+        </button>
+        <div className="samurai-divider w-24 mx-auto"></div>
+      </div>
       </div>
     </section>
   );

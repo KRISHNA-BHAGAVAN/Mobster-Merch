@@ -3,7 +3,7 @@ import React from 'react';
 export const TermsAndConditions: React.FC = () => {
 
  return (
-  <div className="min-h-screen bg-background">
+  <div className="min-h-screen bg-background text-justify hyphenate-auto ">
    <div className="container mx-auto px-4 max-w-4xl">
    
     <h1 className="heading-font text-4xl text-center mb-8">Terms and Conditions</h1>
@@ -19,24 +19,24 @@ export const TermsAndConditions: React.FC = () => {
       This document is published in accordance with the provisions of Rule 3 (1) of the Information
       Technology (Intermediaries guidelines) Rules, 2011 that require publishing the rules and regulations,
       privacy policy and Terms of Use for access or usage of domain name https://mobstermerch.
-      store/ (“Website”), including the related mobile site and mobile application (hereinafter referred to as
-      “Platform”).
+      store/ ("Website"), including the related mobile site and mobile application (hereinafter referred to as
+      "Platform").
      </p>
     
      <p>
       The Platform is owned by MOBSTER MERCH , a company incorporated under the Companies Act,
       1956 with its registered office at Andhra Pradesh, India, 533401
-      (hereinafter referred to as “Platform Owner”, “we”, “us”, “our”).
+      (hereinafter referred to as "Platform Owner", "we", "us", "our").
      </p>
     
      <p>
       Your use of the Platform and services and tools are governed by the following terms and conditions
-      (“Terms of Use”) as applicable to the Platform including the applicable policies which are incorporated
+      ("Terms of Use") as applicable to the Platform including the applicable policies which are incorporated
       herein by way of reference. If You transact on the Platform, You shall be subject to the policies that are
       applicable to the Platform for such transaction. By mere use of the Platform, You shall be contracting with
       the Platform Owner and these terms and conditions including the policies constitute Your binding
       obligations, with Platform Owner. These Terms of Use relate to your use of our website, goods (as
-      applicable) or services (as applicable) (collectively, “Services”). Any terms and conditions proposed by You
+      applicable) or services (as applicable) (collectively, "Services"). Any terms and conditions proposed by You
       which are in addition to or which conflict with these Terms of Use are expressly rejected by the Platform
       Owner and shall be of no force or effect. These Terms of Use can be modified at any time without
       assigning any reason. It is your responsibility to periodically review these Terms of Use to stay informed of
@@ -44,7 +44,7 @@ export const TermsAndConditions: React.FC = () => {
      </p>
     
      <p>
-      For the purpose of these Terms of Use, wherever the context so requires “you”, “your” or “user” shall
+      For the purpose of these Terms of Use, wherever the context so requires "you", "your" or "user" shall
       mean any natural or legal person who has agreed to become a user/buyer on the Platform.
      </p>
     
@@ -56,98 +56,113 @@ export const TermsAndConditions: React.FC = () => {
     
      <p>The use of Platform and/or availing of our Services is subject to the following Terms of Use:</p>
     
-     <ol className="list-decimal list-inside space-y-4 ml-4">
-      <li>
-       To access and use the Services, you agree to provide true, accurate and complete information to us
+     <ul className="space-y-4 ml-4">
+      <li className="flex items-start gap-2">
+       <span className="text-primary mt-1 ">→</span>
+       <span>To access and use the Services, you agree to provide true, accurate and complete information to us
        during and after registration, and you shall be responsible for all acts done through the use of your
-       registered account on the Platform.
+       registered account on the Platform.</span>
       </li>
      
-      <li>
-       Neither we nor any third parties provide any warranty or guarantee as to the accuracy, timeliness,
+      <li className="flex items-start gap-2">
+       <span className="text-primary mt-1">→</span>
+       <span>Neither we nor any third parties provide any warranty or guarantee as to the accuracy, timeliness,
        performance, completeness or suitability of the information and materials offered on this website or
        through the Services, for any specific purpose. You acknowledge that such information and materials may
        contain inaccuracies or errors and we expressly exclude liability for any such inaccuracies or errors to the
-       fullest extent permitted by law.
+       fullest extent permitted by law.</span>
       </li>
      
-      <li>
-       Your use of our Services and the Platform is solely and entirely at your own risk and discretion for
+      <li className="flex items-start gap-2">
+       <span className="text-primary mt-1">→</span>
+       <span>Your use of our Services and the Platform is solely and entirely at your own risk and discretion for
        which we shall not be liable to you in any manner. You are required to independently assess and ensure
-       that the Services meet your requirements.
+       that the Services meet your requirements.</span>
       </li>
      
-      <li>
-       The contents of the Platform and the Services are proprietary to us and are licensed to us. You will not
+      <li className="flex items-start gap-2">
+       <span className="text-primary mt-1">→</span>
+       <span>The contents of the Platform and the Services are proprietary to us and are licensed to us. You will not
        have any authority to claim any intellectual property rights, title, or interest in its contents. The contents
-       includes and is not limited to the design, layout, look and graphics.
+       includes and is not limited to the design, layout, look and graphics.</span>
       </li>
      
-      <li>
-       You acknowledge that unauthorized use of the Platform and/or the Services may lead to action against
-       you as per these Terms of Use and/or applicable laws.
+      <li className="flex items-start gap-2">
+       <span className="text-primary mt-1">→</span>
+       <span>You acknowledge that unauthorized use of the Platform and/or the Services may lead to action against
+       you as per these Terms of Use and/or applicable laws.</span>
       </li>
      
-      <li>
-       You agree to pay us the charges associated with availing the Services.
+      <li className="flex items-start gap-2">
+       <span className="text-primary mt-1">→</span>
+       <span>You agree to pay us the charges associated with availing the Services.</span>
       </li>
      
-      <li>
-       You agree not to use the Platform and/ or Services for any purpose that is unlawful, illegal or forbidden
-       by these Terms, or Indian or local laws that might apply to you.
+      <li className="flex items-start gap-2">
+       <span className="text-primary mt-1">→</span>
+       <span>You agree not to use the Platform and/ or Services for any purpose that is unlawful, illegal or forbidden
+       by these Terms, or Indian or local laws that might apply to you.</span>
       </li>
      
-      <li>
-       You agree and acknowledge that website and the Services may contain links to other third party
+      <li className="flex items-start gap-2">
+       <span className="text-primary mt-1">→</span>
+       <span>You agree and acknowledge that website and the Services may contain links to other third party
        websites. On accessing these links, you will be governed by the terms of use, privacy policy and such
        other policies of such third party websites. These links are provided for your convenience for provide
-       further information.
+       further information.</span>
       </li>
      
-      <li>
-       You understand that upon initiating a transaction for availing the Services you are entering into a
-       legally binding and enforceable contract with the Platform Owner for the Services.
+      <li className="flex items-start gap-2">
+       <span className="text-primary mt-1">→</span>
+       <span>You understand that upon initiating a transaction for availing the Services you are entering into a
+       legally binding and enforceable contract with the Platform Owner for the Services.</span>
       </li>
      
-      <li>
-       You shall indemnify and hold harmless Platform Owner, its affiliates, group companies (as applicable)
+      <li className="flex items-start gap-2">
+       <span className="text-primary mt-1">→</span>
+       <span>You shall indemnify and hold harmless Platform Owner, its affiliates, group companies (as applicable)
        and their respective officers, directors, agents, and employees, from any claim or demand, or actions
-       including reasonable attorneys’ fees, made by any third party or penalty imposed due to or arising out of
+       including reasonable attorneys' fees, made by any third party or penalty imposed due to or arising out of
        Your breach of this Terms of Use, privacy Policy and other Policies, or Your violation of any law, rules or
-       regulations or the rights (including infringement of intellectual property rights) of a third party.
+       regulations or the rights (including infringement of intellectual property rights) of a third party.</span>
       </li>
      
-      <li>
-       In no event will the Platform Owner be liable for any indirect, consequential, incidental, special or
+      <li className="flex items-start gap-2">
+       <span className="text-primary mt-1">→</span>
+       <span>In no event will the Platform Owner be liable for any indirect, consequential, incidental, special or
        punitive damages, including without limitation damages for loss of profits or revenues, business
        interruption, loss of business opportunities, loss of data or loss of other economic interests, whether in
        contract, negligence, tort or otherwise, arising from the use of or inability
        to use the Services, however caused and whether arising in contract, tort, negligence, warranty or
        otherwise, exceed the amount paid by You for using the Services giving rise to the cause of action or
-       Rupees One Hundred (Rs. 100) whichever is less
+       Rupees One Hundred (Rs. 100) whichever is less</span>
       </li>
      
-      <li>
-       Notwithstanding anything contained in these Terms of Use, the parties shall not be liable for any
+      <li className="flex items-start gap-2">
+       <span className="text-primary mt-1">→</span>
+       <span>Notwithstanding anything contained in these Terms of Use, the parties shall not be liable for any
        failure to perform an obligation under these Terms if performance is prevented or delayed by a force
-       majeure event.
+       majeure event.</span>
       </li>
      
-      <li>
-       These Terms and any dispute or claim relating to it, or its enforceability, shall be governed by and
-       construed in accordance with the laws of India.
+      <li className="flex items-start gap-2">
+       <span className="text-primary mt-1">→</span>
+       <span>These Terms and any dispute or claim relating to it, or its enforceability, shall be governed by and
+       construed in accordance with the laws of India.</span>
       </li>
      
-      <li>
-       All disputes arising out of or in connection with these Terms shall be subject to the exclusive
-       jurisdiction of the courts in Andhra Pradesh
+      <li className="flex items-start gap-2">
+       <span className="text-primary mt-1">→</span>
+       <span>All disputes arising out of or in connection with these Terms shall be subject to the exclusive
+       jurisdiction of the courts in Andhra Pradesh</span>
       </li>
      
-      <li>
-       All concerns or communications relating to these Terms must be communicated to us using the
-       contact information provided on this website.
+      <li className="flex items-start gap-2">
+       <span className="text-primary mt-1">→</span>
+       <span>All concerns or communications relating to these Terms must be communicated to us using the
+       contact information provided on this website.</span>
       </li>
-     </ol>
+     </ul>
     </div>
    </div>
   </div>

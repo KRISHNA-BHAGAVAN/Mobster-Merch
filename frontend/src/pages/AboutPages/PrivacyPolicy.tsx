@@ -5,9 +5,9 @@ export const PrivacyPolicy: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div className="min-h-screen bg-background text-justify hyphenate-auto" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <div className="container mx-auto px-4 max-w-4xl">
-        <h1 className="font-sans text-4xl font-bold text-center mb-8">Privacy Policy</h1>
+        <h1 className="font-sans text-4xl font-bold text-center mb-8">Privacy &nbsp;Policy</h1>
         <div className="font-serif prose prose-invert max-w-none text-foreground/80 leading-relaxed space-y-6 text-base">
           
           <section>

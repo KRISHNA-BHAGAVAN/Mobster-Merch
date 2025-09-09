@@ -41,22 +41,22 @@ export const Home: React.FC<HomeProps> = ({ showNavbar }) => {
                 <span className="text-white" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>Merch</span>
               </h1>
               
-              <p className="text-base sm:text-lg md:text-xl mb-6 max-w-2xl mx-auto font-light text-gray-300">
+              <h5 className="text-base sm:text-lg md:text-xl mb-6 max-w-2xl mx-auto font-light text-gray-300 .ungai">
                 Embrace the spirit of the samurai with our exclusive collection.
-              </p>
+              </h5>
                 
-              <p className="text-sm sm:text-base md:text-lg mb-8 max-w-2xl mx-auto font-light text-gray-400">
+              <h5 className="text-sm sm:text-base md:text-lg mb-8 max-w-2xl mx-auto font-light text-gray-400">
                 Limited edition merchandise available now.
-              </p>
+              </h5>
               
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center ">
                 <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className="
                     heading-font tracking-wide text-lg py-3 px-8 rounded-full font-bold
                     bg-white text-black border-2 border-white
-                    hover:bg-transparent hover:text-white cursor-pointer transition-all duration-300
+                    hover:bg-transparent hover:text-white cursor-pointer transition-all duration-300 w-35 mx-auto
                   "
                   onClick={() => navigate('/products')}
                 >

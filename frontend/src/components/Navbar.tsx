@@ -60,10 +60,10 @@ export const Navbar: React.FC<NavbarProps> = ({ show = true }) => {
         sx={{
           width: "100%",
           py: 1,
-          px: { xs: 2, sm: 4 },
+          // px: { xs: 2, sm: 4 },
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          // justifyContent: "space-between",
         }}
       >
         {/* Left: Logo */}
@@ -105,7 +105,6 @@ export const Navbar: React.FC<NavbarProps> = ({ show = true }) => {
               }}
               sx={{
                 color: "rgba(255,255,255,0.9)",
-                fontFamily: "'Ungai', sans-serif",
                 letterSpacing: "0.1em",
                 textDecoration: "none",
                 px: 2,
@@ -116,11 +115,12 @@ export const Navbar: React.FC<NavbarProps> = ({ show = true }) => {
                 border: "none",
                 cursor: "pointer",
                 "&:hover": { color: "#dc2626" },
+                className: 'ungai-font',
               }}
             >
               <Typography
                 variant="button"
-                sx={{ fontFamily: "'Ungai', sans-serif", fontSize: "0.85rem" }}
+                sx={{ fontFamily: "'Ungai1', sans-serif", fontSize: "0.85rem" }}
               >
                 {item.name}
               </Typography>
@@ -129,15 +129,15 @@ export const Navbar: React.FC<NavbarProps> = ({ show = true }) => {
         </Box>
 
         {/* Right: Auth / Profile */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 ,ml: "auto"}}>
           {isAuthenticated ? (
             <>
-              <IconButton
+              {/* <IconButton
                 onClick={() => navigate("/cart")}
                 sx={{ color: "#dc2626" }}
               >
                 <ShoppingCart />
-              </IconButton>
+              </IconButton> */}
               <IconButton
                 onClick={handleClick}
                 sx={{ color: "white" }}
@@ -150,11 +150,13 @@ export const Navbar: React.FC<NavbarProps> = ({ show = true }) => {
                 anchorEl={anchorEl}
                 open={open}
                 onClose={handleClose}
-                PaperProps={{
-                  sx: {
-                    backgroundColor: "rgba(0,0,0,0.9)",
-                    color: "white",
-                    border: "1px solid #dc2626",
+                slotProps={{
+                  paper: {
+                    sx: {
+                      backgroundColor: "rgba(0,0,0,0.9)",
+                      color: "white",
+                      border: "1px solid #dc2626",
+                    },
                   },
                 }}
               >
@@ -174,12 +176,18 @@ export const Navbar: React.FC<NavbarProps> = ({ show = true }) => {
             </>
           ) : (
             <>
-              <IconButton
-                onClick={() => navigate("/login")}
-                sx={{ color: "white" }}
+              {/* <button
+                onClick={() => navigate("/register")}
+                className="px-3 py-1 text-white border border-red-500 rounded hover:bg-red-500 transition-colors text-sm"
               >
-                <Login />
-              </IconButton>
+                Register
+              </button> */}
+              <button
+                onClick={() => navigate("/login")}
+                className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-sm"
+              >
+                Login
+              </button>
             </>
           )}
           {isMobile && (
@@ -217,7 +225,7 @@ export const Navbar: React.FC<NavbarProps> = ({ show = true }) => {
             }}
           >
             <Icon icon="mdi:pistol" className="text-red-500" style={{ fontSize: "28px" }} />
-            <Typography variant="h6" sx={{ fontFamily: "'Ungai', sans-serif" }}>
+            <Typography variant="h6" sx={{ fontFamily: " sans-serif" }}>
               MOBSTER MERCH
             </Typography>
           </Box>
@@ -234,7 +242,7 @@ export const Navbar: React.FC<NavbarProps> = ({ show = true }) => {
               >
                 <ListItemText
                   primary={
-                    <Typography sx={{ fontFamily: "'Ungai', sans-serif" }}>
+                    <Typography sx={{ fontFamily: "'Ungai1', sans-serif" }}>
                       {item.name}
                     </Typography>
                   }

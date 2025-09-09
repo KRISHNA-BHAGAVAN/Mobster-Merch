@@ -93,13 +93,13 @@ export const ProductDetails: React.FC = () => {
       <div className="py-20">
       <div className="container mx-auto px-4">
         <div className="flex justify-end mb-6 mt-7">
-          <button
+          {/* <button
             onClick={() => navigate("/products")}
             className="flex items-center justify-items-end gap-2 mb-8 hover:text-red-500 cursor-pointer"
           >
             <Icon icon="lucide:arrow-left" />
             Back to Products
-          </button>
+          </button> */}
         </div>
 
         <motion.div

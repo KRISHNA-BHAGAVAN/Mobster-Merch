@@ -24,6 +24,7 @@ export const CollectionsPage: React.FC<CollectionProps> = ({ showNavbar }) => {
     fetchCategoriesWithCount();
   }, []);
 
+  console.log("Rendering CollectionsPage with shouldShowNavbar:", shouldShowNavbar );
   const fetchCategoriesWithCount = async () => {
     try {
       const categoriesData = await categoryService.getAllCategories();
@@ -69,7 +70,8 @@ export const CollectionsPage: React.FC<CollectionProps> = ({ showNavbar }) => {
   };
 
   return (
-    <div className=" bg-background">
+    <div className="min-h-screen bg-background">
+      
       {shouldShowNavbar && <Navbar />}
       <section className="py-10 bg-content2/50">
         <div className="container mx-auto px-4">
@@ -97,13 +99,13 @@ export const CollectionsPage: React.FC<CollectionProps> = ({ showNavbar }) => {
               : categories.map((category) => (
                   <motion.div key={category.category_id} variants={item}>
                     <div
-                      className="overflow-hidden border border-gray-300 h-[300px] cursor-pointer rounded-xl"
+                      className="relative overflow-hidden border border-gray-300 h-[300px] cursor-pointer rounded-xl"
                       onClick={() =>
                         navigate(`/category/${category.category_id}`)
                       }
                     >
                       <div className="p-0 overflow-hidden">
-                        <div className="relative w-full max-h-[300px]">
+                        <div className=" w-full max-h-[300px]">
                           <img
                             src={
                               category.image_url
@@ -136,15 +138,7 @@ export const CollectionsPage: React.FC<CollectionProps> = ({ showNavbar }) => {
           </div>
         </div>
       </section>
-      <div className="text-center mt-12">
-        <button
-          className="heading-font tracking-wider hover:text-red-500 text-xl cursor-pointer"
-          onClick={() => navigate("/collections")}
-        >
-          VIEW ALL COLLECTIONS
-        </button>
-        <div className="samurai-divider w-24 mx-auto"></div>
-      </div>
+     
     </div>
   );
 };

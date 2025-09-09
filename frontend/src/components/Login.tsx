@@ -468,7 +468,7 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
                     variant="contained"
                     disabled={loading}
                     sx={{
-                      fontFamily: '"Ungai", sans-serif',
+                      fontFamily: '"Ungai1", sans-serif',
                       backgroundColor: "#dc2626",
                       "&:hover": { backgroundColor: "#b91c1c" },
                       borderRadius: "12px",

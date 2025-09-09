@@ -126,16 +126,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
               />
 
               <TextField
-                label="Phone"
-                value={isEditing ? formData.phone : profile.phone || "Not provided"}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                slotProps={{
-                  input: {
-                    className: "hover:text-red-500 text-white", 
-                  },
-                }}
-                variant={isEditing ? "outlined" : "filled"}
+                label="Email"
+                value={isEditing ? formData.email : profile.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                InputProps={{ readOnly: !isEditing }}
                 className="bg-black/30"
+                variant={isEditing ? "outlined" : "filled"}
                 style={{ width: "100%" }}
               />
 

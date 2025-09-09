@@ -22,14 +22,14 @@ export const AboutPage: React.FC = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <button
+        {/* <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-primary hover:text-primary/80 cursor-pointer transition-colors mb-6"
           >
           <Icon icon="lucide:arrow-left" className="h-5 w-5" />
           Back
-        </button>
-        <div className="flex flex-wrap gap-2 mb-8 border-b border-gray-600">
+        </button> */}
+        <div className="flex flex-wrap gap-2 mb-8 border-b border-gray-600 items-center justify-center">
           {tabs.map((tab) => (
             <button
               key={tab.id}

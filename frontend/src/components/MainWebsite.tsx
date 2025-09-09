@@ -1,11 +1,12 @@
 import React from "react";
 import { Navbar } from "./Navbar";
-import { SectionWrapper } from "./SectionWrapper";
+// import { SectionWrapper } from "./SectionWrapper";
 import { Home } from "../pages/Home";
-import { Collections } from "./Collections";
 import  {Promotions}  from "../pages/Promotions";
 import { FeaturedMerchandisePage } from "../pages/FeaturedMerchandisePage";
 import { Footer } from "../pages/Footer";
+import { CollectionsPage } from "../pages/CollectionsPage";
+import { ProductCollections } from "./ProductCollections";
 
 
 export const MainWebsite: React.FC = () => {
@@ -23,7 +24,7 @@ export const MainWebsite: React.FC = () => {
       {/* </SectionWrapper> */}
 
       {/* <SectionWrapper id="collections"> */}
-      <Collections />
+      <ProductCollections />
       {/* </SectionWrapper> */}
 
       {/* <SectionWrapper id="promotions"> */}

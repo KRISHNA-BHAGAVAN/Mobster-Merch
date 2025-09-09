@@ -5,21 +5,21 @@ export const ShippingPolicy: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div className="min-h-screen bg-background text-justify hyphenate-auto" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <div className="container mx-auto px-4 max-w-4xl">
         
-        <h1 className="font-sans text-4xl font-bold text-center mb-8">Shipping Policy</h1>
+        <h1 className="font-sans text-4xl font-bold text-center mb-8">Shipping&nbsp; Policy</h1>
         <div className="font-serif prose prose-invert max-w-none text-foreground/80 leading-relaxed space-y-6 text-base">
           
           <section>
-            <h2 className="text-2xl font-semibold text-primary mb-4">Order Processing</h2>
+            <h2 className="text-2xl font-semibold text-primary mb-4">Order&nbsp; Processing</h2>
             <p>
               We strive to process and ship orders as quickly as possible. Most orders are expected to be delivered within <strong>8-10 business days</strong>.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-primary mb-4">Shipping & Delivery Disclaimer</h2>
+            <h2 className="text-2xl font-semibold text-primary mb-4">Shipping &nbsp; and  &nbsp;&nbsp;Delivery&nbsp; Disclaimer</h2>
             <p>
               The Platform Owner shall not be held liable for any delay in delivery caused by the courier company, postal authority, or any other third-party logistics provider. All orders will be delivered to the address provided by the buyer at the time of purchase.
             </p>

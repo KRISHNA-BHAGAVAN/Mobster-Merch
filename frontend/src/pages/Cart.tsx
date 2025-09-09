@@ -105,7 +105,7 @@ export const Cart: React.FC = () => {
         <div className="container mx-auto ">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="heading-font text-3xl">Shopping Cart</h1>
+              <h1 className="heading-font text-xl md:text-3xl p-3">Shopping Cart</h1>
               <div className="samurai-divider w-24 mb-6"></div>
             </div>
 
@@ -114,8 +114,9 @@ export const Cart: React.FC = () => {
                 onClick={() => navigate("/products")}
                 className="flex items-center justify-items-end gap-2 mb-8 hover:text-red-500 cursor-pointer"
               >
-                <Icon icon="lucide:arrow-left" />
-                Continue Shopping
+                <Icon icon="lucide:arrow-left" className="md:text-base text-xl mr-5" />
+                <span className="hidden md:block">                Continue Shopping
+</span>
               </button>
             </div>
           </div>
@@ -132,12 +133,12 @@ export const Cart: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 overflow-hidden">
               <div className="lg:col-span-2 space-y-4">
                 {cartItems.map((item) => (
                   <div key={item.cart_id}>
                     <div className="p-4">
-                      <div className="flex gap-4">
+                      <div className="flex items-center justify-center gap-4 max-w-sm border p-3 rounded-md border-gray-700">
                         <img
                           src={
                             item.image_url
@@ -145,17 +146,17 @@ export const Cart: React.FC = () => {
                               : "/placeholder.jpg"
                           }
                           alt={item.name}
-                          className="w-20 h-20 object-cover rounded"
+                          className="w-28 h-28 object-cover rounded"
                         />
                         <div className="flex-1">
-                          <h3 className="font-semibold mb-2">{item.name}</h3>
-                          <p className="text-primary font-mono">₹{item.price}</p>
+                          <h3 className="font-semibold mb-2 text-xl">{item.name}</h3>
+                          <p className="text-primary font-mono ">₹{item.price}</p>
                           <p className="text-xs text-foreground/60">
                             Stock: {item.stock}
                           </p>
                           <div className="flex items-center gap-2 mt-2">
                             <button
-                              className="bg-red-800 text-white hover:bg-red-700 cursor-pointer px-3 py-1 text-xl"
+                              className="border border-gray-600 rounded-sm text-white hover:text-red-700 cursor-pointer px-3 py-1 "
                               onClick={() =>
                                 updateQuantity(
                                   item.cart_id,
@@ -177,11 +178,11 @@ export const Cart: React.FC = () => {
                                   item.stock
                                 );
                               }}
-                              className="w-20 text-center bg-black border border-gray-600 rounded text-white font-semibold text-lg focus:border-primary [-webkit-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              className="w-20 text-center bg-black border border-gray-600 rounded text-white font-semibold text-base focus:border-primary [-webkit-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
 
                             <button
-                              className="bg-red-800 text-white hover:bg-red-700 cursor-pointer px-3 py-1 text-xl"
+                              className="border border-gray-600 rounded-sm  text-white hover:text-red-700 cursor-pointer px-3 py-1 "
                               onClick={() =>
                                 updateQuantity(
                                   item.cart_id,
@@ -193,17 +194,20 @@ export const Cart: React.FC = () => {
                             >
                               +
                             </button>
-                            <button onClick={() => removeItem(item.cart_id)}>
-                              Remove
-                            </button>
+                            
                           </div>
                         </div>
-                        <div className="text-right">
+                        {/* <div className="text-left">
                           <p className="font-semibold">
                             ₹{Number(item.subtotal).toFixed(2)}
                           </p>
-                        </div>
+                        </div> */}
+                        <button onClick={() => removeItem(item.cart_id)} 
+                          className="text-red-500 hover:text-red-700  cursor-pointer self-start ">
+                              Remove
+                            </button>
                       </div>
+                      
                     </div>
                   </div>
                 ))}
@@ -214,6 +218,14 @@ export const Cart: React.FC = () => {
                   <div className="p-6">
                     <h3 className="font-semibold text-xl mb-4">Order Summary</h3>
                     <div className="space-y-2 mb-4">
+                       {cartItems.map((item) => (
+                        <div className="flex justify-between" key={item.cart_id}>
+                          <p>{item.name}</p>
+                          <p className="font-semibold text-left">
+                            ₹{Number(item.subtotal).toFixed(2)}
+                          </p>
+                        </div> 
+                       ))}
                       <div className="flex justify-between">
                         <span>Subtotal</span>
                         <span>₹{total.toFixed(2)}</span>
@@ -223,7 +235,7 @@ export const Cart: React.FC = () => {
                         <span>₹{total.toFixed(2)}</span>
                       </div>
                     </div>
-                    <button style={{ width: "100%" }} onClick={checkout}>
+                    <button style={{ width: "100%" }} onClick={checkout} className="bg-red-600 hover:bg-red-700 text-white py-3 rounded-md font-semibold transition-colors hover: cursor-pointer">
                       Checkout
                     </button>
                   </div>

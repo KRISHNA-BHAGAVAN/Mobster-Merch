@@ -177,7 +177,7 @@ export const PaymentSuccess: React.FC = () => {
           </button>
           <button
             onClick={() => navigate('/products')}
-            className="w-full py-3 bg-gray-700 text-white rounded-lg font-semibold hover:bg-gray-600"
+            className="w-full py-3 bg-gray-700 text-white rounded-lg font-semibold hover:bg-gray-600 text-sm"
           >
             Continue Shopping
           </button>

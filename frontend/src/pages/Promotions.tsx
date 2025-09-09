@@ -95,12 +95,12 @@ export const Promotions: React.FC<PromotionsProps> = ({showNavbar}) => {
             ))}
           </div>
 
-          <div className="absolute left-1/2 -translate-x-1/2 bottom-3 sm:bottom-4 md:bottom-6 flex gap-2 sm:gap-3 z-20">
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-40  md:bottom-6 flex gap-2 sm:gap-3 z-20">
             {slides.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => goToSlide(idx)}
-                className={`w-4 h-1 sm:w-6 sm:h-1 md:w-4 md:h-4 rounded-full border-2 border-white transition-all duration-200 ${
+                className={` w-2 h-2  md:w-4 md:h-4 rounded-full border-2 border-white transition-all duration-200 ${
                   currentIndex === idx ? "bg-white" : "bg-gray-400 opacity-60"
                 }`}
                 aria-label={`Go to slide ${idx + 1}`}
