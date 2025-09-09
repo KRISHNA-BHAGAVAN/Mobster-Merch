@@ -6,7 +6,8 @@ import { Favorite } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useCart } from "../context/CartContext";
-import { productService, cartService, API_BASE_URL } from "../services";
+import { productService, cartService } from "../services";
+import { Navbar } from "../components/Navbar";
 
 interface Product {
   product_id: number;
@@ -87,7 +88,9 @@ export const ProductDetails: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background py-20">
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <div className="py-20">
       <div className="container mx-auto px-4">
         <div className="flex justify-end mb-6 mt-7">
           <button
@@ -182,6 +185,7 @@ export const ProductDetails: React.FC = () => {
             </button>
           </div>
         </motion.div>
+      </div>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Icon } from '@iconify/react';
 import { API_BASE_URL } from '../config/api';
+import { Navbar } from './Navbar';
 
 export const PaymentSuccess: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -72,10 +73,13 @@ export const PaymentSuccess: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <Icon icon="lucide:loader-2" className="animate-spin h-12 w-12 text-green-500 mx-auto mb-4" />
-          <p className="text-white text-lg">Processing your payment...</p>
+      <div className="min-h-screen bg-gray-900">
+        <Navbar />
+        <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 80px)' }}>
+          <div className="text-center">
+            <Icon icon="lucide:loader-2" className="animate-spin h-12 w-12 text-green-500 mx-auto mb-4" />
+            <p className="text-white text-lg">Processing your payment...</p>
+          </div>
         </div>
       </div>
     );
@@ -83,25 +87,30 @@ export const PaymentSuccess: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <Icon icon="lucide:x-circle" className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-white mb-4">Payment Failed</h1>
-          <p className="text-gray-300 mb-6">{error}</p>
-          <button
-            onClick={() => navigate('/cart')}
-            className="py-3 px-6 bg-red-600 text-white rounded-lg hover:bg-red-700"
-          >
-            Back to Cart
-          </button>
+      <div className="min-h-screen bg-gray-900">
+        <Navbar />
+        <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 80px)' }}>
+          <div className="text-center max-w-md mx-auto p-6">
+            <Icon icon="lucide:x-circle" className="h-16 w-16 text-red-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-white mb-4">Payment Failed</h1>
+            <p className="text-gray-300 mb-6">{error}</p>
+            <button
+              onClick={() => navigate('/cart')}
+              className="py-3 px-6 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            >
+              Back to Cart
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 py-8">
-      <div className="max-w-2xl mx-auto px-4">
+    <div className="min-h-screen bg-gray-900">
+      <Navbar />
+      <div className="py-8">
+        <div className="max-w-2xl mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -173,6 +182,7 @@ export const PaymentSuccess: React.FC = () => {
             Continue Shopping
           </button>
         </div>
+      </div>
       </div>
     </div>
   );

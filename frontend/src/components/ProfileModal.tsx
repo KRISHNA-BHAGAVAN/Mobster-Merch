@@ -73,7 +73,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
       className="bg-black/50"
     >
       <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <Icon icon="lucide:user" />
+        <Icon icon="lucide:user" style={{ color: "#dc2626" }} />
         Profile
       </DialogTitle>
       <DialogContent>
@@ -104,7 +104,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                   }}
                   InputProps={{
                     startAdornment: (
-                      <Icon icon="lucide:camera" className="mr-2" />
+                      <Icon icon="lucide:camera" className="mr-2" style={{ color: "#dc2626" }} />
                     ),
                   }}
                   style={{ width: "100%" }}
@@ -120,22 +120,25 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                   setFormData({ ...formData, name: e.target.value })
                 }
                 InputProps={{ readOnly: !isEditing }}
-                className="bg-black/30"
+                className="bg-black/30 "
                 variant={isEditing ? "outlined" : "filled"}
                 style={{ width: "100%" }}
               />
 
               <TextField
-                label="Email"
-                value={isEditing ? formData.email : profile.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                InputProps={{ readOnly: !isEditing }}
-                className="bg-black/30"
+                label="Phone"
+                value={isEditing ? formData.phone : profile.phone || "Not provided"}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                slotProps={{
+                  input: {
+                    className: "hover:text-red-500 text-white", 
+                  },
+                }}
                 variant={isEditing ? "outlined" : "filled"}
+                className="bg-black/30"
                 style={{ width: "100%" }}
               />
+
 
               <TextField
                 label="Phone"

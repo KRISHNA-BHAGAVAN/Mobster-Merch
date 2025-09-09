@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { authService, orderService } from '../../services';
 import { OrderDetailsModal } from './OrderDetailsModal';
+import { Navbar } from '../Navbar';
 
 interface Order {
   order_id: string;
@@ -90,17 +91,22 @@ export const OrdersPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 py-8">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="text-white text-center">Loading orders...</div>
+      <div className="min-h-screen bg-gray-900">
+        <Navbar />
+        <div className="py-8">
+          <div className="max-w-4xl mx-auto px-4">
+            <div className="text-white text-center">Loading orders...</div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 py-8">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="min-h-screen bg-gray-900">
+      <Navbar />
+      <div className="py-8">
+        <div className="max-w-4xl mx-auto px-4">
         <h1 className="text-3xl font-bold text-white mb-8">My Orders</h1>
         
         {orders.length === 0 ? (
@@ -186,6 +192,7 @@ export const OrdersPage: React.FC = () => {
             onClose={() => setSelectedOrderId(null)}
           />
         )}
+        </div>
       </div>
     </div>
   );

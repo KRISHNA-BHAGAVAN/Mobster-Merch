@@ -8,26 +8,32 @@ import { CartProvider } from './context/CartContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthPageProtection } from './components/AuthPageProtection';
 import { API_BASE_URL } from './config/api';
-import SiteClosedPage from './components/SiteClosedPage';
+import SiteClosedPage from './pages/SiteClosedPage';
 import { theme } from './theme/muiTheme';
-import { ProductCategories } from "./components/ProductCategories";
+import { CollectionsPage } from "./pages/CollectionsPage";
+import { Home } from "./pages/Home";
+import { Footer } from "./pages/Footer";
+import {Promotions} from "./pages/Promotions";
 
 // Lazy load components
 const Login = lazy(() => import('./components/Login').then(m => ({ default: m.Login })));
 const MainWebsite = lazy(() => import('./components/MainWebsite').then(m => ({ default: m.MainWebsite })));
-const AdminDashboard = lazy(() => import('./components/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
-const AllProducts = lazy(() => import('./components/AllProducts').then(m => ({ default: m.AllProducts })));
-const CategoryProducts = lazy(() => import('./components/CategoryProducts').then(m => ({ default: m.CategoryProducts })));
-const Cart = lazy(() => import('./components/Cart').then(m => ({ default: m.Cart })));
-const Orders = lazy(() => import('./components/Orders').then(m => ({ default: m.Orders })));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const AllProducts = lazy(() => import('./pages/AllProducts').then(m => ({ default: m.AllProducts })));
+const CategoryProducts = lazy(() => import('./pages/CategoryProducts').then(m => ({ default: m.CategoryProducts })));
+const Cart = lazy(() => import('./pages/Cart').then(m => ({ default: m.Cart })));
+
 const CustomerNotifications = lazy(() => import('./components/CustomerNotifications').then(m => ({ default: m.CustomerNotifications })));
-const ProductDetails = lazy(() => import("./components/ProductDetails").then(m => ({ default: m.ProductDetails })));
+const ProductDetailedPage = lazy(() => import("./pages/ProductDetailedPage").then(m => ({ default: m.ProductDetails })));
 const CheckoutPage = lazy(() => import("./components/Checkout/CheckoutPage").then(m => ({ default: m.CheckoutPage })));
 const OrdersPage = lazy(() => import("./components/Orders/OrdersPage").then(m => ({ default: m.OrdersPage })));
 const PaymentSuccess = lazy(() => import('./components/PaymentSuccess').then(m => ({ default: m.PaymentSuccess })));
-const TermsAndConditions = lazy(() => import('./components/TermsAndConditions').then(m => ({ default: m.TermsAndConditions })));
-const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
-const RefundPolicy = lazy(() => import('./components/RefundPolicy').then(m => ({ default: m.RefundPolicy })));
+const TermsAndConditions = lazy(() => import('./pages/AboutPages/TermsAndConditions').then(m => ({ default: m.TermsAndConditions })));
+const PrivacyPolicy = lazy(() => import('./pages/AboutPages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
+const ReturnPolicy = lazy(() => import('./pages/AboutPages/ReturnPolicy').then(m => ({ default: m.ReturnPolicy })));
+const ShippingPolicy = lazy(() => import('./pages/AboutPages/ShippingPolicy').then(m => ({ default: m.ShippingPolicy })));
+const AboutPage = lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
+const FloatingCart = lazy(() => import('./components/FloatingCart').then(m => ({ default: m.FloatingCart })));
 
 function App() {
   const [siteClosed, setSiteClosed] = useState(false);
@@ -96,25 +102,27 @@ function App() {
                         }
                       />
                       <Route path="/" element={<MainWebsite />} />
+                      <Route path="/home" element={<MainWebsite />} />
+                      {/* <Route path="/home" element={<Home />} /> */}
+                      <Route path="/about" element={<AboutPage />} />
+                      <Route path="/promotions" element={<Promotions />} />
                       <Route path="/products" element={<AllProducts />} />
-                      <Route path="/product/:id" element={<ProductDetails />} />
+                      <Route path="/product/:id" element={<ProductDetailedPage />} />
                       <Route
                         path="/category/:category"
                         element={<CategoryProducts />}
                       />
                       <Route
-                        path="/terms_and_conditions"
+                        path="/T&C"
                         element={<TermsAndConditions />}
                       />
                       <Route
                         path="/privacy_policy"
                         element={<PrivacyPolicy />}
                       />
-                      <Route path="/refund_policy" element={<RefundPolicy />} />
-                      <Route
-                        path="/productcategory"
-                        element={<ProductCategories />}
-                      />
+                      <Route path="/refund_policy" element={<ReturnPolicy />} />
+                      <Route path="/shipping_policy" element={<ShippingPolicy />} />
+                      <Route path="/collections" element={<CollectionsPage />} />
 
                       <Route
                         path="/cart"
@@ -168,6 +176,7 @@ function App() {
                     </>
                   )}
                 </Routes>
+                <FloatingCart />
               </Suspense>
             </Router>
           </CartProvider>

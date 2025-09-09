@@ -13,7 +13,7 @@ body {
 }
 
 @font-face {
-  font-family: "Storm Gust";
+  /* font-family: "Storm Gust"; */
   src: url("/fonts/Storm Gust.otf") format("opentype");
   font-weight: normal;
   font-style: normal;
@@ -21,7 +21,7 @@ body {
 }
 
 @font-face {
-  font-family: "Ungai";
+  /* font-family: "Ungai"; */
   src: url("/fonts/Ungai.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
@@ -60,18 +60,14 @@ body {
   background-color: #0a0a0a;
   color: #ffffff;
   overflow-x: hidden;
-  font-family: "Ungai", sans-serif;
+  /* font-family:  sans-serif; */
   font-size: 14px;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+/* h1,
+h2 {
   font-family: "Storm Gust", sans-serif;
-}
+} */
 
 .hero-gradient {
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.9)),

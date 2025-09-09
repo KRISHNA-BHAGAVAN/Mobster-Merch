@@ -8,9 +8,14 @@ import { Icon } from '@iconify/react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ProfileModal } from './ProfileModal';
-import { API_BASE_URL } from '../services';
 
-export const Navbar: React.FC = () => {
+interface NavbarProps {
+  show?: boolean;
+}
+
+export const Navbar: React.FC<NavbarProps> = ({ show = true }) => {
+  if (!show) return null;
+
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isProfileOpen, setIsProfileOpen] = React.useState(false);
   const { logout, user, isAuthenticated } = useAuth();
@@ -24,11 +29,11 @@ export const Navbar: React.FC = () => {
   };
 
   const menuItems = [
-    { name: "Home", href: "#" },
-    { name: "Shop", href: "#featured" },
-    { name: "Collections", href: "#collections" },
-    { name: "About", href: "#about" },
-    { name: "Contact", href: "#contact" },
+    { name: "Home", path: "/home", showNavbar: true },
+    { name: "Shop", path: "/products", showNavbar: true },
+    { name: "Collections", path: "/collections", showNavbar: true },
+    { name: "Promotions", path: "/promotions", showNavbar: true },
+    { name: "About", path: "/about", showNavbar: true },
   ];
 
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -62,19 +67,8 @@ export const Navbar: React.FC = () => {
         }}
       >
         {/* Left: Logo */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-            ml: { xs: 0, sm: 2 },
-          }}
-        >
-          <Icon
-            icon="mdi:pistol"
-            className="text-red-500"
-            style={{ fontSize: "28px" }}
-          />
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: { xs: 0, sm: 2 } }}>
+          <Icon icon="mdi:pistol" className="text-red-500" style={{ fontSize: "28px" }} />
           <Typography
             variant="h5"
             sx={{
@@ -105,8 +99,10 @@ export const Navbar: React.FC = () => {
           {menuItems.map((item) => (
             <Box
               key={item.name}
-              component="a"
-              href={item.href}
+              component="button"
+              onClick={() => {
+                navigate(item.path, { state: { showNavbar: item.showNavbar } }); // ✅ pass state
+              }}
               sx={{
                 color: "rgba(255,255,255,0.9)",
                 fontFamily: "'Ungai', sans-serif",
@@ -116,9 +112,10 @@ export const Navbar: React.FC = () => {
                 py: 1,
                 borderRadius: "4px",
                 transition: "all 0.3s ease",
-                "&:hover": {
-                  color: "#dc2626",
-                },
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                "&:hover": { color: "#dc2626" },
               }}
             >
               <Typography
@@ -132,146 +129,66 @@ export const Navbar: React.FC = () => {
         </Box>
 
         {/* Right: Auth / Profile */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-            mr: { xs: 0, sm: 2 },
-          }}
-        >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           {isAuthenticated ? (
             <>
-              <Typography
-                variant="body2"
-                sx={{
-                  display: { xs: "none", sm: "inline" },
-                  mr: 1,
-                  opacity: 0.9,
-                  color: "white",
-                  fontFamily: "'Ungai', sans-serif",
-                }}
+              <IconButton
+                onClick={() => navigate("/cart")}
+                sx={{ color: "#dc2626" }}
               >
-                Welcome, {user?.name}
-              </Typography>
-              <IconButton onClick={handleClick}>
-                <Avatar
-                  sx={{
-                    width: 36,
-                    height: 36,
-                    border: "2px solid #dc2626",
-                    transition: "transform 0.3s ease",
-                    "&:hover": { transform: "scale(1.05)" },
-                  }}
-                  src={
-                    user?.image_url
-                      ? `${user.image_url}`
-                      : undefined
-                  }
-                >
-                  {!user?.image_url
-                    ? user?.name?.charAt(0).toUpperCase()
-                    : undefined}
+                <ShoppingCart />
+              </IconButton>
+              <IconButton
+                onClick={handleClick}
+                sx={{ color: "white" }}
+              >
+                <Avatar sx={{ width: 32, height: 32 }}>
+                  {user?.name?.charAt(0) || "U"}
                 </Avatar>
               </IconButton>
               <Menu
-                className=""
                 anchorEl={anchorEl}
                 open={open}
                 onClose={handleClose}
                 PaperProps={{
                   sx: {
-                    backgroundColor: "#1a1a1a",
+                    backgroundColor: "rgba(0,0,0,0.9)",
+                    color: "white",
                     border: "1px solid #dc2626",
-                    mt: 0.5,
-                    mr: { xs: "2px", sm: "5px", md: "12px" },
-                    "& .MuiMenuItem-root": {
-                      color: "white",
-                      fontFamily: "'Ungai', sans-serif",
-                      "&:hover": { backgroundColor: "rgba(220,38,38,0.1)" },
-                    },
                   },
                 }}
               >
-                <MenuItem
-                  onClick={() => {
-                    handleClose();
-                    setIsProfileOpen(true);
-                  }}
-                >
-                  <AccountCircle sx={{ mr: 1, color: "#dc2626" }} /> My Profile
+                <MenuItem onClick={() => { setIsProfileOpen(true); handleClose(); }}>
+                  <AccountCircle sx={{ mr: 1 }} /> Profile
                 </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    handleClose();
-                    navigate("/orders");
-                  }}
-                >
-                  <ShoppingCart sx={{ mr: 1, color: "#dc2626" }} /> My Orders
+                <MenuItem onClick={() => { navigate("/orders"); handleClose(); }}>
+                  <Icon icon="lucide:package" className="mr-2" /> Orders
                 </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    handleClose();
-                    navigate("/notifications");
-                  }}
-                >
-                  <Icon icon="mdi:bell" className="text-red-500 mr-2" />{" "}
-                  Notifications
+                <MenuItem onClick={() => { navigate("/notifications"); handleClose(); }}>
+                  <Icon icon="lucide:bell" className="mr-2" /> Notifications
                 </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    handleClose();
-                    handleLogout();
-                  }}
-                  sx={{ color: "#dc2626 !important" }}
-                >
-                  <Logout sx={{ mr: 1 }} /> Log Out
+                <MenuItem onClick={handleLogout}>
+                  <Logout sx={{ mr: 1 }} /> Logout
                 </MenuItem>
               </Menu>
             </>
           ) : (
             <>
               <IconButton
-                sx={{
-                  border: "1px solid #dc2626",
-                  color: "#dc2626",
-                  "&:hover": { backgroundColor: "rgba(220,38,38,0.1)" },
-                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                  padding: { xs: "4px", sm: "8px" },
-                }}
-                onClick={() =>
-                  navigate("/login", { state: { mode: "register" } })
-                }
-              >
-                <PersonAdd sx={{ fontSize: { xs: "16px", sm: "20px" } }} />
-                <Typography
-                  sx={{ display: { xs: "none", sm: "inline" }, ml: 0.5 }}
-                >
-                  Register
-                </Typography>
-              </IconButton>
-              <IconButton
-                sx={{
-                  backgroundColor: "#dc2626",
-                  "&:hover": { backgroundColor: "#b91c1c" },
-                  padding: { xs: "4px", sm: "8px" },
-                }}
                 onClick={() => navigate("/login")}
+                sx={{ color: "white" }}
               >
-                <Login
-                  sx={{ color: "white", fontSize: { xs: "16px", sm: "20px" } }}
-                />
-                <Typography
-                  sx={{
-                    display: { xs: "none", sm: "inline" },
-                    ml: 0.5,
-                    color: "white",
-                  }}
-                >
-                  Login
-                </Typography>
+                <Login />
               </IconButton>
             </>
+          )}
+          {isMobile && (
+            <IconButton
+              onClick={() => setIsMenuOpen(true)}
+              sx={{ color: "white", ml: 1 }}
+            >
+              <MenuIcon />
+            </IconButton>
           )}
         </Box>
 
@@ -299,11 +216,7 @@ export const Navbar: React.FC = () => {
               backgroundColor: "rgba(220,38,38,0.1)",
             }}
           >
-            <Icon
-              icon="mdi:pistol"
-              className="text-red-500"
-              style={{ fontSize: "28px" }}
-            />
+            <Icon icon="mdi:pistol" className="text-red-500" style={{ fontSize: "28px" }} />
             <Typography variant="h6" sx={{ fontFamily: "'Ungai', sans-serif" }}>
               MOBSTER MERCH
             </Typography>
@@ -312,9 +225,12 @@ export const Navbar: React.FC = () => {
             {menuItems.map((item) => (
               <ListItem
                 key={item.name}
-                component="a"
-                href={item.href}
-                onClick={() => setIsMenuOpen(false)}
+                component="button"
+                onClick={() => {
+                  navigate(item.path, { state: { showNavbar: item.showNavbar } }); // ✅ pass state here too
+                  setIsMenuOpen(false);
+                }}
+                sx={{ cursor: "pointer" }}
               >
                 <ListItemText
                   primary={
@@ -328,7 +244,7 @@ export const Navbar: React.FC = () => {
           </List>
         </Drawer>
 
-        <div className="">
+        <div>
           <ProfileModal
             isOpen={isProfileOpen}
             onClose={() => setIsProfileOpen(false)}
