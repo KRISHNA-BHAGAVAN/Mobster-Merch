@@ -11,29 +11,28 @@ import { Footer } from "../pages/Footer";
 export const MainWebsite: React.FC = () => {
   return (
     // <div className="h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth bg-background text-foreground">
-<div>
+    <div>
       <Navbar />
 
-      <SectionWrapper id="home">
-        <Home showNavbar={false} />
-      </SectionWrapper>
+      {/* <SectionWrapper id="home"> */}
+      <Home showNavbar={false} />
+      {/* </SectionWrapper> */}
 
-      <SectionWrapper id="featured">
-        <FeaturedMerchandisePage showNavbar={false} />
-      </SectionWrapper>
+      {/* <SectionWrapper id="featured"> */}
+      <FeaturedMerchandisePage showNavbar={false} />
+      {/* </SectionWrapper> */}
 
-      <SectionWrapper id="collections">
-        <Collections />
-      </SectionWrapper>
+      {/* <SectionWrapper id="collections"> */}
+      <Collections />
+      {/* </SectionWrapper> */}
 
-      <SectionWrapper id="promotions">
+      {/* <SectionWrapper id="promotions"> */}
       <Promotions showNavbar={false} />
-      </SectionWrapper>
+      {/* </SectionWrapper> */}
 
-      <SectionWrapper id="about">
-        <Footer showNavbar={false} />
-      </SectionWrapper>
-
+      {/* <SectionWrapper id="about"> */}
+      <Footer showNavbar={false} />
+      {/* </SectionWrapper> */}
     </div>
   );
 };

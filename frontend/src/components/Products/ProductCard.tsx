@@ -42,9 +42,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <div className="relative aspect-[10/8] overflow-hidden">
             <img
               src={
-                product.image_url
-                  ? product.image_url
-                  : "/placeholder-image.jpg"
+                product.image_url ? product.image_url : "/placeholder-image.jpg"
               }
               alt={product.name}
               className="w-full h-full object-cover transition-transform duration-500 hover:scale-105 cursor-pointer"
@@ -54,9 +52,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <Favorite
                 onClick={() => onToggleFavorite(product.product_id)}
                 sx={{
-                  color: favorites.has(product.product_id)
-                    ? "red"
-                    : "white",
+                  color: favorites.has(product.product_id) ? "red" : "white",
                   cursor: "pointer",
                   zIndex: 10,
                 }}
@@ -67,14 +63,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               {product.category}
             </div>
           </div>
-          <div className="p-4">
-            <h3 
+          <div className="p-4 ">
+            <h3
               className="heading-font text-lg mb-1 line-clamp-2 cursor-pointer hover:text-red-500"
               onClick={() => navigate(`/product/${product.product_id}`)}
             >
               {product.name}
             </h3>
-            <p className="text-sm text-foreground/70 mb-2 line-clamp-2 font-sans">
+            <p className="text-sm text-foreground/70 mb-2 line-clamp-2 font-sans truncate w-4/5 inline-block">
               {product.description}
             </p>
             <div className="flex justify-between items-center mb-3">
@@ -89,7 +85,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <div className="flex items-center justify-between bg-primary/10 rounded-lg p-2 gap-2">
                 <button
                   className="hover:text-red-500 p-1 border border-gray-400 rounded-sm"
-                  onClick={() => onUpdateQuantity(product.product_id, cartQuantity - 1)}
+                  onClick={() =>
+                    onUpdateQuantity(product.product_id, cartQuantity - 1)
+                  }
                 >
                   <Icon icon="lucide:minus" />
                 </button>
@@ -99,7 +97,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 <button
                   className="hover:text-red-500 p-1 border border-gray-400 rounded-sm"
                   disabled={cartQuantity >= product.stock}
-                  onClick={() => onUpdateQuantity(product.product_id, cartQuantity + 1)}
+                  onClick={() =>
+                    onUpdateQuantity(product.product_id, cartQuantity + 1)
+                  }
                 >
                   <Icon icon="lucide:plus" />
                 </button>
@@ -107,7 +107,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             ) : (
               <button
                 style={{ width: "100%" }}
-                className="heading-font tracking-wider text-sm bg-red-600 p-3 rounded-md cursor-pointer"
+                className=" heading-font tracking-wider text-sm bg-red-600 p-3 rounded-md cursor-pointer"
                 onClick={() => onAddToCart(product.product_id)}
               >
                 ADD TO CART

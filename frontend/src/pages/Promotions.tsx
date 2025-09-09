@@ -66,9 +66,9 @@ export const Promotions: React.FC<PromotionsProps> = ({showNavbar}) => {
   }, [paused, currentIndex]);
 
   return (
-    <div className="min-h-screen bg-background">
-    {shouldShowNavbar && <Navbar />}
-      
+    <div className="bg-background">
+      {shouldShowNavbar && <Navbar />}
+
       <div className="py-5">
         <div className="relative overflow-hidden w-[80vw] h-[80vh] mx-auto">
           <div>
@@ -111,7 +111,9 @@ export const Promotions: React.FC<PromotionsProps> = ({showNavbar}) => {
           <button
             className="absolute left-2 sm:left-3 md:left-4 top-1/2 transform -translate-y-1/2 bg-gray-300 text-koyya2 rounded-full p-1 sm:p-1.5 md:p-2 shadow-lg hover:bg-gray-200 transition"
             onClick={() =>
-              setCurrentIndex((currentIndex - 1 + slides.length) % slides.length)
+              setCurrentIndex(
+                (currentIndex - 1 + slides.length) % slides.length
+              )
             }
             aria-label="Previous slide"
           >

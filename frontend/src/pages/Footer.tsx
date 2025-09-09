@@ -16,8 +16,6 @@ export const Footer: React.FC<FooterProps> = ({ showNavbar }) =>{
   
   return (
     <>
-      {shouldShowNavbar && <Navbar />}
-      
       <div className="bg-content1 border-t border-primary/20 pt-16 pb-8">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
@@ -25,18 +23,29 @@ export const Footer: React.FC<FooterProps> = ({ showNavbar }) =>{
               <div className="flex items-center gap-2 mb-4">
                 <Icon icon="mdi:pistol" className="text-primary h-6 w-6" />
                 <span className="title-font text-xl tracking-wider text-white">
-                  MOBSTER <span className="heading-font text-primary">MERCH</span>
+                  MOBSTER{" "}
+                  <span className="heading-font text-primary">MERCH</span>
                 </span>
               </div>
-             
+
               <div className="flex gap-4">
-                <a href="https://www.instagram.com/mobster_merch_offcl?igsh=YjhwYWVnNTlkb3dl&utm_source=qr" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                <a
+                  href="https://www.instagram.com/mobster_merch_offcl?igsh=YjhwYWVnNTlkb3dl&utm_source=qr"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Instagram"
+                >
                   <Icon
                     icon="lucide:instagram"
                     className="text-foreground/70 hover:text-red-600 transition-colors h-5 w-5"
                   />
                 </a>
-                <a href="https://x.com/mobstermerch?s=21" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
+                <a
+                  href="https://x.com/mobstermerch?s=21"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Twitter"
+                >
                   <Icon
                     icon="lucide:twitter"
                     className="text-foreground/70 hover:text-red-600 transition-colors h-5 w-5"

@@ -166,43 +166,24 @@ export const FeaturedMerchandisePage: React.FC<FeaturedMerchandisePageProps> = (
   };
 
   return (
-    <div className="min-h-screen bg-background sticky top-0 bottom-50 z-10">
+    <div className=" bg-background sticky bottom-0 -z-10 ">
       {shouldShowNavbar && <Navbar />}
-      <motion.section
-        className="min-h-screen py-10 relative flex items-center"
-        initial={{ opacity: 0, x: 100 }}
-        whileInView={{ opacity: 1, x: 0 }}
-        transition={{ duration: 1, ease: "easeOut" }}
-        viewport={{ once: true, amount: 0.3 }}
-      >
-        <motion.div
-          className="container mx-auto px-4"
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          viewport={{ once: true }}
-        >
+      <div className="min-h-screen py-10 relative flex items-center">
+        <div className="container mx-auto px-4">
           <div className="text-center mb-8 mt-10">
             <h2 className="heading-font text-3xl md:text-4xl mb-4 text-shadow-red">
               FEATURED <span className="text-primary">MERCHANDISE</span>
             </h2>
             <div className="samurai-divider w-24 mx-auto mb-6"></div>
             <p className="text-foreground/80 max-w-2xl mx-auto">
-              Exclusive items from the collection. Limited
-              quantities available.
+              Exclusive items from the collection. Limited quantities available.
             </p>
           </div>
 
-          <motion.div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-            variants={container}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.2 }}
-          >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {loading
               ? Array.from({ length: 4 }).map((_, index) => (
-                  <motion.div key={index} variants={item}>
+                  <div key={index}>
                     <div className="product-card bg-content1 border border-primary/20">
                       <div className="p-0">
                         <div className="aspect-[3/4] bg-foreground/10 animate-pulse"></div>
@@ -212,7 +193,7 @@ export const FeaturedMerchandisePage: React.FC<FeaturedMerchandisePageProps> = (
                         </div>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 ))
               : featuredProducts.map((product) => (
                   <ProductCard
@@ -226,7 +207,7 @@ export const FeaturedMerchandisePage: React.FC<FeaturedMerchandisePageProps> = (
                     variants={item}
                   />
                 ))}
-          </motion.div>
+          </div>
 
           <div className="text-center mt-12">
             <button
@@ -237,9 +218,8 @@ export const FeaturedMerchandisePage: React.FC<FeaturedMerchandisePageProps> = (
             </button>
             <div className="samurai-divider w-24 mx-auto"></div>
           </div>
-        </motion.div>
-      </motion.section>
-
+        </div>
+      </div>
     </div>
   );
 };

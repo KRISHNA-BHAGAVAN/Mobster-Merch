@@ -69,9 +69,9 @@ export const CollectionsPage: React.FC<CollectionProps> = ({ showNavbar }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background" >
+    <div className=" bg-background">
       {shouldShowNavbar && <Navbar />}
-      <section  className="py-10 bg-content2/50">
+      <section className="py-10 bg-content2/50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="heading-font text-3xl md:text-4xl mb-4 text-shadow-red">
@@ -83,10 +83,7 @@ export const CollectionsPage: React.FC<CollectionProps> = ({ showNavbar }) => {
             </p>
           </div>
 
-          <div
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-            
-          >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {loading
               ? Array.from({ length: 3 }).map((_, index) => (
                   <motion.div key={index} variants={item}>
@@ -105,7 +102,6 @@ export const CollectionsPage: React.FC<CollectionProps> = ({ showNavbar }) => {
                         navigate(`/category/${category.category_id}`)
                       }
                     >
-                      
                       <div className="p-0 overflow-hidden">
                         <div className="relative w-full max-h-[300px]">
                           <img
@@ -140,6 +136,15 @@ export const CollectionsPage: React.FC<CollectionProps> = ({ showNavbar }) => {
           </div>
         </div>
       </section>
+      <div className="text-center mt-12">
+        <button
+          className="heading-font tracking-wider hover:text-red-500 text-xl cursor-pointer"
+          onClick={() => navigate("/collections")}
+        >
+          VIEW ALL COLLECTIONS
+        </button>
+        <div className="samurai-divider w-24 mx-auto"></div>
+      </div>
     </div>
   );
 };
