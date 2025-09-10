@@ -43,6 +43,7 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -97,7 +98,7 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
       const errorMessage =
         error.message ||
         (isLogin
-          ? "Login failed. Please check your credentials."
+          ? "Invalid credentials"
           : "Registration failed. Please try again.");
       setErrorMsg(errorMessage);
     } finally {
