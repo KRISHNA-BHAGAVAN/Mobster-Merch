@@ -1,9 +1,18 @@
 import React from 'react';
+import { Navbar } from '../../components/Navbar';
+import { useNavigate, useLocation } from 'react-router-dom';
 
-export const TermsAndConditions: React.FC = () => {
+interface TermsAndConditionsProps{
+    showNavbar?:boolean;
+}
+export const TermsAndConditions: React.FC<TermsAndConditionsProps> = ({ showNavbar }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const shouldShowNavbar = showNavbar ?? location.state?.showNavbar ?? false;
 
  return (
-  <div className="min-h-screen bg-background text-justify hyphenate-auto ">
+     <div className="min-h-screen bg-background text-justify hyphenate-auto ">
+      {shouldShowNavbar && <Navbar />}
    <div className="container mx-auto px-4 max-w-4xl">
    
     <h1 className="heading-font text-4xl text-center mb-8">Terms and Conditions</h1>

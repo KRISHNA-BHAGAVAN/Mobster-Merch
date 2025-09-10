@@ -115,14 +115,14 @@ function App() {
                       />
                       <Route
                         path="/T&C"
-                        element={<TermsAndConditions />}
+                        element={<TermsAndConditions showNavbar={true}/>}
                       />
                       <Route
                         path="/privacy_policy"
-                        element={<PrivacyPolicy />}
+                        element={<PrivacyPolicy showNavbar={true}/>}
                       />
-                      <Route path="/refund_policy" element={<ReturnPolicy />} />
-                      <Route path="/shipping_policy" element={<ShippingPolicy />} />
+                      <Route path="/refund_policy" element={<ReturnPolicy showNavbar={true}/>} />
+                      <Route path="/shipping_policy" element={<ShippingPolicy showNavbar={true}/>} />
                       <Route path="/collections" element={<CollectionsPage showNavbar={true}/>} />
                       <Route path='/featured-merchandise' element={<FeaturedMerchandisePage/>}/>
 

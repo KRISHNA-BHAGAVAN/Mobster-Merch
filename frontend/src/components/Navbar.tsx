@@ -73,6 +73,7 @@ export const Navbar: React.FC<NavbarProps> = ({ show = true }) => {
           <Link to="/home">
           <Icon icon="mdi:pistol" className="text-red-500" style={{ fontSize: "28px", cursor:"pointer" }} />
           </Link>
+          <Link to="/home">
           <Typography
             variant="h5"
             sx={{
@@ -88,6 +89,7 @@ export const Navbar: React.FC<NavbarProps> = ({ show = true }) => {
           >
             MOBSTER MERCH
           </Typography>
+          </Link>
         </Box>
 
         {/* Center: Desktop Menu */}

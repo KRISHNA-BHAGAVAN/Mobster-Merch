@@ -1,11 +1,19 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navbar } from '../../components/Navbar';
+import { useNavigate, useLocation } from 'react-router-dom';
 
-export const ReturnPolicy: React.FC = () => {
+interface ReturnPolicyProps {
+  showNavbar?: boolean;
+}
+
+export const ReturnPolicy: React.FC<ReturnPolicyProps> = ({ showNavbar }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const shouldShowNavbar = showNavbar ?? location.state?.showNavbar ?? false;
 
   return (
     <div className="min-h-screen bg-background text-justify hyphenate-auto" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      {shouldShowNavbar && <Navbar />}
       <div className="container mx-auto px-4 max-w-4xl">
         <h1 className="font-sans text-4xl font-bold text-center mb-8">Refund &nbsp; and&nbsp; Return&nbsp; Policy</h1>
         <div className="font-serif prose prose-invert max-w-none text-foreground/80 leading-relaxed space-y-6 text-base">
