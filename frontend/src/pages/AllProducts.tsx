@@ -131,19 +131,21 @@ export const AllProducts: React.FC = () => {
     }
   };
 
-  const filteredProducts = products.filter(
-    (product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // ✅ Updated filtering logic
+  const filteredProducts =
+    searchTerm.trim() === ""
+      ? products
+      : products.filter(
+          (product) =>
+            product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            product.description.toLowerCase().includes(searchTerm.toLowerCase())
+        );
 
   const container = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
+      transition: { staggerChildren: 0.1 },
     },
   };
 
@@ -191,24 +193,27 @@ export const AllProducts: React.FC = () => {
               <div className="samurai-divider w-24 mb-0"></div>
             </div>
 
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full md:w-80 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
-            />
-            <div className="flex justify-end mb-6 mt-7">
-              {/* <button
-                onClick={() => navigate("/")}
-                className="flex items-center justify-items-end gap-2 mb-8 hover:text-red-500 cursor-pointer"
-              >
-                <Icon icon="lucide:arrow-left" />
-                Back to Home
-              </button> */}
+            {/* ✅ search bar with clear button */}
+            <div className="relative w-full md:w-80">
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-500"
+                >
+                  <Icon icon="lucide:x" className="h-4 w-4" />
+                </button>
+              )}
             </div>
           </div>
 
+          {/* ✅ product grid */}
           <motion.div
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
             variants={container}
@@ -216,45 +221,32 @@ export const AllProducts: React.FC = () => {
             whileInView="show"
             viewport={{ once: true, amount: 0.2 }}
           >
-            {loading
-              ? Array.from({ length: 4 }).map((_, index) => (
-                  <motion.div key={index} variants={item}>
-                    <div className="product-card bg-content1 border border-primary/20">
-                      <div className="p-0">
-                        <div className="aspect-[3/4] bg-foreground/10 animate-pulse"></div>
-                        <div className="p-4 space-y-2">
-                          <div className="h-4 bg-foreground/10 animate-pulse rounded"></div>
-                          <div className="h-4 bg-foreground/10 animate-pulse rounded w-1/2"></div>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))
-              : products.map((product) => (
-                  <ProductCard
-                      key={product.product_id}
-                      product={product}
-                      favorites={favorites}
-                      cartQuantity={getCartQuantity(product.product_id)}
-                      onToggleFavorite={toggleFavorite}
-                      onAddToCart={handleAddToCart}
-                      onUpdateQuantity={updateQuantity}
-                      variants={item}
-                    />
-                ))}
+            {filteredProducts.length > 0 ? (
+              filteredProducts.map((product) => (
+                <ProductCard
+                  key={product.product_id}
+                  product={product}
+                  favorites={favorites}
+                  cartQuantity={getCartQuantity(product.product_id)}
+                  onToggleFavorite={toggleFavorite}
+                  onAddToCart={handleAddToCart}
+                  onUpdateQuantity={updateQuantity}
+                  variants={item}
+                />
+              ))
+            ) : (
+              searchTerm.trim() !== "" && (
+                <div className="text-center py-20 col-span-full">
+                  <Icon
+                    icon="lucide:package-x"
+                    className="h-16 w-16 text-foreground/50 mx-auto mb-4"
+                  />
+                  <p className="text-foreground/70">No products found</p>
+                </div>
+              )
+            )}
           </motion.div>
-
-          {filteredProducts.length === 0 && (
-            <div className="text-center py-20">
-              <Icon
-                icon="lucide:package-x"
-                className="h-16 w-16 text-foreground/50 mx-auto mb-4"
-              />
-              <p className="text-foreground/70">No products found</p>
-            </div>
-          )}
         </div>
-
       </div>
     </div>
   );

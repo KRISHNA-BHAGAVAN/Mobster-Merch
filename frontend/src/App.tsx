@@ -124,7 +124,7 @@ function App() {
                       <Route path="/refund_policy" element={<ReturnPolicy showNavbar={true}/>} />
                       <Route path="/shipping_policy" element={<ShippingPolicy showNavbar={true}/>} />
                       <Route path="/collections" element={<CollectionsPage showNavbar={true}/>} />
-                      <Route path='/featured-merchandise' element={<FeaturedMerchandisePage/>}/>
+                      <Route path='/featured-merchandise' element={<FeaturedMerchandisePage showNavbar={true}/>}/>
 
                       <Route
                         path="/cart"

@@ -97,10 +97,10 @@ export const Footer: React.FC<FooterProps> = ({ showNavbar }) =>{
                 </li>
                 <li>
                   <Link
-                    to="#featured"
+                    to="/featured-merchandise"
                     className="text-foreground/70 hover:text-red-600 transition-colors"
                   >
-                    Featured Merchandise
+                    Products
                   </Link>
                 </li>
               </ul>
@@ -212,8 +212,7 @@ export const Footer: React.FC<FooterProps> = ({ showNavbar }) =>{
 
           <div className="pt-8 border-t border-primary/10 text-center text-foreground/60 text-sm ">
             <p>
-              © 2025 Mobster Merch. All rights reserved. Official licensed
-              merchandise.
+              © 2025 Mobster Merch. All rights reserved.
             </p>
           </div>
         </div>

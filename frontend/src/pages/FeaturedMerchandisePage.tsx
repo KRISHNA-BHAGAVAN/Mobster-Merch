@@ -172,7 +172,8 @@ export const FeaturedMerchandisePage: React.FC<FeaturedMerchandisePageProps> = (
         <div className="container mx-auto px-4">
           <div className="text-center mb-8 mt-10">
             <h2 className="heading-font text-3xl md:text-4xl mb-4 text-shadow-red">
-              FEATURED <span className="text-primary">MERCHANDISE</span>
+              {/* FEATURED <span className="text-primary">MERCHANDISE</span> */}
+              PRODUCTS
             </h2>
             <div className="samurai-divider w-24 mx-auto mb-6"></div>
             <p className="text-foreground/80 max-w-2xl mx-auto">

@@ -4,12 +4,13 @@ import { TermsAndConditions } from './AboutPages/TermsAndConditions';
 import { PrivacyPolicy } from './AboutPages/PrivacyPolicy';
 import { ReturnPolicy } from './AboutPages/ReturnPolicy';
 import { ShippingPolicy } from './AboutPages/ShippingPolicy';
-import { Icon } from '@iconify/react';
+import { CompanyDesc } from './AboutPages/companyDesc';
 import { useNavigate } from 'react-router-dom';
 export const AboutPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('terms');
   const navigate = useNavigate();
   const tabs = [
+    { id: 'about', label: 'About Us', component: CompanyDesc },
     { id: 'terms', label: 'Terms & Conditions', component: TermsAndConditions },
     { id: 'privacy', label: 'Privacy Policy', component: PrivacyPolicy },
     { id: 'return', label: 'Return Policy', component: ReturnPolicy },

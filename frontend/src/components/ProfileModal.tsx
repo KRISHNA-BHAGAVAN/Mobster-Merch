@@ -165,7 +165,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
               Cancel
             </button>
             <button
-              variant="contained"
               onClick={handleSave}
               className="hover:text-red-500 cursor-pointer"
               disabled={loading}
@@ -174,7 +173,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
             </button>
           </div>
         ) : (
-          <div className="flex gap-5 ">
+          <div className="flex gap-5">
             <button
               onClick={onClose}
               className="hover:text-red-500 cursor-pointer"
@@ -182,13 +181,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
               Close
             </button>
             <button
-              variant="contained"
-              className="hover:text-red-500 cursor-pointer"
+              className="bg-none text-white rounded-md hover:text-red-500 cursor-pointer"
               onClick={() => setIsEditing(true)}
             >
               Edit Profile
             </button>
           </div>
+
         )}
       </DialogActions>
     </Dialog>
