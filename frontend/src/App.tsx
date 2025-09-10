@@ -14,6 +14,7 @@ import { CollectionsPage } from "./pages/CollectionsPage";
 import { Home } from "./pages/Home";
 import { Footer } from "./pages/Footer";
 import {Promotions} from "./pages/Promotions";
+import { FeaturedMerchandisePage } from './pages/FeaturedMerchandisePage';
 
 // Lazy load components
 const Login = lazy(() => import('./components/Login').then(m => ({ default: m.Login })));
@@ -122,7 +123,8 @@ function App() {
                       />
                       <Route path="/refund_policy" element={<ReturnPolicy />} />
                       <Route path="/shipping_policy" element={<ShippingPolicy />} />
-                      <Route path="/collections" element={<CollectionsPage />} />
+                      <Route path="/collections" element={<CollectionsPage showNavbar={true}/>} />
+                      <Route path='/featured-merchandise' element={<FeaturedMerchandisePage/>}/>
 
                       <Route
                         path="/cart"

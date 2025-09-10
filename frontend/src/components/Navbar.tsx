@@ -8,6 +8,8 @@ import { Icon } from '@iconify/react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ProfileModal } from './ProfileModal';
+import { Link } from 'react-router-dom';
+
 
 interface NavbarProps {
   show?: boolean;
@@ -68,11 +70,13 @@ export const Navbar: React.FC<NavbarProps> = ({ show = true }) => {
       >
         {/* Left: Logo */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: { xs: 0, sm: 2 } }}>
-          <Icon icon="mdi:pistol" className="text-red-500" style={{ fontSize: "28px" }} />
+          <Link to="/home">
+          <Icon icon="mdi:pistol" className="text-red-500" style={{ fontSize: "28px", cursor:"pointer" }} />
+          </Link>
           <Typography
             variant="h5"
             sx={{
-              fontFamily: "'Ungai', sans-serif",
+              fontFamily: "'Ungai1', sans-serif",
               letterSpacing: "0.1em",
               fontWeight: 700,
               background: "linear-gradient(90deg, #fff 0%, #dc2626 100%)",
@@ -184,7 +188,7 @@ export const Navbar: React.FC<NavbarProps> = ({ show = true }) => {
               </button> */}
               <button
                 onClick={() => navigate("/login")}
-                className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-sm"
+                className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 cursor-pointer transition-colors text-sm"
               >
                 Login
               </button>

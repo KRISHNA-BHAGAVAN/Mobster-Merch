@@ -166,7 +166,7 @@ export const FeaturedMerchandisePage: React.FC<FeaturedMerchandisePageProps> = (
   };
 
   return (
-    <div className=" bg-background  ">
+    <div id="featured" className=" bg-background  ">
       {shouldShowNavbar && <Navbar />}
       <div className="min-h-screen py-10 relative flex items-center">
         <div className="container mx-auto px-4">

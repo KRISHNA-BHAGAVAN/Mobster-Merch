@@ -20,7 +20,7 @@ export const MainWebsite: React.FC = () => {
       {/* </SectionWrapper> */}
 
       {/* <SectionWrapper id="featured"> */}
-      <FeaturedMerchandisePage showNavbar={false} />
+      <FeaturedMerchandisePage  showNavbar={false} />
       {/* </SectionWrapper> */}
 
       {/* <SectionWrapper id="collections"> */}

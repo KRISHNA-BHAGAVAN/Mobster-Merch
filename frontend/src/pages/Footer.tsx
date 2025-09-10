@@ -22,9 +22,9 @@ export const Footer: React.FC<FooterProps> = ({ showNavbar }) =>{
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <Icon icon="mdi:pistol" className="text-primary h-6 w-6" />
-                <span className="title-font text-xl tracking-wider text-white">
+                <span className="text-xl tracking-wider text-white" style={{ fontFamily: "Ungai1"}}>
                   MOBSTER{" "}
-                  <span className="heading-font text-primary">MERCH</span>
+                  <span className="text-primary" style={{ fontFamily: "Ungai1"}}>MERCH</span>
                 </span>
               </div>
 
@@ -51,7 +51,7 @@ export const Footer: React.FC<FooterProps> = ({ showNavbar }) =>{
                     className="text-foreground/70 hover:text-red-600 transition-colors h-5 w-5"
                   />
                 </a>
-                <a href="#" aria-label="Facebook">
+                {/* <a href="#" aria-label="Facebook">
                   <Icon
                     icon="lucide:facebook"
                     className="text-foreground/70 hover:text-red-600 transition-colors h-5 w-5"
@@ -62,7 +62,7 @@ export const Footer: React.FC<FooterProps> = ({ showNavbar }) =>{
                     icon="lucide:youtube"
                     className="text-foreground/70 hover:text-red-600 transition-colors h-5 w-5"
                   />
-                </a>
+                </a> */}
               </div>
             </div>
 
@@ -70,7 +70,7 @@ export const Footer: React.FC<FooterProps> = ({ showNavbar }) =>{
               <h3 className="heading-font text-lg">SHOP</h3>
               <div className="samurai-divider w-8 mb-3"></div>
               <ul className="space-y-2">
-                <li>
+                {/* <li>
                   <Link
                     to="/products"
                     className="text-foreground/70 hover:text-red-600 transition-colors"
@@ -78,14 +78,7 @@ export const Footer: React.FC<FooterProps> = ({ showNavbar }) =>{
                     All Products
                   </Link>
                 </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-foreground/70 hover:text-red-600 transition-colors"
-                  >
-                    Apparel
-                  </a>
-                </li>
+                
                 <li>
                   <a
                     href="#"
@@ -93,22 +86,22 @@ export const Footer: React.FC<FooterProps> = ({ showNavbar }) =>{
                   >
                     Accessories
                   </a>
-                </li>
+                </li> */}
                 <li>
-                  <a
-                    href="#"
+                  <Link
+                    to="/collections"
                     className="text-foreground/70 hover:text-red-600 transition-colors"
                   >
-                    Collectibles
-                  </a>
+                    Collections
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    href="#"
+                  <Link
+                    to="#featured"
                     className="text-foreground/70 hover:text-red-600 transition-colors"
                   >
-                    Limited Editions
-                  </a>
+                    Featured Merchandise
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -133,6 +126,70 @@ export const Footer: React.FC<FooterProps> = ({ showNavbar }) =>{
                     Privacy Policy
                   </Link>
                 </li>
+                {/* <li>
+                  <Link
+                    to="/return_policy"
+                    className="text-foreground/70 hover:text-red-600 transition-colors"
+                  >
+                    Return Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/shipping_policy"
+                    className="text-foreground/70 hover:text-red-600 transition-colors"
+                  >
+                    Shipping Policy
+                  </Link>
+                </li> */}
+               
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="heading-font text-lg">CUSTOMER SERVICE</h3>
+              <div className="samurai-divider w-28 mb-3"></div>
+              <ul className="space-y-2">
+                {/* <li>
+                  <a
+                    href="#"
+                    className="text-foreground/70 hover:text-red-600 transition-colors"
+                  >
+                    Contact Us
+                  </a>
+                </li>
+                <li>
+                  <Link
+                    to="/shipping_policy"
+                    className="text-foreground/70 hover:text-red-600 transition-colors"
+                  >
+                    Shipping Policy
+                  </Link>
+                </li>
+                  <li>
+                    <Link
+                      to="/return_policy"
+                      className="text-foreground/70 hover:text-red-600 transition-colors"
+                    >
+                      Returns & Exchanges
+                    </Link>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      className="text-foreground/70 hover:text-red-600 transition-colors"
+                    >
+                      FAQ
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      className="text-foreground/70 hover:text-red-600 transition-colors"
+                    >
+                      Size Guide
+                    </a>
+                  </li> */}
                 <li>
                   <Link
                     to="/return_policy"
@@ -149,66 +206,11 @@ export const Footer: React.FC<FooterProps> = ({ showNavbar }) =>{
                     Shipping Policy
                   </Link>
                 </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-foreground/70 hover:text-red-600 transition-colors"
-                  >
-                    Press Kit
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="heading-font text-lg">CUSTOMER SERVICE</h3>
-              <div className="samurai-divider w-28 mb-3"></div>
-              <ul className="space-y-2">
-                <li>
-                  <a
-                    href="#"
-                    className="text-foreground/70 hover:text-red-600 transition-colors"
-                  >
-                    Contact Us
-                  </a>
-                </li>
-                <li>
-                  <Link
-                    to="/shipping_policy"
-                    className="text-foreground/70 hover:text-red-600 transition-colors"
-                  >
-                    Shipping Policy
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/return_policy"
-                    className="text-foreground/70 hover:text-red-600 transition-colors"
-                  >
-                    Returns & Exchanges
-                  </Link>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-foreground/70 hover:text-red-600 transition-colors"
-                  >
-                    FAQ
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-foreground/70 hover:text-red-600 transition-colors"
-                  >
-                    Size Guide
-                  </a>
-                </li>
               </ul>
             </div>
           </div>
 
-          <div className="pt-8 border-t border-primary/10 text-center text-foreground/60 text-sm">
+          <div className="pt-8 border-t border-primary/10 text-center text-foreground/60 text-sm ">
             <p>
               © 2025 Mobster Merch. All rights reserved. Official licensed
               merchandise.
