@@ -51,7 +51,7 @@ router.post("/initiate-payment", authMiddleware, async (req, res) => {
 
   const merchantOrderId = orderId;
   const amountPaisa = Math.round(amount * 100);
-  const redirectUrl = "http://localhost:5173/payment-success";
+  const redirectUrl = `${process.env.MERCHANT_REDIRECT_URL}/payment-success`;
 
   const request = StandardCheckoutPayRequest.builder()
     .merchantOrderId(merchantOrderId)
@@ -200,13 +200,22 @@ router.get("/order-status/:orderId", authMiddleware, async (req, res) => {
       [orderStatus, paymentStatus, merchantOrderId]
     );
 
+    // Get address information from order
+    const [addressData] = await connection.execute(
+      "SELECT address_line1, address_line2, city, state, pincode FROM orders WHERE order_id = ?",
+      [merchantOrderId]
+    );
+
     await connection.commit();
 
     console.log(
       `Database updated - OrderId: ${merchantOrderId}, PaymentStatus: ${paymentStatus}, OrderStatus: ${orderStatus}`
     );
 
-    res.json({ orderStatus: response });
+    res.json({ 
+      orderStatus: response,
+      address: addressData.length > 0 ? addressData[0] : null
+    });
   } catch (err) {
     await connection.rollback();
     console.error(err);
