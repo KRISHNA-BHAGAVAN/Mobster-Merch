@@ -35,7 +35,7 @@ export const Navbar: React.FC<NavbarProps> = ({ show = true }) => {
     { name: "Shop", path: "/products", showNavbar: true },
     { name: "Collections", path: "/collections", showNavbar: true },
     { name: "Promotions", path: "/promotions", showNavbar: true },
-    { name: "About", path: "/about", showNavbar: true },
+    { name: "About Us", path: "/about", showNavbar: true },
   ];
 
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);

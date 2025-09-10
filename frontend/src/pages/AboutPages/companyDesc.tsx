@@ -1,12 +1,21 @@
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Navbar } from '../../components/Navbar';
 
 interface CompanyDescProps {
   showNavbar?: boolean;
 }
 
 export const CompanyDesc: React.FC<CompanyDescProps> = ({ showNavbar = true }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const shouldShowNavbar = showNavbar ?? location.state?.showNavbar ?? false;
+
   return (
+    <>
+    {shouldShowNavbar && <Navbar />}
     <div className="max-w-4xl mx-auto p-6 text-justify">
+      
       <div className="bg-gray-900/50 rounded-lg p-8 border border-gray-700">
         <h1 className="text-3xl font-bold text-white mb-6 text-center">Welcome to Mobster Merch – Where Street Culture Meets Premium Quality</h1>
         <div className="text-gray-300 text-lg leading-relaxed space-y-6">
@@ -41,5 +50,6 @@ export const CompanyDesc: React.FC<CompanyDescProps> = ({ showNavbar = true }) =
         </div>
       </div>
     </div>
+    </>
   );
 };

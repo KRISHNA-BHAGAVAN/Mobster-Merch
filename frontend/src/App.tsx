@@ -15,6 +15,8 @@ import { Home } from "./pages/Home";
 import { Footer } from "./pages/Footer";
 import {Promotions} from "./pages/Promotions";
 import { FeaturedMerchandisePage } from './pages/FeaturedMerchandisePage';
+import { CompanyDesc } from './pages/AboutPages/companyDesc';
+
 
 // Lazy load components
 const Login = lazy(() => import('./components/Login').then(m => ({ default: m.Login })));
@@ -105,7 +107,7 @@ function App() {
                       <Route path="/" element={<MainWebsite />} />
                       <Route path="/home" element={<MainWebsite />} />
                       {/* <Route path="/home" element={<Home />} /> */}
-                      <Route path="/about" element={<AboutPage />} />
+                      <Route path="/about" element={<CompanyDesc showNavbar={true}/>} />
                       <Route path="/promotions" element={<Promotions />} />
                       <Route path="/products" element={<AllProducts />} />
                       <Route path="/product/:id" element={<ProductDetailedPage />} />
