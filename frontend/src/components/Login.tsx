@@ -143,7 +143,7 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
     setResetEmail("");
     setResetToken("");
     setNewPassword("");
-    setErrorM sg(null);
+    setErrorMsg(null);
     setSuccessMsg(null);
   };
 
