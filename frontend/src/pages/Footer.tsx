@@ -192,10 +192,10 @@ export const Footer: React.FC<FooterProps> = ({ showNavbar }) =>{
                   </li> */}
                 <li>
                   <Link
-                    to="/return_policy"
+                    to="/refund_policy"
                     className="text-foreground/70 hover:text-red-600 transition-colors"
                   >
-                    Return Policy
+                    Return and Refund Policy
                   </Link>
                 </li>
                 <li>
