@@ -33,7 +33,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     
     setTimeout(() => {
       setToasts(prev => prev.filter(toast => toast.id !== id));
-    }, 4000);
+    }, 1000);
   };
 
   const removeToast = (id: string) => {

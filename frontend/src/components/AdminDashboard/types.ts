@@ -6,6 +6,7 @@ export interface Product {
   stock: number;
   category_name: string;
   image_url: string;
+  additional_info?: any;
 }
 
 export interface Notification {
@@ -25,6 +26,16 @@ export interface ProductFormData {
   price: string;
   stock: string;
   category: string;
+  additional_info?: DynamicField[];
+}
+
+export interface DynamicField {
+  id: string;
+  name: string;
+  type: 'text' | 'number' | 'select' | 'textarea';
+  value: string;
+  options?: string[];
+  required?: boolean;
 }
 
 export interface CategoryFormData {

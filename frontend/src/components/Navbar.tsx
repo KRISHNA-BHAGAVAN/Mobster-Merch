@@ -148,8 +148,11 @@ export const Navbar: React.FC<NavbarProps> = ({ show = true }) => {
                 onClick={handleClick}
                 sx={{ color: "white" }}
               >
-                <Avatar sx={{ width: 32, height: 32 }}>
-                  {user?.name?.charAt(0) || "U"}
+                <Avatar 
+                  src={user?.image_url ? user.image_url : undefined}
+                  sx={{ width: 32, height: 32 }}
+                >
+                  {!user?.image_url ? (user?.name?.charAt(0) || "U") : undefined}
                 </Avatar>
               </IconButton>
               <Menu
@@ -174,6 +177,9 @@ export const Navbar: React.FC<NavbarProps> = ({ show = true }) => {
                 </MenuItem>
                 <MenuItem onClick={() => { navigate("/notifications"); handleClose(); }}>
                   <Icon icon="lucide:bell" className="mr-2" /> Notifications
+                </MenuItem>
+                <MenuItem onClick={() => { navigate("/wishlist"); handleClose(); }}>
+                  <Icon icon="lucide:heart" className="mr-2" /> Wishlist
                 </MenuItem>
                 <MenuItem onClick={handleLogout}>
                   <Logout sx={{ mr: 1 }} /> Logout

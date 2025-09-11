@@ -16,9 +16,9 @@ interface Product {
 
 interface ProductCardProps {
   product: Product;
-  favorites: Set<number>;
+  isInWishlist: boolean;
   cartQuantity: number;
-  onToggleFavorite: (productId: number) => void;
+  onToggleWishlist: (productId: number) => void;
   onAddToCart: (productId: number) => void;
   onUpdateQuantity: (productId: number, quantity: number) => void;
   variants: any;
@@ -26,9 +26,9 @@ interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
-  favorites,
+  isInWishlist,
   cartQuantity,
-  onToggleFavorite,
+  onToggleWishlist,
   onAddToCart,
   onUpdateQuantity,
   variants
@@ -48,20 +48,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               className="w-full h-full object-cover transition-transform duration-500 hover:scale-105 cursor-pointer"
               onClick={() => navigate(`/product/${product.product_id}`)}
             />
-            <div>
-              <Favorite
-                onClick={() => onToggleFavorite(product.product_id)}
-                sx={{
-                  color: favorites.has(product.product_id) ? "red" : "white",
-                  cursor: "pointer",
-                  zIndex: 10,
-                }}
-                className="absolute top-2 right-2"
-              />
-            </div>
-            <div className="absolute top-2 right-2 bg-primary text-white text-xs px-2 py-1 rounded-sm heading-font">
+            <div className="absolute top-2 left-2 bg-primary text-white text-xs px-2 py-1 rounded-sm heading-font">
               {product.category}
             </div>
+            <Favorite
+              onClick={() => onToggleWishlist(product.product_id)}
+              sx={{
+                color: isInWishlist ? "red" : "white",
+                cursor: "pointer",
+                zIndex: 10,
+              }}
+              className="absolute top-2 right-2"
+            />
           </div>
           <div className="p-4 ">
             <h3

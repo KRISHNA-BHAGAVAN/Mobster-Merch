@@ -23,6 +23,8 @@ import paymentVerificationRoutes from "./routes/payment-verification.js";
 import phonepeRoutes from "./routes/phonepe-sdk.js";
 import settingsRoutes from "./routes/settings.js";
 import paymentModeRoutes from "./routes/paymentMode.js";
+import wishlistRoutes from "./routes/wishlist.js";
+import shipmentRoutes from "./routes/shipment.js";
 
 // Import corrected middleware
 import { authMiddleware, adminMiddleware } from "./middleware/auth.js";
@@ -176,6 +178,8 @@ app.use("/api/payment-verification", paymentVerificationRoutes);
 app.use("/api/phonepe", phonepeRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/payment-mode", paymentModeRoutes);
+app.use("/api/wishlist", authMiddleware, wishlistRoutes);
+app.use("/api/shipment", shipmentRoutes);
 
 // ---------------------
 // Health check

@@ -23,7 +23,7 @@ router.post('/toggle-site', authMiddleware, adminMiddleware, async (req, res) =>
 // POST create product with image
 router.post('/create-product', authMiddleware, adminMiddleware, upload.single('image'), async (req, res) => {
   try {
-    const { name, description, price, stock, category_id } = req.body;
+    const { name, description, price, stock, category_id, additional_info } = req.body;
     let imageUrl = null;
     let cloudinaryPublicId = null;
     
@@ -33,9 +33,11 @@ router.post('/create-product', authMiddleware, adminMiddleware, upload.single('i
       cloudinaryPublicId = result.public_id;
     }
     
+    const additionalInfoJson = additional_info ? JSON.parse(additional_info) : null;
+    
     const [result] = await pool.execute(
-      'INSERT INTO products (name, description, price, stock, category_id, image_url, cloudinary_public_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [name, description, price, stock, category_id, imageUrl, cloudinaryPublicId]
+      'INSERT INTO products (name, description, price, stock, category_id, image_url, cloudinary_public_id, additional_info) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [name, description, price, stock, category_id, imageUrl, cloudinaryPublicId, additionalInfoJson]
     );
     
     res.status(201).json({ 
@@ -51,7 +53,7 @@ router.post('/create-product', authMiddleware, adminMiddleware, upload.single('i
 // PUT update product
 router.put('/products/:id', authMiddleware, adminMiddleware, upload.single('image'), async (req, res) => {
   try {
-    const { name, description, price, stock, category_id } = req.body;
+    const { name, description, price, stock, category_id, additional_info } = req.body;
     const productId = req.params.id;
     
     // Get current product to handle image replacement
@@ -73,9 +75,11 @@ router.put('/products/:id', authMiddleware, adminMiddleware, upload.single('imag
       cloudinaryPublicId = result.public_id;
     }
     
+    const additionalInfoJson = additional_info ? JSON.parse(additional_info) : null;
+    
     const [result] = await pool.execute(
-      'UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category_id = ?, image_url = ?, cloudinary_public_id = ? WHERE product_id = ?',
-      [name, description, price, stock, category_id, imageUrl, cloudinaryPublicId, productId]
+      'UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category_id = ?, image_url = ?, cloudinary_public_id = ?, additional_info = ? WHERE product_id = ?',
+      [name, description, price, stock, category_id, imageUrl, cloudinaryPublicId, additionalInfoJson, productId]
     );
     
     res.json({ message: 'Product updated successfully', image_url: imageUrl });

@@ -135,7 +135,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           isAdmin: data.user.isAdmin
         };
         
-        // Store user data in localStorage
+        
         localStorage.setItem('user', JSON.stringify(mappedUser));
         
         setUser(mappedUser);

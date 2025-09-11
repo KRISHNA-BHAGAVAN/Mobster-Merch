@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { productService, API_BASE_URL, Category } from '../../services';
-import { Product, ProductFormData } from './types';
+import { Product, ProductFormData, DynamicField } from './types';
 
 interface ProductsTabProps {
   products: Product[];
@@ -27,16 +27,22 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
     description: '',
     price: '',
     stock: '',
-    category: ''
+    category: '',
+    additional_info: []
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [showDynamicFields, setShowDynamicFields] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const formDataToSend = new FormData();
     
     Object.entries(formData).forEach(([key, value]) => {
-      formDataToSend.append(key, value);
+      if (key === 'additional_info') {
+        formDataToSend.append(key, JSON.stringify(value));
+      } else {
+        formDataToSend.append(key, value);
+      }
     });
     
     const categoryObject = categories.find(cat => cat.name === formData.category);
@@ -75,16 +81,18 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
       description: product.description,
       price: product.price.toString(),
       stock: product.stock.toString(),
-      category: categoryName
+      category: categoryName,
+      additional_info: product.additional_info || []
     });
     setShowAddForm(true);
   };
 
   const resetForm = () => {
-    setFormData({ name: '', description: '', price: '', stock: '', category: '' });
+    setFormData({ name: '', description: '', price: '', stock: '', category: '', additional_info: [] });
     setImageFile(null);
     setEditingProduct(null);
     setShowAddForm(false);
+    setShowDynamicFields(false);
   };
 
   const handleSoftDelete = async (id: number) => {
@@ -130,6 +138,62 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
         }
       }
     );
+  };
+
+  const addDynamicField = () => {
+    const newField: DynamicField = {
+      id: Date.now().toString(),
+      name: '',
+      type: 'text',
+      value: '',
+      required: false
+    };
+    setFormData({
+      ...formData,
+      additional_info: [...(formData.additional_info || []), newField]
+    });
+  };
+
+  const updateDynamicField = (id: string, updates: Partial<DynamicField>) => {
+    setFormData({
+      ...formData,
+      additional_info: formData.additional_info?.map(field => 
+        field.id === id ? { ...field, ...updates } : field
+      ) || []
+    });
+  };
+
+  const removeDynamicField = (id: string) => {
+    setFormData({
+      ...formData,
+      additional_info: formData.additional_info?.filter(field => field.id !== id) || []
+    });
+  };
+
+  const addSelectOption = (fieldId: string) => {
+    const field = formData.additional_info?.find(f => f.id === fieldId);
+    if (field) {
+      updateDynamicField(fieldId, {
+        options: [...(field.options || []), '']
+      });
+    }
+  };
+
+  const updateSelectOption = (fieldId: string, optionIndex: number, value: string) => {
+    const field = formData.additional_info?.find(f => f.id === fieldId);
+    if (field && field.options) {
+      const newOptions = [...field.options];
+      newOptions[optionIndex] = value;
+      updateDynamicField(fieldId, { options: newOptions });
+    }
+  };
+
+  const removeSelectOption = (fieldId: string, optionIndex: number) => {
+    const field = formData.additional_info?.find(f => f.id === fieldId);
+    if (field && field.options) {
+      const newOptions = field.options.filter((_, index) => index !== optionIndex);
+      updateDynamicField(fieldId, { options: newOptions });
+    }
   };
 
   return (
@@ -250,6 +314,136 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                   onChange={(e) => setImageFile(e.target.files?.[0] || null)}
                   className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-500 file:text-white hover:file:bg-red-600"
                 />
+              </div>
+              
+              <div className="border-t border-gray-700 pt-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-white">Additional Information</h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowDynamicFields(!showDynamicFields)}
+                    className="py-1 px-3 rounded bg-blue-600 text-white text-sm hover:bg-blue-700"
+                  >
+                    {showDynamicFields ? 'Hide' : 'Show'} Custom Fields
+                  </button>
+                </div>
+                
+                {showDynamicFields && (
+                  <div className="space-y-4">
+                    {formData.additional_info?.map((field) => (
+                      <div key={field.id} className="p-4 bg-gray-800 rounded border border-gray-600">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                          <input
+                            placeholder="Field Name"
+                            value={field.name}
+                            onChange={(e) => updateDynamicField(field.id, { name: e.target.value })}
+                            className="p-2 bg-gray-900 border border-gray-600 rounded text-white text-sm"
+                          />
+                          <select
+                            value={field.type}
+                            onChange={(e) => updateDynamicField(field.id, { type: e.target.value as any })}
+                            className="p-2 bg-gray-900 border border-gray-600 rounded text-white text-sm"
+                          >
+                            <option value="text">Text</option>
+                            <option value="number">Number</option>
+                            <option value="textarea">Textarea</option>
+                            <option value="select">Dropdown</option>
+                          </select>
+                          <div className="flex gap-2">
+                            <label className="flex items-center text-sm text-white">
+                              <input
+                                type="checkbox"
+                                checked={field.required}
+                                onChange={(e) => updateDynamicField(field.id, { required: e.target.checked })}
+                                className="mr-1"
+                              />
+                              Required
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => removeDynamicField(field.id)}
+                              className="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {field.type === 'select' && (
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-gray-300">Options:</span>
+                              <button
+                                type="button"
+                                onClick={() => addSelectOption(field.id)}
+                                className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+                              >
+                                Add Option
+                              </button>
+                            </div>
+                            {field.options?.map((option, index) => (
+                              <div key={index} className="flex gap-2">
+                                <input
+                                  placeholder={`Option ${index + 1}`}
+                                  value={option}
+                                  onChange={(e) => updateSelectOption(field.id, index, e.target.value)}
+                                  className="flex-1 p-2 bg-gray-900 border border-gray-600 rounded text-white text-sm"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => removeSelectOption(field.id, index)}
+                                  className="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        <div className="mt-3">
+                          <span className="text-sm text-gray-300">Default Value:</span>
+                          {field.type === 'textarea' ? (
+                            <textarea
+                              placeholder="Default value"
+                              value={field.value}
+                              onChange={(e) => updateDynamicField(field.id, { value: e.target.value })}
+                              className="w-full p-2 bg-gray-900 border border-gray-600 rounded text-white text-sm mt-1"
+                              rows={2}
+                            />
+                          ) : field.type === 'select' ? (
+                            <select
+                              value={field.value}
+                              onChange={(e) => updateDynamicField(field.id, { value: e.target.value })}
+                              className="w-full p-2 bg-gray-900 border border-gray-600 rounded text-white text-sm mt-1"
+                            >
+                              <option value="">Select default</option>
+                              {field.options?.map((option, index) => (
+                                <option key={index} value={option}>{option}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              type={field.type}
+                              placeholder="Default value"
+                              value={field.value}
+                              onChange={(e) => updateDynamicField(field.id, { value: e.target.value })}
+                              className="w-full p-2 bg-gray-900 border border-gray-600 rounded text-white text-sm mt-1"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    <button
+                      type="button"
+                      onClick={addDynamicField}
+                      className="w-full py-2 border-2 border-dashed border-gray-600 rounded text-gray-400 hover:border-gray-500 hover:text-gray-300"
+                    >
+                      + Add Custom Field
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="flex gap-4">
                 <button

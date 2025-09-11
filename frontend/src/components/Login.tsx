@@ -70,7 +70,9 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
     try {
       if (isLogin) {
         const result = await login(username, password);
-
+        if(result.status==401 && result.message.includes("Invalid")){
+          setErrorMsg("Invalid Credentials");
+        }
         // Check if backend returned maintenance message
         if (result?.message && result.message.includes("maintainance")) {
           setErrorMsg("Site is under maintenance. Please try again later.");

@@ -11,8 +11,6 @@ import { API_BASE_URL } from './config/api';
 import SiteClosedPage from './pages/SiteClosedPage';
 import { theme } from './theme/muiTheme';
 import { CollectionsPage } from "./pages/CollectionsPage";
-import { Home } from "./pages/Home";
-import { Footer } from "./pages/Footer";
 import {Promotions} from "./pages/Promotions";
 import { FeaturedMerchandisePage } from './pages/FeaturedMerchandisePage';
 import { CompanyDesc } from './pages/AboutPages/companyDesc';
@@ -36,7 +34,9 @@ const PrivacyPolicy = lazy(() => import('./pages/AboutPages/PrivacyPolicy').then
 const ReturnPolicy = lazy(() => import('./pages/AboutPages/ReturnPolicy').then(m => ({ default: m.ReturnPolicy })));
 const ShippingPolicy = lazy(() => import('./pages/AboutPages/ShippingPolicy').then(m => ({ default: m.ShippingPolicy })));
 const AboutPage = lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
+const WishlistPage = lazy(() => import('./pages/WishlistPage').then(m => ({ default: m.WishlistPage })));
 const FloatingCart = lazy(() => import('./components/FloatingCart').then(m => ({ default: m.FloatingCart })));
+import { ScrollToTop } from './components/ScrollToTop';
 
 function App() {
   const [siteClosed, setSiteClosed] = useState(false);
@@ -70,6 +70,7 @@ function App() {
         <ToastProvider>
           <CartProvider>
             <Router>
+              <ScrollToTop />
               <Suspense
                 fallback={
                   <div className="flex items-center justify-center min-h-screen">
@@ -165,6 +166,14 @@ function App() {
                         element={
                           <ProtectedRoute>
                             <CustomerNotifications />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/wishlist"
+                        element={
+                          <ProtectedRoute>
+                            <WishlistPage />
                           </ProtectedRoute>
                         }
                       />

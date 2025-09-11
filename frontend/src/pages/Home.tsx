@@ -77,7 +77,7 @@ export const Home: React.FC<HomeProps> = ({ showNavbar }) => {
               repeatType: "reverse"
             }}
           >
-            <button onClick={() => navigate('/products')} aria-label="Shop now">
+            <button onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })} aria-label="Scroll to bottom">
               <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-[#E50000] hover:text-white cursor-pointer">
                 <path d="M12 5v14"/>
                 <path d="m19 12-7 7-7-7"/>

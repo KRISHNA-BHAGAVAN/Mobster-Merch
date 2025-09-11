@@ -17,6 +17,16 @@ interface Product {
   category: string;
   description: string;
   stock: number;
+  additional_info?: any;
+}
+
+interface DynamicField {
+  id: string;
+  name: string;
+  type: 'text' | 'number' | 'select' | 'textarea';
+  value: string;
+  options?: string[];
+  required?: boolean;
 }
 
 export const ProductDetails: React.FC = () => {
@@ -26,6 +36,7 @@ export const ProductDetails: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<{[key: string]: string}>({});
 
   const { isAuthenticated } = useAuth();
   const { showToast } = useToast();
@@ -146,6 +157,45 @@ export const ProductDetails: React.FC = () => {
             <p className="text-gray-300 leading-relaxed">
               {product.description}
             </p>
+
+            {/* Additional Information */}
+            {product.additional_info && product.additional_info.length > 0 && (
+              <div className="border-t border-gray-700 pt-6">
+                <h3 className="text-lg font-semibold mb-4">Product Details</h3>
+                <div className="space-y-3">
+                  {product.additional_info.map((field: DynamicField) => (
+                    <div key={field.id} className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <span className="font-medium text-gray-300 min-w-[120px]">
+                        {field.name}:
+                      </span>
+                      <span className="text-white">
+                        {field.type === 'textarea' ? (
+                          <div className="whitespace-pre-wrap">{field.value}</div>
+                        ) : field.type === 'select' ? (
+                          <div className="flex flex-wrap gap-2">
+                            {field.options?.map((option, index) => (
+                              <button
+                                key={index}
+                                onClick={() => setSelectedOptions(prev => ({...prev, [field.id]: option}))}
+                                className={`px-3 py-1 rounded border transition-colors ${
+                                  selectedOptions[field.id] === option
+                                    ? 'bg-red-600 border-red-600 text-white'
+                                    : 'border-gray-600 text-gray-300 hover:border-red-500'
+                                }`}
+                              >
+                                {option}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          field.value
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center gap-4">
               <span className="text-sm">Stock: {product.stock} available</span>

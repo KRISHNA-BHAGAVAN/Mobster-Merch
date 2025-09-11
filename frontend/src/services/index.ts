@@ -7,6 +7,7 @@ export { categoryService } from './categoryService';
 export { paymentService } from './paymentService';
 export { adminService } from './adminService';
 export { profileService } from './profileService';
+export { wishlistService } from './wishlistService';
 export { checkoutService } from './checkoutService';
 export { paymentVerificationService } from './paymentVerificationService';
 export { apiCall } from './api';

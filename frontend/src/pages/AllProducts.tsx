@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useCart } from "../context/CartContext";
-import { productService, cartService } from "../services";
+import { productService, cartService, wishlistService } from "../services";
 
 import { Navbar } from "../components/Navbar";
 import { ProductCard } from "../components/Products/ProductCard";
@@ -35,7 +35,7 @@ export const AllProducts: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const { showToast } = useToast();
   const { refreshCart } = useCart();
-  const [favorites, setFavorites] = useState<Set<number>>(new Set());
+  const [wishlistItems, setWishlistItems] = useState<Set<number>>(new Set());
 
   const handleAddToCart = (productId: number) => {
     if (isAuthenticated && user) {
@@ -102,6 +102,7 @@ export const AllProducts: React.FC = () => {
     fetchProducts();
     if (isAuthenticated) {
       fetchCartItems();
+      fetchWishlistItems();
     }
   }, [isAuthenticated]);
 
@@ -128,6 +129,15 @@ export const AllProducts: React.FC = () => {
       setCartItems(data);
     } catch (error) {
       console.error("Error fetching cart:", error);
+    }
+  };
+
+  const fetchWishlistItems = async () => {
+    try {
+      const data = await wishlistService.getWishlist();
+      setWishlistItems(new Set(data.map((item: any) => item.product_id)));
+    } catch (error) {
+      console.error("Error fetching wishlist:", error);
     }
   };
 
@@ -168,16 +178,43 @@ export const AllProducts: React.FC = () => {
     );
   }
 
-  const toggleFavorite = (productId: number) => {
-    setFavorites((prev) => {
-      const newFavorites = new Set(prev);
-      if (newFavorites.has(productId)) {
-        newFavorites.delete(productId);
+  const toggleWishlist = async (productId: number) => {
+    if (!isAuthenticated) {
+      showToast("Please login to add to wishlist", "error");
+      navigate("/login");
+      return;
+    }
+
+    try {
+      if (wishlistItems.has(productId)) {
+        await wishlistService.removeFromWishlist(productId);
+        setWishlistItems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(productId);
+          return newSet;
+        });
+        showToast("Removed from wishlist", "success");
       } else {
-        newFavorites.add(productId);
+        try {
+          await wishlistService.addToWishlist(productId);
+          setWishlistItems(prev => new Set([...prev, productId]));
+          showToast("Added to wishlist", "success");
+        } catch (addError: any) {
+          if (addError.message?.includes('already in wishlist')) {
+            // Product is already in wishlist, sync the state
+            setWishlistItems(prev => new Set([...prev, productId]));
+            showToast("Product already in wishlist", "info");
+          } else {
+            throw addError;
+          }
+        }
       }
-      return newFavorites;
-    });
+    } catch (error: any) {
+      console.error('Wishlist error:', error);
+      // Refresh wishlist state to sync with backend
+      fetchWishlistItems();
+      showToast("Error updating wishlist", "error");
+    }
   };
 
   return (
@@ -226,9 +263,9 @@ export const AllProducts: React.FC = () => {
                 <ProductCard
                   key={product.product_id}
                   product={product}
-                  favorites={favorites}
+                  isInWishlist={wishlistItems.has(product.product_id)}
                   cartQuantity={getCartQuantity(product.product_id)}
-                  onToggleFavorite={toggleFavorite}
+                  onToggleWishlist={toggleWishlist}
                   onAddToCart={handleAddToCart}
                   onUpdateQuantity={updateQuantity}
                   variants={item}
