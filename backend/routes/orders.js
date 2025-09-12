@@ -155,13 +155,21 @@ router.get('/:order_id/status', authMiddleware, async (req, res) => {
 // Get single order details
 router.get('/:order_id/details', authMiddleware, async (req, res) => {
   try {
+    // const [orderDetails] = await pool.execute(`
+    //   SELECT o.*, u.name, u.email, u.phone,
+    //          a.address_line1, a.address_line2, a.city, a.state, a.pincode,
+    //          pv.transaction_id, pv.screenshot_url, pv.status as payment_status, pv.admin_notes
+    //   FROM orders o
+    //   JOIN users u ON o.user_id = u.user_id
+    //   LEFT JOIN addresses a ON u.user_id = a.user_id AND a.is_default = 1
+    //   LEFT JOIN payment_verifications pv ON o.order_id = pv.order_id
+    //   WHERE o.order_id = ?
+    // `, [req.params.order_id]);
     const [orderDetails] = await pool.execute(`
       SELECT o.*, u.name, u.email, u.phone,
-             a.address_line1, a.address_line2, a.city, a.state, a.pincode,
              pv.transaction_id, pv.screenshot_url, pv.status as payment_status, pv.admin_notes
       FROM orders o
       JOIN users u ON o.user_id = u.user_id
-      LEFT JOIN addresses a ON u.user_id = a.user_id AND a.is_default = 1
       LEFT JOIN payment_verifications pv ON o.order_id = pv.order_id
       WHERE o.order_id = ?
     `, [req.params.order_id]);
@@ -176,6 +184,8 @@ router.get('/:order_id/details', authMiddleware, async (req, res) => {
       JOIN products p ON oi.product_id = p.product_id
       WHERE oi.order_id = ?
     `, [req.params.order_id]);
+
+    console.log(`ORDER ADDRESS DETAILS: ${orderDetails}`)
     
     res.json({
       order: orderDetails[0],
