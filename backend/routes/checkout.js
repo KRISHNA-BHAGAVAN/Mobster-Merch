@@ -111,7 +111,7 @@ router.post("/prepare-checkout", authMiddleware, async (req, res) => {
       });
     } else {
       // Generate UPI payment link for manual payment
-      const upiId = "9063655788@okbizaxis";
+      const upiId = "mobster@ptaxis";
       const upiLink = `upi://pay?pa=${upiId}&pn=OG Merchandise&am=${total}&cu=INR&tn=Order${temp_order_id}`;
 
       res.json({

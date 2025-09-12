@@ -7,10 +7,10 @@ const createTransporter = () => {
     throw new Error('Email configuration is incomplete. Please check EMAIL_HOST, EMAIL_USER, and EMAIL_PASS in .env file.');
   }
 
-  return nodemailer.createTransporter({
+  return nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
-    port: process.env.EMAIL_PORT,
-    secure: false, // true for 465, false for other ports
+    port: process.env.NODE_ENV=="production" ? 587 : 465,
+    secure: process.env.NODE_ENV=="production",
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
