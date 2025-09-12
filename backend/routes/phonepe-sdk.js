@@ -11,7 +11,7 @@ import {
 import { authMiddleware } from "../middleware/auth.js";
 
 dotenv.config({ override: true });
-
+console.log("MERCHANT_REDIRECT_URL: ",process.env.MERCHANT_REDIRECT_URL)
 const router = express.Router();
 
 // 1. Initialize PhonePe SDK
