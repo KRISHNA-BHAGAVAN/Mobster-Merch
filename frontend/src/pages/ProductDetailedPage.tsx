@@ -227,11 +227,15 @@ export const ProductDetails: React.FC = () => {
 
             {/* Add to Cart Button */}
             <button
-              onClick={handleAddToCart}
+              onClick={product.stock === 0 ? undefined : handleAddToCart}
               disabled={product.stock === 0}
-              className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white py-3 rounded-md font-semibold transition-colors hover: cursor-pointer"
+              className={`w-full py-3 rounded-md font-semibold transition-colors hover:cursor-pointer ${
+                product.stock === 0
+                  ? 'bg-gray-600 text-gray-300'
+                  : 'bg-red-600 hover:bg-red-700 text-white'
+              }`}
             >
-              {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
+              {product.stock === 0 ? "Notify Me" : "Add to Cart"}
             </button>
           </div>
         </motion.div>

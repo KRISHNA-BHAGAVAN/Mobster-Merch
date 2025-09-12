@@ -165,6 +165,7 @@ router.get('/:order_id/details', authMiddleware, async (req, res) => {
       LEFT JOIN payment_verifications pv ON o.order_id = pv.order_id
       WHERE o.order_id = ?
     `, [req.params.order_id]);
+    
     // const [orderDetails] = await pool.execute(`
     //   SELECT o.*, u.name, u.email, u.phone,
     //          pv.transaction_id, pv.screenshot_url, pv.status as payment_status, pv.admin_notes
@@ -222,20 +223,57 @@ router.get('/user/:user_id', authMiddleware, async (req, res) => {
 
 // Update order status (admin only)
 router.put('/:order_id/status', authMiddleware, adminMiddleware, async (req, res) => {
+  const connection = await pool.getConnection();
+  
   try {
+    await connection.beginTransaction();
+    
     const { status } = req.body;
-    const [result] = await pool.execute(
-      'UPDATE orders SET status = ? WHERE order_id = ?',
-      [status, req.params.order_id]
+    const order_id = req.params.order_id;
+    
+    // Get current order status
+    const [currentOrder] = await connection.execute(
+      'SELECT status FROM orders WHERE order_id = ?',
+      [order_id]
     );
     
-    if (result.affectedRows === 0) {
+    if (currentOrder.length === 0) {
       return res.status(404).json({ message: 'Order not found' });
     }
     
-    res.json({ message: 'Order status updated' });
+    const oldStatus = currentOrder[0].status;
+    
+    // Update order status
+    await connection.execute(
+      'UPDATE orders SET status = ? WHERE order_id = ?',
+      [status, order_id]
+    );
+    
+    // Reduce stock if order status changed to paid/shipped/delivered
+    if (['paid', 'shipped', 'delivered'].includes(status) && !['paid', 'shipped', 'delivered'].includes(oldStatus)) {
+      const [orderItems] = await connection.execute(
+        'SELECT product_id, quantity FROM order_items WHERE order_id = ?',
+        [order_id]
+      );
+      
+      for (const item of orderItems) {
+        await connection.execute(
+          'UPDATE products SET stock = stock - ? WHERE product_id = ? AND stock >= ?',
+          [item.quantity, item.product_id, item.quantity]
+        );
+      }
+      
+      console.log(`✅ Stock reduced for order ${order_id}`);
+    }
+    
+    await connection.commit();
+    res.json({ message: 'Order status updated and stock adjusted' });
   } catch (error) {
+    await connection.rollback();
+    console.error('Error updating order status:', error);
     res.status(500).json({ message: 'Error updating order status' });
+  } finally {
+    connection.release();
   }
 });
 

@@ -159,7 +159,7 @@ router.get("/order-status/:orderId", authMiddleware, async (req, res) => {
       orderStatus = "pending";
     }
     
-
+    
     // Create payment entry if it doesn't exist (after redirect)
     const [existingPayment] = await connection.execute(
       "SELECT payment_id FROM payments WHERE order_id = ?",
@@ -200,11 +200,35 @@ router.get("/order-status/:orderId", authMiddleware, async (req, res) => {
       );
     }
 
+    // Get current order status before update
+    const [currentOrder] = await connection.execute(
+      "SELECT status FROM orders WHERE order_id = ?",
+      [merchantOrderId]
+    );
+    const oldStatus = currentOrder.length > 0 ? currentOrder[0].status : 'pending';
+    
     // Update order status
     await connection.execute(
       "UPDATE orders SET status = ?, payment_status = ? WHERE order_id = ?",
       [orderStatus, paymentStatus, merchantOrderId]
     );
+    
+    // Reduce stock if order status changed to paid
+    if (orderStatus === 'paid' && oldStatus !== 'paid') {
+      const [orderItems] = await connection.execute(
+        'SELECT product_id, quantity FROM order_items WHERE order_id = ?',
+        [merchantOrderId]
+      );
+      
+      for (const item of orderItems) {
+        await connection.execute(
+          'UPDATE products SET stock = stock - ? WHERE product_id = ? AND stock >= ?',
+          [item.quantity, item.product_id, item.quantity]
+        );
+      }
+      
+      console.log(`✅ Stock reduced for PhonePe order ${merchantOrderId}`);
+    }
 
     // If session has address but DB doesn’t, insert it
     if (req.session.checkoutAddress) {
@@ -254,7 +278,7 @@ router.get("/order-status/:orderId", authMiddleware, async (req, res) => {
     await connection.commit();
 
     console.log(
-      `Database updated - OrderId: ${merchantOrderId}, PaymentStatus: ${paymentStatus}, OrderStatus: ${orderStatus}`
+      `Database updated - OrderId: ${merchantOrderId}, PaymentStatus: ${paymentStatus}, OrderStatus: ${orderStatus}, StockReduced: ${orderStatus === 'paid' && oldStatus !== 'paid'}`
     );
 
     res.json({ 

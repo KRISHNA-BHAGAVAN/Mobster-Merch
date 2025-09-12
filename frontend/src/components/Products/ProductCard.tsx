@@ -105,10 +105,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             ) : (
               <button
                 style={{ width: "100%" }}
-                className=" heading-font tracking-wider text-sm bg-red-600 p-3 rounded-md cursor-pointer"
-                onClick={() => onAddToCart(product.product_id)}
+                className={`heading-font tracking-wider text-sm p-3 rounded-md cursor-pointer ${
+                  product.stock === 0 
+                    ? 'bg-gray-600 text-gray-300' 
+                    : 'bg-red-600'
+                }`}
+                onClick={() => product.stock > 0 && onAddToCart(product.product_id)}
+                disabled={product.stock === 0}
               >
-                ADD TO CART
+                {product.stock === 0 ? 'NOTIFY ME' : 'ADD TO CART'}
               </button>
             )}
           </div>
