@@ -6,6 +6,7 @@ A complete e-commerce platform for "They Call Him OG" movie merchandise built wi
 
 ### Customer Features
 - **User Authentication** - Register, login with JWT tokens
+- **Password Reset** - Secure username-based password reset with email tokens
 - **Product Browsing** - View products by categories with search functionality
 - **Shopping Cart** - Add/remove items with quantity controls and stock validation
 - **Order Management** - Place orders with UPI payment integration
@@ -39,6 +40,7 @@ A complete e-commerce platform for "They Call Him OG" movie merchandise built wi
 - **Node.js** with Express
 - **MySQL** database
 - **JWT** authentication
+- **Nodemailer** for email services
 - **Multer** for file uploads
 - **bcryptjs** for password hashing
 
@@ -168,6 +170,13 @@ DB_USER=root
 DB_PASSWORD=your_password
 DB_NAME=merchandise
 DB_PORT=3306
+
+# Email Configuration (see EMAIL_SETUP.md for details)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-app-password
+EMAIL_FROM=OG Merchandise <your-email@gmail.com>
 ```
 
 4. Start the server:

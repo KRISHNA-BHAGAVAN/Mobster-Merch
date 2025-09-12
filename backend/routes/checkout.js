@@ -35,13 +35,36 @@ const generateUniqueOrderId = async (connection) => {
 router.post("/prepare-checkout", authMiddleware, async (req, res) => {
   try {
     const user_id = req.session.userId;
+    console.log(req.body);
     const { address_line1, address_line2, city, state, pincode } = req.body;
 
     // Validate address
     if (!address_line1 || !city || !state || !pincode) {
       return res.status(400).json({ message: "Complete address is required" });
     }
+    // const addr = await pool.query(
+    //     `INSERT INTO addresses (user_id, address_line1, address_line2, city, state, pincode, is_default)
+    //     VALUES (?, ?, ?, ?, ?, ?, 1)
+    //     ON DUPLICATE KEY UPDATE
+    //     address_line1 = VALUES(address_line1),
+    //     address_line2 = VALUES(address_line2),
+    //     city = VALUES(city),
+    //     state = VALUES(state),
+    //     pincode = VALUES(pincode)`,
+    //     [user_id, address_line1, address_line2 || "", city, state, pincode]
+    //   );
 
+    //   console.log("Address stored on Database:",addr)
+    
+    req.session.checkoutAddress = {
+      address_line1,
+      address_line2: address_line2 || null,
+      city,
+      state,
+      pincode
+    };
+    console.log('📦 DEBUG: Address stored in session:', req.session.checkoutAddress);
+    
     // Get cart items
     const [cartItems] = await pool.execute(
       `SELECT c.product_id, c.quantity, p.price, p.stock, p.name

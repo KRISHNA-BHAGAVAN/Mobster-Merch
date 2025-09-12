@@ -18,11 +18,12 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [resetEmail, setResetEmail] = useState("");
+  const [resetUsername, setResetUsername] = useState("");
   const [resetToken, setResetToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [resetStep, setResetStep] = useState<"email" | "token" | "password">(
-    "email"
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [resetStep, setResetStep] = useState<"username" | "token" | "password">(
+    "username"
   );
 
   const { login, register, user } = useAuth();
@@ -117,20 +118,36 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
     setSuccessMsg(null);
 
     try {
-      if (resetStep === "email") {
-        const result = await authService.forgotPassword(resetEmail);
-        setSuccessMsg(`Reset token sent! Token: ${result.resetToken}`);
+      if (resetStep === "username") {
+        const result = await authService.forgotPassword(resetUsername);
+        setSuccessMsg(result.message);
         setResetStep("token");
       } else if (resetStep === "token") {
+        if (!resetToken || resetToken.length !== 6) {
+          setErrorMsg("Please enter a valid 6-digit token");
+          setLoading(false);
+          return;
+        }
         setResetStep("password");
       } else if (resetStep === "password") {
-        await authService.resetPassword(resetEmail, resetToken, newPassword);
+        if (newPassword !== confirmPassword) {
+          setErrorMsg("Passwords do not match");
+          setLoading(false);
+          return;
+        }
+        if (newPassword.length < 6) {
+          setErrorMsg("Password must be at least 6 characters long");
+          setLoading(false);
+          return;
+        }
+        await authService.resetPassword(resetUsername, resetToken, newPassword, confirmPassword);
         setSuccessMsg("Password reset successfully! You can now login.");
         setShowForgotPassword(false);
-        setResetStep("email");
-        setResetEmail("");
+        setResetStep("username");
+        setResetUsername("");
         setResetToken("");
         setNewPassword("");
+        setConfirmPassword("");
       }
     } catch (error: any) {
       setErrorMsg(error.message || "Failed to process request");
@@ -141,10 +158,11 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
 
   const resetForgotPassword = () => {
     setShowForgotPassword(false);
-    setResetStep("email");
-    setResetEmail("");
+    setResetStep("username");
+    setResetUsername("");
     setResetToken("");
     setNewPassword("");
+    setConfirmPassword("");
     setErrorMsg(null);
     setSuccessMsg(null);
   };
@@ -261,18 +279,18 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
               >
                 {showForgotPassword ? (
                   <>
-                    {resetStep === "email" && (
+                    {resetStep === "username" && (
                       <TextField
                         fullWidth
-                        type="email"
-                        label="Email"
-                        value={resetEmail}
-                        onChange={(e) => setResetEmail(e.target.value)}
+                        type="text"
+                        label="Username"
+                        value={resetUsername}
+                        onChange={(e) => setResetUsername(e.target.value)}
                         autoComplete="off"
                         InputProps={{
                           startAdornment: (
                             <Icon
-                              icon="lucide:mail"
+                              icon="lucide:user"
                               className="text-red-500 mr-2"
                             />
                           ),
@@ -289,9 +307,12 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
                       <TextField
                         fullWidth
                         type="text"
-                        label="Reset Token (6 digits)"
+                        label="Reset Token (6 digits from email)"
                         value={resetToken}
-                        onChange={(e) => setResetToken(e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+                          setResetToken(value);
+                        }}
                         autoComplete="off"
                         InputProps={{
                           startAdornment: (
@@ -310,28 +331,52 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
                       />
                     )}
                     {resetStep === "password" && (
-                      <TextField
-                        fullWidth
-                        type="password"
-                        label="New Password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        autoComplete="off"
-                        InputProps={{
-                          startAdornment: (
-                            <Icon
-                              icon="lucide:lock"
-                              className="text-red-500 mr-2"
-                            />
-                          ),
-                        }}
-                        sx={{
-                          "& .MuiInputLabel-root.Mui-focused": {
-                            color: "#dc2626",
-                          },
-                        }}
-                        required
-                      />
+                      <>
+                        <TextField
+                          fullWidth
+                          type="password"
+                          label="New Password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          autoComplete="off"
+                          InputProps={{
+                            startAdornment: (
+                              <Icon
+                                icon="lucide:lock"
+                                className="text-red-500 mr-2"
+                              />
+                            ),
+                          }}
+                          sx={{
+                            "& .MuiInputLabel-root.Mui-focused": {
+                              color: "#dc2626",
+                            },
+                          }}
+                          required
+                        />
+                        <TextField
+                          fullWidth
+                          type="password"
+                          label="Confirm Password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          autoComplete="off"
+                          InputProps={{
+                            startAdornment: (
+                              <Icon
+                                icon="lucide:lock"
+                                className="text-red-500 mr-2"
+                              />
+                            ),
+                          }}
+                          sx={{
+                            "& .MuiInputLabel-root.Mui-focused": {
+                              color: "#dc2626",
+                            },
+                          }}
+                          required
+                        />
+                      </>
                     )}
                   </>
                 ) : (
@@ -481,8 +526,8 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
                     {loading
                       ? "Loading..."
                       : showForgotPassword
-                      ? resetStep === "email"
-                        ? "SEND TOKEN"
+                      ? resetStep === "username"
+                        ? "SEND TOKEN TO EMAIL"
                         : resetStep === "token"
                         ? "VERIFY TOKEN"
                         : "RESET PASSWORD"

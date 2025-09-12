@@ -87,12 +87,12 @@ h5 {
   box-shadow: 0 10px 25px -5px rgba(253, 5, 5, 0.356);
 }
 
-.japanese-pattern {
+/* .japanese-pattern {
   background-image: url("/images/japanese-pattern.png");
   background-size: 100px;
   background-repeat: repeat;
   opacity: 0.1;
-}
+} */
 
 .text-stroke {
   -webkit-text-stroke: 1px rgba(255, 0, 0, 0.7);
@@ -103,13 +103,13 @@ h5 {
   background: linear-gradient(90deg, transparent, #ff0000, transparent);
 }
 
-.cherry-blossom-overlay {
+/* .cherry-blossom-overlay {
   background-image: url("/images/cherry-blossom-overlay.png");
   background-size: cover;
   background-position: center;
   opacity: 0.1;
   mix-blend-mode: screen;
-}
+} */
 /* Thunderstorm Effects */
 @keyframes lightning {
   0%,

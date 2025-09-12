@@ -72,12 +72,12 @@ export const authService = {
     return response.json();
   },
 
-  forgotPassword: async (email: string) => {
+  forgotPassword: async (username: string) => {
     const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ email })
+      body: JSON.stringify({ username })
     });
     
     if (!response.ok) {
@@ -88,12 +88,12 @@ export const authService = {
     return response.json();
   },
 
-  resetPassword: async (email: string, token: string, newPassword: string) => {
+  resetPassword: async (username: string, token: string, password: string, confirmPassword: string) => {
     const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ email, token, newPassword })
+      body: JSON.stringify({ username, token, password, confirmPassword })
     });
     
     if (!response.ok) {

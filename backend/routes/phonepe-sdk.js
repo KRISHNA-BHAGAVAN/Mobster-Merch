@@ -64,6 +64,11 @@ router.post("/initiate-payment", authMiddleware, async (req, res) => {
 
     // Store order ID in session for success page
     req.session.currentOrderId = merchantOrderId;
+    
+    // Store address in session if provided in request
+    if (req.body.address) {
+      req.session.checkoutAddress = req.body.address;
+    }
 
     const response = await phonePeClient.pay(request);
 
@@ -74,6 +79,7 @@ router.post("/initiate-payment", authMiddleware, async (req, res) => {
       phonepeOrderId: response.order_id,
       state: response.state,
     });
+
   } catch (err) {
     console.error(err);
     res
@@ -117,9 +123,7 @@ router.post("/create-sdk-order", authMiddleware, async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res
-      .status(500)
-      .json({ error: "SDK Order creation failed", details: err.message });
+    res.status(500).json({ error: "SDK Order creation failed", details: err.message });
   }
 });
 
@@ -135,6 +139,7 @@ router.get("/order-status/:orderId", authMiddleware, async (req, res) => {
 
     const response = await phonePeClient.getOrderStatus(merchantOrderId);
     const orderState = response?.state || "PENDING";
+    console.log(req.session)
     const userId = req.session.userId;
     const transactionId = response?.paymentDetails?.[0]?.transactionId || null;
 
@@ -153,6 +158,7 @@ router.get("/order-status/:orderId", authMiddleware, async (req, res) => {
       paymentStatus = "failed";
       orderStatus = "pending";
     }
+    
 
     // Create payment entry if it doesn't exist (after redirect)
     const [existingPayment] = await connection.execute(
@@ -200,11 +206,50 @@ router.get("/order-status/:orderId", authMiddleware, async (req, res) => {
       [orderStatus, paymentStatus, merchantOrderId]
     );
 
-    // Get address information from order
+    // If session has address but DB doesn’t, insert it
+    if (req.session.checkoutAddress) {
+      const addr = req.session.checkoutAddress;
+      await connection.execute(
+        `INSERT INTO addresses (user_id, address_line1, address_line2, city, state, pincode, is_default)
+        VALUES (?, ?, ?, ?, ?, ?, 1)
+        ON DUPLICATE KEY UPDATE
+        address_line1 = VALUES(address_line1),
+        address_line2 = VALUES(address_line2),
+        city = VALUES(city),
+        state = VALUES(state),
+        pincode = VALUES(pincode)`,
+        [userId, addr.address_line1, addr.address_line2, addr.city, addr.state, addr.pincode]
+      );
+    }
+
+    if (req.session.checkoutAddress) {
+      const addr = req.session.checkoutAddress;
+      await connection.execute(
+        `UPDATE orders 
+         SET address_line1 = ?, 
+             address_line2 = ?, 
+             city = ?, 
+             state = ?, 
+             pincode = ?
+         WHERE order_id = ?`,
+        [
+          addr.address_line1,
+          addr.address_line2,
+          addr.city,
+          addr.state,
+          addr.pincode,
+          merchantOrderId,
+        ]
+      );
+    }
+
+
+    // Get address information from addresses table
     const [addressData] = await connection.execute(
-      "SELECT address_line1, address_line2, city, state, pincode FROM orders WHERE order_id = ?",
+      "SELECT address_line1, address_line2, city, state, pincode FROM addresses WHERE order_id = ? ORDER BY created_at DESC LIMIT 1",
       [merchantOrderId]
     );
+    console.log(`Address data: ${addressData}`);
 
     await connection.commit();
 
@@ -349,8 +394,8 @@ router.post("/webhook", express.json({ type: "*/*" }), async (req, res) => {
 
       // Update order status
       await connection.execute(
-        "UPDATE orders SET status = ? WHERE order_id = ?",
-        [orderStatus, orderId]
+        "UPDATE orders SET status = ?, payemnt_status = ? WHERE order_id = ?",
+        [orderStatus, paymentStatus, orderId]
       );
     }
 

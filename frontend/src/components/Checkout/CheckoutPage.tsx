@@ -58,6 +58,8 @@ export const CheckoutPage: React.FC = () => {
             <h2 className="text-xl font-semibold text-white mb-6">Delivery Address</h2>
             <form onSubmit={handleAddressSubmit} className="space-y-4">
               <input
+                id="address_line1"
+                name="address_line1"
                 type="text"
                 placeholder="Address Line 1"
                 value={addressForm.address_line1}
@@ -66,6 +68,8 @@ export const CheckoutPage: React.FC = () => {
                 required
               />
               <input
+                id="address_line2"
+                name="address_line2"
                 type="text"
                 placeholder="Address Line 2 (Optional)"
                 value={addressForm.address_line2}
@@ -74,6 +78,8 @@ export const CheckoutPage: React.FC = () => {
               />
               <div className="grid grid-cols-2 gap-4">
                 <input
+                  id="city"
+                  name="city"
                   type="text"
                   placeholder="City"
                   value={addressForm.city}
@@ -82,6 +88,8 @@ export const CheckoutPage: React.FC = () => {
                   required
                 />
                 <input
+                  id="state"
+                  name="state"
                   type="text"
                   placeholder="State"
                   value={addressForm.state}
@@ -91,6 +99,8 @@ export const CheckoutPage: React.FC = () => {
                 />
               </div>
               <input
+                id="pincode"
+                name="pincode"
                 type="text"
                 placeholder="Pincode"
                 value={addressForm.pincode}
@@ -278,6 +288,8 @@ const PaymentStep: React.FC<PaymentStepProps> = ({ orderData, address, onComplet
       {orderData.payment_method === 'manual' && (
         <form onSubmit={handlePaymentSubmit} className="space-y-4">
           <input
+            id="transaction_id"
+            name="transaction_id"
             type="text"
             placeholder="Transaction ID"
             value={transactionId}
@@ -287,8 +299,10 @@ const PaymentStep: React.FC<PaymentStepProps> = ({ orderData, address, onComplet
           />
           
           <div>
-            <label className="block text-white mb-2">Payment Screenshot</label>
+            <label htmlFor="payment_screenshot" className="block text-white mb-2">Payment Screenshot</label>
             <input
+              id="payment_screenshot"
+              name="payment_screenshot"
               type="file"
               accept="image/*"
               onChange={(e) => setScreenshot(e.target.files?.[0] || null)}

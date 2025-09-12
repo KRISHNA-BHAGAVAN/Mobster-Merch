@@ -4,6 +4,7 @@ import crypto from "crypto";
 import db from "../config/database.js";
 import { redisClient } from "../config/redis.js";
 import { siteClosedMiddleware } from "../middleware/site-status.js";
+import { sendPasswordResetEmail } from "../utils/emailService.js";
 
 const router = express.Router();
 
@@ -269,21 +270,21 @@ router.get("/me", async (req, res) => {
 // ---------------------
 router.post("/forgot-password", async (req, res) => {
   try {
-    const { email } = req.body;
+    const { username } = req.body;
 
-    if (!email) {
-      return res.status(400).json({ error: "Email is required" });
+    if (!username) {
+      return res.status(400).json({ error: "Username is required" });
     }
 
-    // Check if user exists
+    // Check if user exists by username and get email
     const [rows] = await db.query(
-      "SELECT user_id, name FROM users WHERE email = ?",
-      [email]
+      "SELECT user_id, name, email FROM users WHERE name = ?",
+      [username]
     );
 
     if (!rows.length) {
-      // Don't reveal if email exists or not for security
-      return res.json({ success: true, message: "If the email exists, a reset token has been sent." });
+      // Don't reveal if username exists or not for security
+      return res.json({ success: true, message: "If the username exists, a reset token has been sent to the registered email." });
     }
 
     const user = rows[0];
@@ -291,15 +292,23 @@ router.post("/forgot-password", async (req, res) => {
     // Generate reset token (6-digit code)
     const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
     
-    // Store reset token in Redis with 15 minutes expiry
-    await redisClient.set(`reset_${email}`, resetToken, "EX", 900);
+    // Store reset token in Redis with 15 minutes expiry using username as key
+    await redisClient.set(`reset_${username}`, resetToken, "EX", 900);
     
-    console.log(`Reset token for ${email}: ${resetToken}`);
+    // Send email with reset token
+    try {
+      await sendPasswordResetEmail(user.email, user.name, resetToken);
+      console.log(`Reset token sent to ${user.email} for username: ${username}`);
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError);
+      // Delete the token if email fails
+      await redisClient.del(`reset_${username}`);
+      return res.status(500).json({ error: "Failed to send reset email. Please check email configuration." });
+    }
     
     res.json({ 
       success: true, 
-      message: "Reset token generated. Check console for token.",
-      resetToken // Remove this in production - only for development
+      message: "If the username exists, a reset token has been sent to the registered email address."
     });
   } catch (error) {
     console.error("Forgot password error:", error);
@@ -312,25 +321,30 @@ router.post("/forgot-password", async (req, res) => {
 // ---------------------
 router.post("/reset-password", async (req, res) => {
   try {
-    const { email, token, newPassword } = req.body;
+    const { username, token, password, confirmPassword } = req.body;
 
-    if (!email || !token || !newPassword) {
-      return res.status(400).json({ error: "Email, token, and new password are required" });
+    if (!username || !token || !password || !confirmPassword) {
+      return res.status(400).json({ error: "Username, token, password, and confirm password are required" });
+    }
+
+    // Check if passwords match
+    if (password !== confirmPassword) {
+      return res.status(400).json({ error: "Passwords do not match" });
     }
 
     // Verify reset token
-    const storedToken = await redisClient.get(`reset_${email}`);
+    const storedToken = await redisClient.get(`reset_${username}`);
     if (!storedToken || storedToken !== token) {
       return res.status(400).json({ error: "Invalid or expired reset token" });
     }
 
     // Hash new password
-    const hash = await bcrypt.hash(newPassword, 10);
+    const hash = await bcrypt.hash(password, 10);
 
     // Update password
     const [result] = await db.query(
-      "UPDATE users SET password = ? WHERE email = ?",
-      [hash, email]
+      "UPDATE users SET password = ? WHERE name = ?",
+      [hash, username]
     );
 
     if (result.affectedRows === 0) {
@@ -338,7 +352,7 @@ router.post("/reset-password", async (req, res) => {
     }
 
     // Delete the reset token
-    await redisClient.del(`reset_${email}`);
+    await redisClient.del(`reset_${username}`);
 
     res.json({ success: true, message: "Password reset successfully" });
   } catch (error) {

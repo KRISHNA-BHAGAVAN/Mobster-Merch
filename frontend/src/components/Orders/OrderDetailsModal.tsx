@@ -130,7 +130,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ orderId, o
           {/* Delivery Address */}
           <div className="bg-gray-700 p-4 rounded-lg mb-6">
             <h3 className="text-lg font-semibold text-white mb-3">Delivery Address</h3>
-            <div className="text-gray-300">
+            <div className="text-gray-300">  
               <p>{orderDetails.order.address_line1}</p>
               {orderDetails.order.address_line2 && <p>{orderDetails.order.address_line2}</p>}
               <p>{orderDetails.order.city}, {orderDetails.order.state} - {orderDetails.order.pincode}</p>

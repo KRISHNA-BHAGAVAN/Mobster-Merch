@@ -39,7 +39,7 @@ router.post('/submit-payment', authMiddleware, upload.single('screenshot'), asyn
     const { address, transaction_id } = req.body;
     const user_id = req.session.userId;
     const addressData = JSON.parse(address);
-    
+    console.log("addressData:", addressData)
     if (!transaction_id || !req.file) {
       return res.status(400).json({ message: 'Transaction ID and screenshot are required' });
     }

@@ -33,7 +33,7 @@ const TermsAndConditions = lazy(() => import('./pages/AboutPages/TermsAndConditi
 const PrivacyPolicy = lazy(() => import('./pages/AboutPages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
 const ReturnPolicy = lazy(() => import('./pages/AboutPages/ReturnPolicy').then(m => ({ default: m.ReturnPolicy })));
 const ShippingPolicy = lazy(() => import('./pages/AboutPages/ShippingPolicy').then(m => ({ default: m.ShippingPolicy })));
-const AboutPage = lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
+// const AboutPage = lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
 const WishlistPage = lazy(() => import('./pages/WishlistPage').then(m => ({ default: m.WishlistPage })));
 const FloatingCart = lazy(() => import('./components/FloatingCart').then(m => ({ default: m.FloatingCart })));
 import { ScrollToTop } from './components/ScrollToTop';
