@@ -394,7 +394,7 @@ router.post("/webhook", express.json({ type: "*/*" }), async (req, res) => {
 
       // Update order status
       await connection.execute(
-        "UPDATE orders SET status = ?, payemnt_status = ? WHERE order_id = ?",
+        "UPDATE orders SET status = ?, payment_status = ? WHERE order_id = ?",
         [orderStatus, paymentStatus, orderId]
       );
     }
