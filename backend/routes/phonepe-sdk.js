@@ -246,8 +246,8 @@ router.get("/order-status/:orderId", authMiddleware, async (req, res) => {
 
     // Get address information from addresses table
     const [addressData] = await connection.execute(
-      "SELECT address_line1, address_line2, city, state, pincode FROM addresses WHERE order_id = ? ORDER BY created_at DESC LIMIT 1",
-      [merchantOrderId]
+      "SELECT address_line1, address_line2, city, state, pincode FROM addresses WHERE user_id = ? ORDER BY created_at DESC LIMIT 1",
+      [userId]
     );
     console.log(`Address data: ${addressData}`);
 
