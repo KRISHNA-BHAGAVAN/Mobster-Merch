@@ -282,8 +282,9 @@ router.get('/admin/all', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { status } = req.query;
     let query = `
-      SELECT o.order_id, o.user_id, o.total, o.status, o.created_at,
-             u.name as user_name, u.email,
+      SELECT o.order_id, o.user_id, o.total, o.status, o.payment_status, o.created_at,
+             o.address_line1, o.address_line2, o.city, o.state, o.pincode,
+             u.name as user_name, u.email, u.phone,
              GROUP_CONCAT(CONCAT(p.name, ' (', oi.quantity, ')') SEPARATOR ', ') as items
       FROM orders o
       JOIN users u ON o.user_id = u.user_id
@@ -297,12 +298,13 @@ router.get('/admin/all', authMiddleware, adminMiddleware, async (req, res) => {
       params.push(status);
     }
     
-    query += ' GROUP BY o.order_id ORDER BY o.created_at DESC';
+    query += ' GROUP BY o.order_id, o.user_id, o.total, o.status, o.payment_status, o.created_at, o.address_line1, o.address_line2, o.city, o.state, o.pincode, u.name, u.email, u.phone ORDER BY COALESCE(o.state, "ZZZ") ASC, COALESCE(o.pincode, "999999") ASC, o.created_at DESC';
     
     const [orders] = await pool.execute(query, params);
     res.json(orders);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching orders' });
+    console.error('Error fetching admin orders:', error);
+    res.status(500).json({ message: 'Error fetching orders', error: error.message });
   }
 });
 

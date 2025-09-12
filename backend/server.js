@@ -191,12 +191,12 @@ app.get("/health", (req, res) => {
 // ---------------------
 // Serve React frontend (Reverse Proxy)
 // ---------------------
-// const frontendPath = path.join(__dirname, "..", "frontend", "dist");
-// app.use(express.static(frontendPath));
+const frontendPath = path.join(__dirname, "..", "frontend", "dist");
+app.use(express.static(frontendPath));
 
-// app.get("*", (req, res) => {
-//    res.sendFile(path.join(frontendPath, "index.html"));
-// });
+app.get("*", (req, res) => {
+   res.sendFile(path.join(frontendPath, "index.html"));
+});
 
 // ---------------------
 // Error handling middleware

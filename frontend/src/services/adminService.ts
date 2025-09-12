@@ -5,10 +5,16 @@ export interface Order {
   user_id: number;
   user_name: string;
   email: string;
+  phone?: string;
   total: number;
   status: string;
   created_at: string;
   items: string;
+  address_line1?: string;
+  address_line2?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
 }
 
 export interface PendingPayment {
