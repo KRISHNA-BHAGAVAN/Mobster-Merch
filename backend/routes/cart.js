@@ -1,19 +1,40 @@
 import express from 'express';
 import pool from '../config/database.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { validateVariantSelection, calculateVariantPrice, findVariantById } from '../utils/variantHelper.js';
 
 const router = express.Router();
 
 // Add to cart
 router.post('/',  async (req, res) => {
   try {
-    const { product_id, quantity } = req.body;
+    const { product_id, quantity, variant_id } = req.body;
     const user_id = req.session.userId;
 
-    // Check if item already in cart
+    // Get product info to validate variant
+    const [productRows] = await pool.execute(
+      'SELECT additional_info FROM products WHERE product_id = ? AND is_deleted = FALSE',
+      [product_id]
+    );
+    
+    if (productRows.length === 0) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    
+    const product = productRows[0];
+    
+    // Validate variant if provided
+    if (variant_id) {
+      const validation = validateVariantSelection(product.additional_info, variant_id);
+      if (!validation.valid) {
+        return res.status(400).json({ message: validation.error });
+      }
+    }
+
+    // Check if item already in cart (including variant)
     const [existing] = await pool.execute(
-      'SELECT cart_id, quantity FROM cart WHERE user_id = ? AND product_id = ?',
-      [user_id, product_id]
+      'SELECT cart_id, quantity FROM cart WHERE user_id = ? AND product_id = ? AND (variant_id = ? OR (variant_id IS NULL AND ? IS NULL))',
+      [user_id, product_id, variant_id, variant_id]
     );
 
     if (existing.length > 0) {
@@ -27,8 +48,8 @@ router.post('/',  async (req, res) => {
     } else {
       // Insert new item
       const [result] = await pool.execute(
-        'INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)',
-        [user_id, product_id, quantity]
+        'INSERT INTO cart (user_id, product_id, quantity, variant_id) VALUES (?, ?, ?, ?)',
+        [user_id, product_id, quantity, variant_id]
       );
       res.status(201).json({ message: 'Added to cart', cart_id: result.insertId });
     }
@@ -42,14 +63,38 @@ router.get('/', authMiddleware, async (req, res) => {
   try {
     const user_id = req.session.userId;
     const [rows] = await pool.execute(`
-      SELECT c.cart_id, c.quantity, p.product_id, p.name, p.price, p.image_url, p.stock,
-             (c.quantity * p.price) AS subtotal
+      SELECT c.cart_id, c.quantity, c.variant_id, p.product_id, p.name, p.price, p.image_url, p.stock, p.additional_info
       FROM cart c
       JOIN products p ON c.product_id = p.product_id
       WHERE c.user_id = ?
     `, [user_id]);
     
-    res.json(rows);
+    // Calculate variant-specific pricing and details
+    const cartWithVariants = rows.map(item => {
+      let finalPrice = item.price;
+      let variantDetails = null;
+      
+      if (item.variant_id && item.additional_info?.variants) {
+        const variant = findVariantById(item.additional_info, item.variant_id);
+        if (variant) {
+          finalPrice = calculateVariantPrice(item.price, variant.price_modifier);
+          variantDetails = {
+            id: variant.id,
+            name: variant.name,
+            options: variant.options
+          };
+        }
+      }
+      
+      return {
+        ...item,
+        final_price: finalPrice,
+        subtotal: item.quantity * finalPrice,
+        variant_details: variantDetails
+      };
+    });
+    
+    res.json(cartWithVariants);
   } catch (error) {
     console.error('Cart fetch error:', error);
     res.status(500).json({ message: 'Error fetching cart' });

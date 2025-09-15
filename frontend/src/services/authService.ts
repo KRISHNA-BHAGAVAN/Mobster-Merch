@@ -88,6 +88,56 @@ export const authService = {
     return response.json();
   },
 
+  // New password reset flow
+  requestPasswordReset: async (identifier: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/reset-password-request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ identifier })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error);
+    }
+    
+    return response.json();
+  },
+
+  verifyResetCode: async (userId: string, code: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/verify-reset-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ userId, code })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error);
+    }
+    
+    return response.json();
+  },
+
+  completePasswordReset: async (verifyToken: string, newPassword: string, confirmPassword: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/reset-password-complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ verifyToken, newPassword, confirmPassword })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error);
+    }
+    
+    return response.json();
+  },
+
+  // Legacy methods (keeping for compatibility)
   resetPassword: async (username: string, token: string, password: string, confirmPassword: string) => {
     const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
       method: 'POST',

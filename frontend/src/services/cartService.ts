@@ -3,6 +3,7 @@ import { apiCall } from './api';
 export interface AddToCartData {
   product_id: number;
   quantity: number;
+  variant_id?: string;
 }
 
 export const cartService = {

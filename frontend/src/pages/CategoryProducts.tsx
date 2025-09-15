@@ -155,9 +155,6 @@ export const CategoryProducts: React.FC = () => {
                       <p className="text-primary font-bold font-mono">
                         ₹{product.price}
                       </p>
-                      <p className="text-xs text-foreground/60">
-                        Stock: {product.stock}
-                      </p>
                     </div>
                   </div>
                 </div>

@@ -36,6 +36,8 @@ const ShippingPolicy = lazy(() => import('./pages/AboutPages/ShippingPolicy').th
 // const AboutPage = lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
 const WishlistPage = lazy(() => import('./pages/WishlistPage').then(m => ({ default: m.WishlistPage })));
 const FloatingCart = lazy(() => import('./components/FloatingCart').then(m => ({ default: m.FloatingCart })));
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail').then(m => ({ default: m.VerifyEmail })));
+const WaitingForVerification = lazy(() => import('./pages/WaitingForVerification').then(m => ({ default: m.WaitingForVerification })));
 import { ScrollToTop } from './components/ScrollToTop';
 
 function App() {
@@ -105,6 +107,8 @@ function App() {
                           </AuthPageProtection>
                         }
                       />
+                      <Route path="/verify-email" element={<VerifyEmail />} />
+                      <Route path="/waiting-verification" element={<WaitingForVerification />} />
                       <Route path="/" element={<MainWebsite />} />
                       <Route path="/home" element={<MainWebsite />} />
                       {/* <Route path="/home" element={<Home />} /> */}

@@ -36,7 +36,7 @@ router.post("/prepare-checkout", authMiddleware, async (req, res) => {
   try {
     const user_id = req.session.userId;
     console.log(req.body);
-    const { address_line1, address_line2, city, state, pincode } = req.body;
+    const { address_line1, address_line2, city, district, state, country, pincode } = req.body;
 
     // Validate address
     if (!address_line1 || !city || !state || !pincode) {
@@ -60,7 +60,9 @@ router.post("/prepare-checkout", authMiddleware, async (req, res) => {
       address_line1,
       address_line2: address_line2 || null,
       city,
+      district: district || null,
       state,
+      country: country || null,
       pincode
     };
     console.log('📦 DEBUG: Address stored in session:', req.session.checkoutAddress);
@@ -106,7 +108,7 @@ router.post("/prepare-checkout", authMiddleware, async (req, res) => {
         temp_order_id,
         total,
         payment_method: 'phonepe',
-        address: { address_line1, address_line2, city, state, pincode },
+        address: { address_line1, address_line2, city, district, state, country, pincode },
         cart_items: cartItems
       });
     } else {
@@ -121,7 +123,7 @@ router.post("/prepare-checkout", authMiddleware, async (req, res) => {
         upi_link: upiLink,
         upi_id: upiId,
         payment_method: 'manual',
-        address: { address_line1, address_line2, city, state, pincode },
+        address: { address_line1, address_line2, city, district, state, country, pincode },
         cart_items: cartItems
       });
     }
@@ -172,11 +174,11 @@ router.post("/create-order-with-payment", authMiddleware, async (req, res) => {
     
     // Save address
     await connection.execute(
-      `INSERT INTO addresses (user_id, address_line1, address_line2, city, state, pincode, is_default)
-       VALUES (?, ?, ?, ?, ?, ?, 1) ON DUPLICATE KEY UPDATE
+      `INSERT INTO addresses (user_id, address_line1, address_line2, city, district, state, country, pincode, is_default)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1) ON DUPLICATE KEY UPDATE
        address_line1 = VALUES(address_line1), address_line2 = VALUES(address_line2),
-       city = VALUES(city), state = VALUES(state), pincode = VALUES(pincode)`,
-      [user_id, address.address_line1, address.address_line2 || "", address.city, address.state, address.pincode]
+       city = VALUES(city), district = VALUES(district), state = VALUES(state), country = VALUES(country), pincode = VALUES(pincode)`,
+      [user_id, address.address_line1, address.address_line2 || "", address.city, address.district || "", address.state, address.country || "", address.pincode]
     );
     
     // Create order

@@ -29,7 +29,7 @@ function cookieOptions() {
 }
 
 // ---------------------
-// Register
+// Register (Email Verification)
 // ---------------------
 router.post("/register", async (req, res) => {
   try {
@@ -55,30 +55,33 @@ router.post("/register", async (req, res) => {
     // Hash password
     const hash = await bcrypt.hash(password, 10);
 
-    // Insert user
-    const [result] = await db.query(
-      "INSERT INTO users (name, email, password, phone, is_admin) VALUES (?, ?, ?, ?, ?)",
-      [name, email, hash, phone, is_admin ? 1 : 0]
-    );
+    // Generate verification token
+    const verificationToken = generateToken();
 
-    const userId = result.insertId;
+    // Store user data temporarily in Redis (1 hour expiry)
+    const userData = {
+      name,
+      email,
+      password: hash,
+      phone,
+      is_admin: is_admin ? 1 : 0
+    };
+    await redisClient.set(`verify_${verificationToken}`, JSON.stringify(userData), "EX", 3600);
 
-    // Create session
-    req.session.userId = userId;
-    req.session.isAdmin = is_admin ? true : false;
-
-    // Create refresh token
-    const refreshToken = generateToken();
-    await redisClient.set(`refresh_${refreshToken}`, userId, "EX", REFRESH_TTL);
-
-    res.cookie("refreshToken", refreshToken, cookieOptions());
-
-    console.log("✅ User registration successful:", name);
+    // Send verification email
+    const { sendVerificationEmail } = await import("../utils/verificationEmailService.js");
+    try {
+      await sendVerificationEmail(email, name, verificationToken);
+      console.log(`Verification email sent to ${email}`);
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError);
+      await redisClient.del(`verify_${verificationToken}`);
+      return res.status(500).json({ error: "Failed to send verification email. Please try again." });
+    }
 
     res.json({
       success: true,
-      user: { id: userId, name, email, phone, isAdmin: Boolean(is_admin) },
-      isAdmin: Boolean(is_admin),
+      message: "Registration initiated. Please check your email to verify your account."
     });
   } catch (error) {
     console.error("Registration error:", error);
@@ -266,7 +269,203 @@ router.get("/me", async (req, res) => {
 });
 
 // ---------------------
-// Forgot Password - Send Reset Token
+// Check Verification Status
+// ---------------------
+router.get("/check-verification", async (req, res) => {
+  try {
+    const { email } = req.query;
+    
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    const [rows] = await db.query(
+      "SELECT user_id FROM users WHERE email = ?",
+      [email]
+    );
+
+    res.json({ verified: rows.length > 0 });
+  } catch (error) {
+    console.error("Verification check error:", error);
+    res.status(500).json({ error: "Failed to check verification status" });
+  }
+});
+
+// ---------------------
+// Verify Email
+// ---------------------
+router.get("/verify-email", async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.status(400).json({ error: "Verification token is required" });
+    }
+
+    // Get user data from Redis
+    const userDataStr = await redisClient.get(`verify_${token}`);
+    if (!userDataStr) {
+      return res.status(400).json({ error: "Invalid or expired verification token" });
+    }
+
+    const userData = JSON.parse(userDataStr);
+
+    // Create user in MySQL
+    const [result] = await db.query(
+      "INSERT INTO users (name, email, password, phone, is_admin) VALUES (?, ?, ?, ?, ?)",
+      [userData.name, userData.email, userData.password, userData.phone, userData.is_admin]
+    );
+
+    const userId = result.insertId;
+
+    // Delete verification token
+    await redisClient.del(`verify_${token}`);
+
+    console.log("✅ Email verified and user created:", userData.name);
+
+    res.json({
+      success: true,
+      message: "Email verified successfully! You can now login."
+    });
+  } catch (error) {
+    console.error("Email verification error:", error);
+    res.status(500).json({ error: "Email verification failed" });
+  }
+});
+
+// ---------------------
+// Password Reset - Step 1: Check User and Send Code
+// ---------------------
+router.post("/reset-password-request", async (req, res) => {
+  try {
+    const { identifier } = req.body;
+
+    if (!identifier) {
+      return res.status(400).json({ error: "Username or email is required" });
+    }
+
+    // Check if user exists
+    const [rows] = await db.query(
+      "SELECT user_id, name, email FROM users WHERE email = ? OR name = ?",
+      [identifier, identifier]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ 
+        error: "User not found", 
+        shouldRegister: true 
+      });
+    }
+
+    const user = rows[0];
+    
+    // Generate 6-digit code
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Store code in Redis (15 minutes expiry)
+    await redisClient.set(`reset_code_${user.user_id}`, resetCode, "EX", 900);
+    
+    // Send email with code
+    const { sendPasswordResetCodeEmail } = await import("../utils/passwordResetEmailService.js");
+    await sendPasswordResetCodeEmail(user.email, user.name, resetCode);
+    
+    res.json({
+      success: true,
+      message: "Reset code sent to your email",
+      userId: user.user_id
+    });
+  } catch (error) {
+    console.error("Password reset request error:", error);
+    res.status(500).json({ error: "Failed to send reset code" });
+  }
+});
+
+// ---------------------
+// Password Reset - Step 2: Verify Code
+// ---------------------
+router.post("/verify-reset-code", async (req, res) => {
+  try {
+    const { userId, code } = req.body;
+
+    if (!userId || !code) {
+      return res.status(400).json({ error: "User ID and code are required" });
+    }
+
+    // Get stored code from Redis
+    const storedCode = await redisClient.get(`reset_code_${userId}`);
+    
+    if (!storedCode || storedCode !== code) {
+      return res.status(400).json({ error: "Invalid or expired reset code" });
+    }
+
+    // Generate verification token for password reset
+    const verifyToken = generateToken();
+    await redisClient.set(`reset_verify_${verifyToken}`, userId, "EX", 900);
+    
+    // Delete the code as it's been used
+    await redisClient.del(`reset_code_${userId}`);
+    
+    res.json({
+      success: true,
+      message: "Code verified successfully",
+      verifyToken
+    });
+  } catch (error) {
+    console.error("Code verification error:", error);
+    res.status(500).json({ error: "Code verification failed" });
+  }
+});
+
+// ---------------------
+// Password Reset - Step 3: Set New Password
+// ---------------------
+router.post("/reset-password-complete", async (req, res) => {
+  try {
+    const { verifyToken, newPassword, confirmPassword } = req.body;
+
+    if (!verifyToken || !newPassword || !confirmPassword) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ error: "Passwords do not match" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
+
+    // Get user ID from verification token
+    const userId = await redisClient.get(`reset_verify_${verifyToken}`);
+    
+    if (!userId) {
+      return res.status(400).json({ error: "Invalid or expired verification token" });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Update password in database
+    await db.query(
+      "UPDATE users SET password = ? WHERE user_id = ?",
+      [hashedPassword, userId]
+    );
+    
+    // Delete verification token
+    await redisClient.del(`reset_verify_${verifyToken}`);
+    
+    res.json({
+      success: true,
+      message: "Password reset successfully"
+    });
+  } catch (error) {
+    console.error("Password reset completion error:", error);
+    res.status(500).json({ error: "Password reset failed" });
+  }
+});
+
+// ---------------------
+// Legacy endpoint (keeping for compatibility)
 // ---------------------
 router.post("/forgot-password", async (req, res) => {
   try {

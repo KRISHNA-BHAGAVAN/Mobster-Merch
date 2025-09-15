@@ -12,10 +12,16 @@ interface CartItem {
   product_id: number;
   name: string;
   price: number;
+  final_price: number;
   quantity: number;
   image_url: string;
   subtotal: number;
   stock: number;
+  variant_details?: {
+    id: string;
+    name: string;
+    options: { [key: string]: string };
+  };
 }
 
 export const Cart: React.FC = () => {
@@ -150,10 +156,17 @@ export const Cart: React.FC = () => {
                         />
                         <div className="flex-1">
                           <h3 className="font-semibold mb-2 text-xl">{item.name}</h3>
-                          <p className="text-primary font-mono ">₹{item.price}</p>
-                          <p className="text-xs text-foreground/60">
-                            Stock: {item.stock}
-                          </p>
+                          {item.variant_details && (
+                            <div className="text-sm text-gray-400 mb-1">
+                              {Object.entries(item.variant_details.options).map(([key, value]) => (
+                                <span key={key} className="mr-2">
+                                  {key}: {value}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <p className="text-primary font-mono ">₹{item.final_price || item.price}</p>
+
                           <div className="flex items-center gap-2 mt-2">
                             <button
                               className="border border-gray-600 rounded-sm text-white hover:text-red-700 cursor-pointer px-3 py-1 "
@@ -220,7 +233,14 @@ export const Cart: React.FC = () => {
                     <div className="space-y-2 mb-4">
                        {cartItems.map((item) => (
                         <div className="flex justify-between" key={item.cart_id}>
-                          <p>{item.name}</p>
+                          <div>
+                            <p>{item.name}</p>
+                            {item.variant_details && (
+                              <p className="text-xs text-gray-400">
+                                {Object.entries(item.variant_details.options).map(([key, value]) => `${key}: ${value}`).join(', ')}
+                              </p>
+                            )}
+                          </div>
                           <p className="font-semibold text-left">
                             ₹{Number(item.subtotal).toFixed(2)}
                           </p>

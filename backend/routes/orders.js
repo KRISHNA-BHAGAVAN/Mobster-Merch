@@ -283,7 +283,7 @@ router.get('/admin/all', authMiddleware, adminMiddleware, async (req, res) => {
     const { status } = req.query;
     let query = `
       SELECT o.order_id, o.user_id, o.total, o.status, o.payment_status, o.created_at,
-             o.address_line1, o.address_line2, o.city, o.state, o.pincode,
+             o.address_line1, o.address_line2, o.city, o.district, o.state, o.country, o.pincode,
              u.name as user_name, u.email, u.phone,
              GROUP_CONCAT(CONCAT(p.name, ' (', oi.quantity, ')') SEPARATOR ', ') as items
       FROM orders o
@@ -298,7 +298,7 @@ router.get('/admin/all', authMiddleware, adminMiddleware, async (req, res) => {
       params.push(status);
     }
     
-    query += ' GROUP BY o.order_id, o.user_id, o.total, o.status, o.payment_status, o.created_at, o.address_line1, o.address_line2, o.city, o.state, o.pincode, u.name, u.email, u.phone ORDER BY COALESCE(o.state, "ZZZ") ASC, COALESCE(o.pincode, "999999") ASC, o.created_at DESC';
+    query += ' GROUP BY o.order_id, o.user_id, o.total, o.status, o.payment_status, o.created_at, o.address_line1, o.address_line2, o.city, o.district, o.state, o.country, o.pincode, u.name, u.email, u.phone ORDER BY COALESCE(o.state, "ZZZ") ASC, COALESCE(o.pincode, "999999") ASC, o.created_at DESC';
     
     const [orders] = await pool.execute(query, params);
     res.json(orders);

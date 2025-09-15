@@ -33,7 +33,22 @@ router.post('/create-product', authMiddleware, adminMiddleware, upload.single('i
       cloudinaryPublicId = result.public_id;
     }
     
-    const additionalInfoJson = additional_info ? JSON.parse(additional_info) : null;
+    let additionalInfoJson = null;
+    if (additional_info) {
+      additionalInfoJson = JSON.parse(additional_info);
+      
+      // Validate variant structure if variants exist
+      if (additionalInfoJson.variants) {
+        for (const variant of additionalInfoJson.variants) {
+          if (!variant.id || !variant.name) {
+            return res.status(400).json({ message: 'Each variant must have id and name' });
+          }
+          if (variant.stock < 0) {
+            return res.status(400).json({ message: 'Variant stock cannot be negative' });
+          }
+        }
+      }
+    }
     
     const [result] = await pool.execute(
       'INSERT INTO products (name, description, price, stock, category_id, image_url, cloudinary_public_id, additional_info) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -46,6 +61,7 @@ router.post('/create-product', authMiddleware, adminMiddleware, upload.single('i
       image_url: imageUrl
     });
   } catch (error) {
+    console.error('Product creation error:', error);
     res.status(500).json({ message: 'Error creating product' });
   }
 });

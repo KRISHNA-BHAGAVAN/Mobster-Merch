@@ -1,5 +1,6 @@
 import express from "express";
 import pool from "../config/database.js";
+import { calculateVariantPrice, getTotalStock } from "../utils/variantHelper.js";
 
 const router = express.Router();
 
@@ -13,7 +14,17 @@ router.get("/get-available-products", async (req, res) => {
       WHERE p.is_deleted = FALSE 
       ORDER BY p.created_at DESC
     `);
-    res.json(rows);
+    
+    // Add variant information to each product
+    const productsWithVariants = rows.map(product => {
+      if (product.additional_info?.variants) {
+        const totalStock = getTotalStock(product.additional_info, product.stock);
+        return { ...product, total_variant_stock: totalStock };
+      }
+      return product;
+    });
+    
+    res.json(productsWithVariants);
   } catch (error) {
     res.status(500).json({ message: "Error fetching products" });
   }
@@ -57,7 +68,7 @@ router.get("/:category_id", async (req, res) => {
 });
 
 // GET single product
-router.get("/:id", async (req, res) => {
+router.get("/single/:id", async (req, res) => {
   try {
     const [rows] = await pool.execute(
       `
@@ -71,7 +82,14 @@ router.get("/:id", async (req, res) => {
     if (rows.length === 0) {
       return res.status(404).json({ message: "Product not found" });
     }
-    res.json(rows[0]);
+    
+    const product = rows[0];
+    if (product.additional_info?.variants) {
+      const totalStock = getTotalStock(product.additional_info, product.stock);
+      product.total_variant_stock = totalStock;
+    }
+    
+    res.json(product);
   } catch (error) {
     res.status(500).json({ message: "Error fetching product" });
   }

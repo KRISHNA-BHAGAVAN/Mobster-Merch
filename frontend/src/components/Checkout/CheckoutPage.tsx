@@ -3,12 +3,15 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { checkoutService, paymentVerificationService, orderService, AddressData } from '../../services';
+import { API_BASE_URL } from '../../config/api';
 
 interface AddressForm {
   address_line1: string;
   address_line2: string;
   city: string;
+  district: string;
   state: string;
+  country: string;
   pincode: string;
 }
 
@@ -21,9 +24,54 @@ export const CheckoutPage: React.FC = () => {
     address_line1: '',
     address_line2: '',
     city: '',
+    district: '',
     state: '',
+    country: '',
     pincode: ''
   });
+  const [pincodeLoading, setPincodeLoading] = useState(false);
+  const [pincodeError, setPincodeError] = useState('');
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
+
+  const handlePincodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const pincode = e.target.value.replace(/\D/g, '').slice(0, 6);
+    setAddressForm({...addressForm, pincode});
+    setPincodeError('');
+    
+    if (pincode.length === 6) {
+      setPincodeLoading(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/pincode/${pincode}`);
+        const data = await response.json();
+        
+        if (data.error) {
+          setPincodeError(data.error);
+          setAddressForm(prev => ({...prev, city: '', district: '', state: ''}));
+          setAvailableCities([]);
+          setShowCityDropdown(false);
+        } else {
+          setAvailableCities(data.cities || []);
+          setShowCityDropdown(data.cities && data.cities.length > 0);
+          setAddressForm(prev => ({
+            ...prev,
+            city: data.cities && data.cities.length === 1 ? data.cities[0] : '',
+            district: data.district || '',
+            state: data.state || '',
+            country: data.country || 'India'
+          }));
+        }
+      } catch (error) {
+        setPincodeError('Failed to fetch location details');
+      } finally {
+        setPincodeLoading(false);
+      }
+    } else if (pincode.length < 6) {
+      setAddressForm(prev => ({...prev, city: '', district: '', state: ''}));
+      setAvailableCities([]);
+      setShowCityDropdown(false);
+    }
+  };
 
   const handleAddressSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,15 +124,67 @@ export const CheckoutPage: React.FC = () => {
                 onChange={(e) => setAddressForm({...addressForm, address_line2: e.target.value})}
                 className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
               />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="relative">
                 <input
-                  id="city"
-                  name="city"
+                  id="pincode"
+                  name="pincode"
                   type="text"
-                  placeholder="City"
-                  value={addressForm.city}
-                  onChange={(e) => setAddressForm({...addressForm, city: e.target.value})}
-                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  placeholder="Pincode (6 digits)"
+                  value={addressForm.pincode}
+                  onChange={handlePincodeChange}
+                  maxLength={6}
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white pr-10"
+                  required
+                />
+                {pincodeLoading && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500"></div>
+                  </div>
+                )}
+              </div>
+              {pincodeError && (
+                <p className="text-red-400 text-sm">{pincodeError}</p>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {showCityDropdown ? (
+                  <select
+                    id="city"
+                    name="city"
+                    value={addressForm.city}
+                    onChange={(e) => setAddressForm({...addressForm, city: e.target.value})}
+                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                    required
+                  >
+                    <option value="">Select City/Area</option>
+                    {availableCities.map((city, index) => (
+                      <option key={index} value={city}>{city}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    id="city"
+                    name="city"
+                    type="text"
+                    placeholder="City"
+                    value={addressForm.city}
+                    onChange={(e) => setAddressForm({...addressForm, city: e.target.value})}
+                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                    required
+                  />
+                )}
+                <input
+                  id="district"
+                  name="district"
+                  type="text"
+                  placeholder="District"
+                  value={addressForm.district}
+                  onChange={(e) => setAddressForm({...addressForm, district: e.target.value})}
+                  className={`w-full p-3 border border-gray-600 rounded-lg text-white ${
+                    addressForm.district && addressForm.pincode.length === 6 
+                      ? 'bg-gray-600' 
+                      : 'bg-gray-700'
+                  }`}
+                  readOnly={addressForm.district && addressForm.pincode.length === 6}
                   required
                 />
                 <input
@@ -94,20 +194,30 @@ export const CheckoutPage: React.FC = () => {
                   placeholder="State"
                   value={addressForm.state}
                   onChange={(e) => setAddressForm({...addressForm, state: e.target.value})}
-                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  className={`w-full p-3 border border-gray-600 rounded-lg text-white ${
+                    addressForm.state && addressForm.pincode.length === 6 
+                      ? 'bg-gray-600' 
+                      : 'bg-gray-700'
+                  }`}
+                  readOnly={addressForm.state && addressForm.pincode.length === 6}
+                  required
+                />
+                <input
+                  id="country"
+                  name="country"
+                  type="text"
+                  placeholder="Country"
+                  value={addressForm.country}
+                  onChange={(e) => setAddressForm({...addressForm, country: e.target.value})}
+                  className={`w-full p-3 border border-gray-600 rounded-lg text-white ${
+                    addressForm.country && addressForm.pincode.length === 6 
+                      ? 'bg-gray-600' 
+                      : 'bg-gray-700'
+                  }`}
+                  readOnly={addressForm.country && addressForm.pincode.length === 6}
                   required
                 />
               </div>
-              <input
-                id="pincode"
-                name="pincode"
-                type="text"
-                placeholder="Pincode"
-                value={addressForm.pincode}
-                onChange={(e) => setAddressForm({...addressForm, pincode: e.target.value})}
-                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                required
-              />
               <button
                 type="submit"
                 className="w-full py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
@@ -157,7 +267,7 @@ export const CheckoutPage: React.FC = () => {
                 <div className="text-gray-300 text-sm">
                   <p>{savedAddress.address_line1}</p>
                   {savedAddress.address_line2 && <p>{savedAddress.address_line2}</p>}
-                  <p>{savedAddress.city}, {savedAddress.state} - {savedAddress.pincode}</p>
+                  <p>{savedAddress.city}{savedAddress.district && `, ${savedAddress.district}`}, {savedAddress.state}{savedAddress.country && `, ${savedAddress.country}`} - {savedAddress.pincode}</p>
                 </div>
               </div>
             </motion.div>

@@ -75,9 +75,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <p className="text-primary font-bold font-mono">
                 ₹{product.price}
               </p>
-              <p className="text-xs text-foreground/60">
-                Stock: {product.stock}
-              </p>
             </div>
             {cartQuantity > 0 ? (
               <div className="flex items-center justify-between bg-primary/10 rounded-lg p-2 gap-2">
@@ -94,7 +91,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 </span>
                 <button
                   className="hover:text-red-500 p-1 border border-gray-400 rounded-sm"
-                  disabled={cartQuantity >= product.stock}
+                  disabled={cartQuantity >= (product.additional_info?.variants ? 
+                    (product.total_variant_stock || 0) : product.stock)}
                   onClick={() =>
                     onUpdateQuantity(product.product_id, cartQuantity + 1)
                   }
@@ -106,14 +104,30 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <button
                 style={{ width: "100%" }}
                 className={`heading-font tracking-wider text-sm p-3 rounded-md cursor-pointer ${
-                  product.stock === 0 
+                  (product.additional_info?.variants ? 
+                    (product.total_variant_stock || 0) === 0 : product.stock === 0) 
                     ? 'bg-gray-600 text-gray-300' 
                     : 'bg-red-600'
                 }`}
-                onClick={() => product.stock > 0 && onAddToCart(product.product_id)}
-                disabled={product.stock === 0}
+                onClick={() => {
+                  const hasStock = product.additional_info?.variants ? 
+                    (product.total_variant_stock || 0) > 0 : product.stock > 0;
+                  if (hasStock) {
+                    // For variant products, navigate to detail page for selection
+                    if (product.additional_info?.variants) {
+                      window.location.href = `/product/${product.product_id}`;
+                    } else {
+                      onAddToCart(product.product_id);
+                    }
+                  }
+                }}
+                disabled={(product.additional_info?.variants ? 
+                  (product.total_variant_stock || 0) === 0 : product.stock === 0)}
               >
-                {product.stock === 0 ? 'NOTIFY ME' : 'ADD TO CART'}
+                {(product.additional_info?.variants ? 
+                  (product.total_variant_stock || 0) === 0 : product.stock === 0) 
+                  ? 'NOTIFY ME' 
+                  : (product.additional_info?.variants ? 'SELECT OPTIONS' : 'ADD TO CART')}
               </button>
             )}
           </div>

@@ -16,7 +16,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   user?: User;
   login: (identifier: string, password: string) => Promise<any>;
-  register: (name: string, identifier: string, password: string, phone: string) => Promise<void>;
+  register: (name: string, identifier: string, password: string, phone: string) => Promise<any>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   checkAuthStatus: () => Promise<boolean>;
@@ -70,21 +70,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true);
       const data = await authService.register(name, email, password, phone);
-      const mappedUser = {
-        userId: data.user.id,
-        name: data.user.name,
-        email: data.user.email,
-        phone: data.user.phone,
-        image_url: data.user.image_url,
-        isAdmin: data.user.isAdmin || data.isAdmin
-      };
-      
-      // Store user data in localStorage
-      localStorage.setItem('user', JSON.stringify(mappedUser));
-      
-      setUser(mappedUser);
-      setIsAuthenticated(true);
       setLoading(false);
+      return data;
     } catch (err) {
       setLoading(false);
       console.error("Registration error:", err);

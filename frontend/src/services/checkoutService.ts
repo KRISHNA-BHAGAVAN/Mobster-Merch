@@ -4,7 +4,9 @@ export interface AddressData {
   address_line1: string;
   address_line2?: string;
   city: string;
+  district?: string;
   state: string;
+  country?: string;
   pincode: string;
 }
 

@@ -3,7 +3,9 @@ import multer from 'multer';
 import path from 'path';
 import pool from '../config/database.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
+import dotenv from 'dotenv';
 
+dotenv.config({ override:true })
 const router = express.Router();
 
 // Configure multer for payment screenshot uploads

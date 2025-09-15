@@ -2,6 +2,8 @@
 import express from "express";
 import dotenv from "dotenv";
 import pool from "../config/database.js";
+import { MERCHANT_REDIRECT_URL } from "../config/api.js";
+
 import {
   StandardCheckoutClient,
   Env,
@@ -11,7 +13,7 @@ import {
 import { authMiddleware } from "../middleware/auth.js";
 
 dotenv.config({ override: true });
-console.log("MERCHANT_REDIRECT_URL: ",process.env.MERCHANT_REDIRECT_URL)
+console.log("MERCHANT_REDIRECT_URL: ",MERCHANT_REDIRECT_URL)
 const router = express.Router();
 
 // 1. Initialize PhonePe SDK
@@ -234,15 +236,17 @@ router.get("/order-status/:orderId", authMiddleware, async (req, res) => {
     if (req.session.checkoutAddress) {
       const addr = req.session.checkoutAddress;
       await connection.execute(
-        `INSERT INTO addresses (user_id, address_line1, address_line2, city, state, pincode, is_default)
-        VALUES (?, ?, ?, ?, ?, ?, 1)
+        `INSERT INTO addresses (user_id, address_line1, address_line2, city, district, state, country, pincode, is_default)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
         ON DUPLICATE KEY UPDATE
         address_line1 = VALUES(address_line1),
         address_line2 = VALUES(address_line2),
         city = VALUES(city),
+        district = VALUES(district),
         state = VALUES(state),
+        country = VALUES(country),
         pincode = VALUES(pincode)`,
-        [userId, addr.address_line1, addr.address_line2, addr.city, addr.state, addr.pincode]
+        [userId, addr.address_line1, addr.address_line2, addr.city, addr.district, addr.state, addr.country, addr.pincode]
       );
     }
 
@@ -253,14 +257,18 @@ router.get("/order-status/:orderId", authMiddleware, async (req, res) => {
          SET address_line1 = ?, 
              address_line2 = ?, 
              city = ?, 
+             district = ?, 
              state = ?, 
+             country = ?, 
              pincode = ?
          WHERE order_id = ?`,
         [
           addr.address_line1,
           addr.address_line2,
           addr.city,
+          addr.district,
           addr.state,
+          addr.country,
           addr.pincode,
           merchantOrderId,
         ]
@@ -270,7 +278,7 @@ router.get("/order-status/:orderId", authMiddleware, async (req, res) => {
 
     // Get address information from addresses table
     const [addressData] = await connection.execute(
-      "SELECT address_line1, address_line2, city, state, pincode FROM addresses WHERE user_id = ? ORDER BY created_at DESC LIMIT 1",
+      "SELECT address_line1, address_line2, city, district, state, country, pincode FROM addresses WHERE user_id = ? ORDER BY created_at DESC LIMIT 1",
       [userId]
     );
     console.log(`Address data: ${addressData}`);

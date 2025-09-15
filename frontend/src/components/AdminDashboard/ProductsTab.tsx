@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { productService, API_BASE_URL, Category } from '../../services';
 import { Product, ProductFormData, DynamicField } from './types';
+import { VariantConfiguration } from './VariantConfiguration';
 
 interface ProductsTabProps {
   products: Product[];
@@ -30,6 +31,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
     category: '',
     additional_info: []
   });
+  const [variantConfig, setVariantConfig] = useState<any>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [showDynamicFields, setShowDynamicFields] = useState(false);
 
@@ -37,9 +39,15 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
     e.preventDefault();
     const formDataToSend = new FormData();
     
+    // Combine additional_info with variant config
+    const combinedAdditionalInfo = {
+      ...formData.additional_info,
+      ...(variantConfig || {})
+    };
+    
     Object.entries(formData).forEach(([key, value]) => {
       if (key === 'additional_info') {
-        formDataToSend.append(key, JSON.stringify(value));
+        formDataToSend.append(key, JSON.stringify(combinedAdditionalInfo));
       } else {
         formDataToSend.append(key, value);
       }
@@ -76,14 +84,27 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
     setEditingProduct(product);
     // Find the category name from the product's category field or category_name
     const categoryName = product.category_name || '';
+    
+    // Extract variant config from additional_info
+    const additionalInfo = product.additional_info || {};
+    const { variants, variant_fields, ...otherInfo } = additionalInfo;
+    
     setFormData({
       name: product.name,
       description: product.description,
       price: product.price.toString(),
       stock: product.stock.toString(),
       category: categoryName,
-      additional_info: product.additional_info || []
+      additional_info: otherInfo
     });
+    
+    // Set variant config if exists
+    if (variants || variant_fields) {
+      setVariantConfig({ variants: variants || [], variant_fields: variant_fields || [] });
+    } else {
+      setVariantConfig(null);
+    }
+    
     setShowAddForm(true);
   };
 
@@ -93,6 +114,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
     setEditingProduct(null);
     setShowAddForm(false);
     setShowDynamicFields(false);
+    setVariantConfig(null);
   };
 
   const handleSoftDelete = async (id: number) => {
@@ -445,6 +467,12 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                   </div>
                 )}
               </div>
+              
+              <VariantConfiguration
+                config={variantConfig}
+                onChange={setVariantConfig}
+              />
+              
               <div className="flex gap-4">
                 <button
                   type="submit"

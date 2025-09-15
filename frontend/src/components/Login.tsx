@@ -18,13 +18,13 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [resetUsername, setResetUsername] = useState("");
-  const [resetToken, setResetToken] = useState("");
+  const [resetIdentifier, setResetIdentifier] = useState("");
+  const [resetCode, setResetCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [resetStep, setResetStep] = useState<"username" | "token" | "password">(
-    "username"
-  );
+  const [resetStep, setResetStep] = useState<"identifier" | "code" | "password">("identifier");
+  const [resetUserId, setResetUserId] = useState<string | null>(null);
+  const [verifyToken, setVerifyToken] = useState<string | null>(null);
 
   const { login, register, user } = useAuth();
   const [authService, setAuthService] = useState<any>(null);
@@ -61,6 +61,13 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
       }
     }
 
+    // Validate email for registration
+    if (!isLogin && !username.endsWith('@gmail.com')) {
+      setErrorMsg("Please enter a valid Gmail address ending with @gmail.com");
+      setLoading(false);
+      return;
+    }
+
     // Validate phone number for registration
     if (!isLogin && !/^\d{10}$/.test(phone)) {
       setErrorMsg("Phone number must be exactly 10 digits");
@@ -87,22 +94,14 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
           navigate("/", { replace: true });
         }
       } else {
-        await register(name, username, password, phone);
-        if (siteClosed) {
-          setSuccessMsg("Registration successful! Site is under maintenance.");
-          setTimeout(() => navigate("/", { replace: true }), 2000);
-        } else {
-          setSuccessMsg("Registration successful! You are now logged in.");
-          setTimeout(() => navigate("/", { replace: true }), 1000);
+        const result = await register(name, username, password, phone);
+        if (result.success) {
+          navigate('/waiting-verification', { state: { email: username } });
         }
       }
     } catch (error: any) {
       console.error("Auth error:", error);
-      const errorMessage =
-        error.message ||
-        (isLogin
-          ? "Invalid credentials"
-          : "Registration failed. Please try again.");
+      const errorMessage = error.message || (isLogin ? "Invalid credentials" : "Registration failed. Please try again.");
       setErrorMsg(errorMessage);
     } finally {
       setLoading(false);
@@ -118,16 +117,29 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
     setSuccessMsg(null);
 
     try {
-      if (resetStep === "username") {
-        const result = await authService.forgotPassword(resetUsername);
-        setSuccessMsg(result.message);
-        setResetStep("token");
-      } else if (resetStep === "token") {
-        if (!resetToken || resetToken.length !== 6) {
-          setErrorMsg("Please enter a valid 6-digit token");
+      if (resetStep === "identifier") {
+        const result = await authService.requestPasswordReset(resetIdentifier);
+        if (result.shouldRegister) {
+          setErrorMsg("User not found. Please register first.");
+          setTimeout(() => {
+            setIsLogin(false);
+            setShowForgotPassword(false);
+            resetForgotPassword();
+          }, 2000);
+        } else {
+          setSuccessMsg(result.message);
+          setResetUserId(result.userId);
+          setResetStep("code");
+        }
+      } else if (resetStep === "code") {
+        if (!resetCode || resetCode.length !== 6) {
+          setErrorMsg("Please enter a valid 6-digit code");
           setLoading(false);
           return;
         }
+        const result = await authService.verifyResetCode(resetUserId!, resetCode);
+        setSuccessMsg(result.message);
+        setVerifyToken(result.verifyToken);
         setResetStep("password");
       } else if (resetStep === "password") {
         if (newPassword !== confirmPassword) {
@@ -140,17 +152,23 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
           setLoading(false);
           return;
         }
-        await authService.resetPassword(resetUsername, resetToken, newPassword, confirmPassword);
+        await authService.completePasswordReset(verifyToken!, newPassword, confirmPassword);
         setSuccessMsg("Password reset successfully! You can now login.");
-        setShowForgotPassword(false);
-        setResetStep("username");
-        setResetUsername("");
-        setResetToken("");
-        setNewPassword("");
-        setConfirmPassword("");
+        setTimeout(() => {
+          resetForgotPassword();
+        }, 2000);
       }
     } catch (error: any) {
-      setErrorMsg(error.message || "Failed to process request");
+      if (error.message.includes("User not found")) {
+        setErrorMsg("User not found. Please register first.");
+        setTimeout(() => {
+          setIsLogin(false);
+          setShowForgotPassword(false);
+          resetForgotPassword();
+        }, 2000);
+      } else {
+        setErrorMsg(error.message || "Failed to process request");
+      }
     } finally {
       setLoading(false);
     }
@@ -158,11 +176,13 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
 
   const resetForgotPassword = () => {
     setShowForgotPassword(false);
-    setResetStep("username");
-    setResetUsername("");
-    setResetToken("");
+    setResetStep("identifier");
+    setResetIdentifier("");
+    setResetCode("");
     setNewPassword("");
     setConfirmPassword("");
+    setResetUserId(null);
+    setVerifyToken(null);
     setErrorMsg(null);
     setSuccessMsg(null);
   };
@@ -279,13 +299,13 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
               >
                 {showForgotPassword ? (
                   <>
-                    {resetStep === "username" && (
+                    {resetStep === "identifier" && (
                       <TextField
                         fullWidth
                         type="text"
-                        label="Username"
-                        value={resetUsername}
-                        onChange={(e) => setResetUsername(e.target.value)}
+                        label="Username or Email"
+                        value={resetIdentifier}
+                        onChange={(e) => setResetIdentifier(e.target.value)}
                         autoComplete="off"
                         InputProps={{
                           startAdornment: (
@@ -303,15 +323,15 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
                         required
                       />
                     )}
-                    {resetStep === "token" && (
+                    {resetStep === "code" && (
                       <TextField
                         fullWidth
                         type="text"
-                        label="Reset Token (6 digits from email)"
-                        value={resetToken}
+                        label="6-digit Code from Email"
+                        value={resetCode}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, "").slice(0, 6);
-                          setResetToken(value);
+                          setResetCode(value);
                         }}
                         autoComplete="off"
                         InputProps={{
@@ -526,10 +546,10 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
                     {loading
                       ? "Loading..."
                       : showForgotPassword
-                      ? resetStep === "username"
-                        ? "SEND TOKEN TO EMAIL"
-                        : resetStep === "token"
-                        ? "VERIFY TOKEN"
+                      ? resetStep === "identifier"
+                        ? "SEND CODE"
+                        : resetStep === "code"
+                        ? "VERIFY CODE"
                         : "RESET PASSWORD"
                       : isLogin
                       ? "LOGIN"

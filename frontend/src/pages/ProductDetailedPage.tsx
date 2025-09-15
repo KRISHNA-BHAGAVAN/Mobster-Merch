@@ -6,7 +6,7 @@ import { Favorite } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useCart } from "../context/CartContext";
-import { productService, cartService } from "../services";
+import { productService, cartService, wishlistService } from "../services";
 import { Navbar } from "../components/Navbar";
 
 interface Product {
@@ -35,8 +35,11 @@ export const ProductDetails: React.FC = () => {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isInWishlist, setIsInWishlist] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState<{[key: string]: string}>({});
+  const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
+  const [currentPrice, setCurrentPrice] = useState<number>(0);
+  const [currentStock, setCurrentStock] = useState<number>(0);
 
   const { isAuthenticated } = useAuth();
   const { showToast } = useToast();
@@ -45,19 +48,103 @@ export const ProductDetails: React.FC = () => {
   useEffect(() => {
     if (id) {
       fetchProduct(parseInt(id));
+      if (isAuthenticated) {
+        checkWishlistStatus(parseInt(id));
+      }
     }
-  }, [id]);
+  }, [id, isAuthenticated]);
 
   const fetchProduct = async (productId: number) => {
     try {
       const data = await productService.getProductById(productId);
       setProduct(data);
+      setCurrentPrice(data.price);
+      setCurrentStock(data.stock);
+      
+      // If product has variants, initialize selection
+      if (data.additional_info?.variants && data.additional_info.variants.length > 0) {
+        const firstVariant = data.additional_info.variants[0];
+        setSelectedVariant(firstVariant.id);
+        const basePrice = parseFloat(data.price) || 0;
+        const modifier = parseFloat(firstVariant.price_modifier) || 0;
+        setCurrentPrice(basePrice + modifier);
+        setCurrentStock(firstVariant.stock || 0);
+        
+        // Initialize selected options
+        const initialOptions: {[key: string]: string} = {};
+        Object.entries(firstVariant.options || {}).forEach(([key, value]) => {
+          initialOptions[key] = value as string;
+        });
+        setSelectedOptions(initialOptions);
+      }
     } catch (error) {
       console.error("Error fetching product:", error);
       showToast("Product not found", "error");
       navigate("/products");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVariantOptionChange = (optionName: string, optionValue: string) => {
+    const newSelectedOptions = { ...selectedOptions, [optionName]: optionValue };
+    setSelectedOptions(newSelectedOptions);
+    
+    // Find matching variant
+    if (product?.additional_info?.variants) {
+      const matchingVariant = product.additional_info.variants.find((variant: any) => {
+        return Object.entries(newSelectedOptions).every(([key, value]) => 
+          variant.options[key] === value
+        );
+      });
+      
+      if (matchingVariant) {
+        setSelectedVariant(matchingVariant.id);
+        const basePrice = parseFloat(product.price) || 0;
+        const modifier = parseFloat(matchingVariant.price_modifier) || 0;
+        setCurrentPrice(basePrice + modifier);
+        setCurrentStock(matchingVariant.stock || 0);
+        setQuantity(1); // Reset quantity when variant changes
+      }
+    }
+  };
+
+  const checkWishlistStatus = async (productId: number) => {
+    try {
+      const response = await wishlistService.checkWishlist(productId);
+      setIsInWishlist(response.isInWishlist);
+    } catch (error) {
+      console.error("Error checking wishlist status:", error);
+    }
+  };
+
+  const toggleWishlist = async () => {
+    if (!isAuthenticated) {
+      showToast("Please login to add to wishlist", "error");
+      navigate("/login");
+      return;
+    }
+
+    if (!product) return;
+
+    try {
+      if (isInWishlist) {
+        await wishlistService.removeFromWishlist(product.product_id);
+        setIsInWishlist(false);
+        showToast("Removed from wishlist", "success");
+      } else {
+        await wishlistService.addToWishlist(product.product_id);
+        setIsInWishlist(true);
+        showToast("Added to wishlist", "success");
+      }
+    } catch (error: any) {
+      console.error('Wishlist error:', error);
+      if (error.message?.includes('already in wishlist')) {
+        setIsInWishlist(true);
+        showToast("Product already in wishlist", "info");
+      } else {
+        showToast("Error updating wishlist", "error");
+      }
     }
   };
 
@@ -71,6 +158,7 @@ export const ProductDetails: React.FC = () => {
       await cartService.addToCart({
         product_id: product!.product_id,
         quantity,
+        variant_id: selectedVariant
       });
       await refreshCart();
       showToast("Added to cart successfully!", "success");
@@ -130,9 +218,9 @@ export const ProductDetails: React.FC = () => {
               className="w-full h-96 lg:h-[500px] object-cover rounded-lg"
             />
             <Favorite
-              onClick={() => setIsFavorite(!isFavorite)}
+              onClick={toggleWishlist}
               sx={{
-                color: isFavorite ? "red" : "gray",
+                color: isInWishlist ? "red" : "gray",
                 cursor: "pointer",
                 fontSize: "2rem",
               }}
@@ -150,7 +238,12 @@ export const ProductDetails: React.FC = () => {
                 {product.name}
               </h1>
               <p className="text-2xl font-bold text-red-500 mt-4">
-                ₹{product.price}
+                ₹{Number(currentPrice || 0).toFixed(0)}
+                {product.additional_info?.variants && currentPrice !== product.price && (
+                  <span className="text-sm text-gray-400 ml-2 line-through">
+                    ₹{Number(product.price || 0).toFixed(0)}
+                  </span>
+                )}
               </p>
             </div>
 
@@ -158,8 +251,39 @@ export const ProductDetails: React.FC = () => {
               {product.description}
             </p>
 
+            {/* Variant Selection */}
+            {product.additional_info?.variant_fields && product.additional_info.variant_fields.length > 0 && (
+              <div className="border-t border-gray-700 pt-6">
+                <h3 className="text-lg font-semibold mb-4">Select Options</h3>
+                <div className="space-y-4">
+                  {product.additional_info.variant_fields.map((field: any) => (
+                    <div key={field.name}>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        {field.label}
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {field.options.map((option: string) => (
+                          <button
+                            key={option}
+                            onClick={() => handleVariantOptionChange(field.name, option)}
+                            className={`px-4 py-2 rounded border transition-colors ${
+                              selectedOptions[field.name] === option
+                                ? 'bg-red-600 border-red-600 text-white'
+                                : 'border-gray-600 text-gray-300 hover:border-red-500'
+                            }`}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Additional Information */}
-            {product.additional_info && product.additional_info.length > 0 && (
+            {product.additional_info && Array.isArray(product.additional_info) && product.additional_info.length > 0 && (
               <div className="border-t border-gray-700 pt-6">
                 <h3 className="text-lg font-semibold mb-4">Product Details</h3>
                 <div className="space-y-3">
@@ -171,22 +295,6 @@ export const ProductDetails: React.FC = () => {
                       <span className="text-white">
                         {field.type === 'textarea' ? (
                           <div className="whitespace-pre-wrap">{field.value}</div>
-                        ) : field.type === 'select' ? (
-                          <div className="flex flex-wrap gap-2">
-                            {field.options?.map((option, index) => (
-                              <button
-                                key={index}
-                                onClick={() => setSelectedOptions(prev => ({...prev, [field.id]: option}))}
-                                className={`px-3 py-1 rounded border transition-colors ${
-                                  selectedOptions[field.id] === option
-                                    ? 'bg-red-600 border-red-600 text-white'
-                                    : 'border-gray-600 text-gray-300 hover:border-red-500'
-                                }`}
-                              >
-                                {option}
-                              </button>
-                            ))}
-                          </div>
                         ) : (
                           field.value
                         )}
@@ -197,9 +305,7 @@ export const ProductDetails: React.FC = () => {
               </div>
             )}
 
-            <div className="flex items-center gap-4">
-              <span className="text-sm">Stock: {product.stock} available</span>
-            </div>
+
 
             {/* Quantity Selector */}
             <div className="flex items-center gap-4">
@@ -216,9 +322,10 @@ export const ProductDetails: React.FC = () => {
                 </span>
                 <button
                   onClick={() =>
-                    setQuantity(Math.min(product.stock, quantity + 1))
+                    setQuantity(Math.min(currentStock, quantity + 1))
                   }
                   className="px-3 py-1 hover:bg-gray-700 hover: cursor-pointer"
+                  disabled={quantity >= currentStock}
                 >
                   +
                 </button>
@@ -227,15 +334,15 @@ export const ProductDetails: React.FC = () => {
 
             {/* Add to Cart Button */}
             <button
-              onClick={product.stock === 0 ? undefined : handleAddToCart}
-              disabled={product.stock === 0}
+              onClick={currentStock === 0 ? undefined : handleAddToCart}
+              disabled={currentStock === 0}
               className={`w-full py-3 rounded-md font-semibold transition-colors hover:cursor-pointer ${
-                product.stock === 0
+                currentStock === 0
                   ? 'bg-gray-600 text-gray-300'
                   : 'bg-red-600 hover:bg-red-700 text-white'
               }`}
             >
-              {product.stock === 0 ? "Notify Me" : "Add to Cart"}
+              {currentStock === 0 ? "Notify Me" : "Add to Cart"}
             </button>
           </div>
         </motion.div>

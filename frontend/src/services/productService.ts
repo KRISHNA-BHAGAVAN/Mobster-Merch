@@ -17,12 +17,7 @@ export const productService = {
     apiCall(`/products/${category_id}`),
 
   getProductById: (id: number) => 
-    apiCall(`/products/get-available-products`).then(response => {
-      const products = Array.isArray(response) ? response : response.products || [];
-      const product = products.find((p: any) => p.product_id === id);
-      if (!product) throw new Error('Product not found');
-      return product;
-    }),
+    apiCall(`/products/single/${id}`),
 
   // Admin only
   createProduct: (formData: FormData) => 

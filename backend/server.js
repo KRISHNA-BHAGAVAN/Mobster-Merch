@@ -25,6 +25,7 @@ import settingsRoutes from "./routes/settings.js";
 import paymentModeRoutes from "./routes/paymentMode.js";
 import wishlistRoutes from "./routes/wishlist.js";
 import shipmentRoutes from "./routes/shipment.js";
+import pincodeRoutes from "./routes/pincode.js";
 
 // Import corrected middleware
 import { authMiddleware, adminMiddleware } from "./middleware/auth.js";
@@ -180,6 +181,7 @@ app.use("/api/settings", settingsRoutes);
 app.use("/api/payment-mode", paymentModeRoutes);
 app.use("/api/wishlist", authMiddleware, wishlistRoutes);
 app.use("/api/shipment", shipmentRoutes);
+app.use("/api/pincode", pincodeRoutes);
 
 // ---------------------
 // Health check
@@ -188,15 +190,18 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", message: "Your Merchandise API is running fine" });
 });
 
-// ---------------------
-// Serve React frontend (Reverse Proxy)
-// ---------------------
-const frontendPath = path.join(__dirname, "..", "frontend", "dist");
-app.use(express.static(frontendPath));
 
-app.get("*", (req, res) => {
-   res.sendFile(path.join(frontendPath, "index.html"));
-});
+if (process.env.NODE_ENV=="development") {
+    // ---------------------
+    // Serve React frontend (Reverse Proxy)
+    // ---------------------
+    const frontendPath = path.join(__dirname, "..", "frontend", "dist");
+    app.use(express.static(frontendPath));
+
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(frontendPath, "index.html"));
+    });
+}
 
 // ---------------------
 // Error handling middleware
