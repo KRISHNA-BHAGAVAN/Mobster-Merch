@@ -67,20 +67,47 @@ router.post("/prepare-checkout", authMiddleware, async (req, res) => {
     };
     console.log('📦 DEBUG: Address stored in session:', req.session.checkoutAddress);
     
-    // Get cart items
+    // Get cart items with variant pricing
     const [cartItems] = await pool.execute(
-      `SELECT c.product_id, c.quantity, p.price, p.stock, p.name
+      `SELECT c.product_id, c.quantity, c.variant_id, p.price, p.stock, p.name, p.additional_info
        FROM cart c JOIN products p ON c.product_id = p.product_id
        WHERE c.user_id = ? AND p.is_deleted = 0`,
       [user_id]
     );
+    
+    // Calculate correct prices including variant modifiers
+    const cartItemsWithCorrectPrices = cartItems.map(item => {
+      let finalPrice = parseFloat(item.price);
+      
+      if (item.variant_id && item.additional_info) {
+        try {
+          const additionalInfo = typeof item.additional_info === 'string' 
+            ? JSON.parse(item.additional_info) 
+            : item.additional_info;
+          
+          if (additionalInfo.variants) {
+            const variant = additionalInfo.variants.find(v => v.id === item.variant_id);
+            if (variant && variant.price_modifier) {
+              finalPrice += parseFloat(variant.price_modifier);
+            }
+          }
+        } catch (e) {
+          console.error('Error parsing variant info:', e);
+        }
+      }
+      
+      return {
+        ...item,
+        price: finalPrice
+      };
+    });
 
     if (cartItems.length === 0) {
       return res.status(400).json({ message: "Cart is empty" });
     }
 
     // Check stock availability
-    for (const item of cartItems) {
+    for (const item of cartItemsWithCorrectPrices) {
       if (item.stock < item.quantity) {
         return res.status(400).json({
           message: `Insufficient stock for ${item.name}. Available: ${item.stock}, Requested: ${item.quantity}`,
@@ -88,8 +115,8 @@ router.post("/prepare-checkout", authMiddleware, async (req, res) => {
       }
     }
 
-    // Calculate total
-    const total = cartItems.reduce((sum, item) => sum + item.quantity * item.price, 0);
+    // Calculate total with correct variant pricing
+    const total = cartItemsWithCorrectPrices.reduce((sum, item) => sum + item.quantity * item.price, 0);
     
     // Get payment method setting
     const [paymentSettings] = await pool.execute(
@@ -98,21 +125,40 @@ router.post("/prepare-checkout", authMiddleware, async (req, res) => {
     );
     const paymentMethod = paymentSettings.length > 0 ? paymentSettings[0].setting_value : 'manual';
     
-    // Generate temp order ID for payment
-    const temp_order_id = Date.now().toString();
-    
     if (paymentMethod === 'phonepe') {
-      // Return data for PhonePe gateway
-      res.json({
-        message: "Checkout prepared",
-        temp_order_id,
-        total,
-        payment_method: 'phonepe',
-        address: { address_line1, address_line2, city, district, state, country, pincode },
-        cart_items: cartItems
-      });
+      // For PhonePe, create a proper order ID that can be used
+      const connection = await pool.getConnection();
+      try {
+        const order_id = await generateUniqueOrderId(connection);
+        
+        // Create a pending order for PhonePe
+        await connection.execute(
+          "INSERT INTO orders (order_id, user_id, total, status, payment_status) VALUES (?, ?, ?, ?, ?)",
+          [order_id, user_id, total, "pending", "pending"]
+        );
+        
+        // Insert order items with correct variant pricing
+        for (const item of cartItemsWithCorrectPrices) {
+          await connection.execute(
+            "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)",
+            [order_id, item.product_id, item.quantity, item.price]
+          );
+        }
+        
+        res.json({
+          message: "Checkout prepared",
+          order_id,
+          total,
+          payment_method: 'phonepe',
+          address: { address_line1, address_line2, city, district, state, country, pincode },
+          cart_items: cartItemsWithCorrectPrices
+        });
+      } finally {
+        connection.release();
+      }
     } else {
-      // Generate UPI payment link for manual payment
+      // Generate temp order ID for manual payment
+      const temp_order_id = Date.now().toString();
       const upiId = "mobster@ptaxis";
       const upiLink = `upi://pay?pa=${upiId}&pn=OG Merchandise&am=${total}&cu=INR&tn=Order${temp_order_id}`;
 
@@ -124,7 +170,7 @@ router.post("/prepare-checkout", authMiddleware, async (req, res) => {
         upi_id: upiId,
         payment_method: 'manual',
         address: { address_line1, address_line2, city, district, state, country, pincode },
-        cart_items: cartItems
+        cart_items: cartItemsWithCorrectPrices
       });
     }
   } catch (error) {
@@ -157,9 +203,9 @@ router.post("/create-order-with-payment", authMiddleware, async (req, res) => {
     const user_id = req.session.userId;
     const { address, transaction_id, screenshot_url } = req.body;
     
-    // Get current cart items
+    // Get current cart items with variant pricing
     const [cartItems] = await connection.execute(
-      `SELECT c.product_id, c.quantity, p.price, p.stock, p.name
+      `SELECT c.product_id, c.quantity, c.variant_id, p.price, p.stock, p.name, p.additional_info
        FROM cart c JOIN products p ON c.product_id = p.product_id
        WHERE c.user_id = ? AND p.is_deleted = 0`,
       [user_id]
@@ -169,7 +215,34 @@ router.post("/create-order-with-payment", authMiddleware, async (req, res) => {
       return res.status(400).json({ message: "Cart is empty" });
     }
     
-    const total = cartItems.reduce((sum, item) => sum + item.quantity * item.price, 0);
+    // Calculate correct prices including variant modifiers
+    const cartItemsWithCorrectPrices = cartItems.map(item => {
+      let finalPrice = parseFloat(item.price);
+      
+      if (item.variant_id && item.additional_info) {
+        try {
+          const additionalInfo = typeof item.additional_info === 'string' 
+            ? JSON.parse(item.additional_info) 
+            : item.additional_info;
+          
+          if (additionalInfo.variants) {
+            const variant = additionalInfo.variants.find(v => v.id === item.variant_id);
+            if (variant && variant.price_modifier) {
+              finalPrice += parseFloat(variant.price_modifier);
+            }
+          }
+        } catch (e) {
+          console.error('Error parsing variant info:', e);
+        }
+      }
+      
+      return {
+        ...item,
+        price: finalPrice
+      };
+    });
+    
+    const total = cartItemsWithCorrectPrices.reduce((sum, item) => sum + item.quantity * item.price, 0);
     const order_id = await generateUniqueOrderId(connection);
     
     // Save address
@@ -187,8 +260,8 @@ router.post("/create-order-with-payment", authMiddleware, async (req, res) => {
       [order_id, user_id, total, "pending"]
     );
     
-    // Insert order items
-    for (const item of cartItems) {
+    // Insert order items with correct variant pricing
+    for (const item of cartItemsWithCorrectPrices) {
       await connection.execute(
         "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)",
         [order_id, item.product_id, item.quantity, item.price]

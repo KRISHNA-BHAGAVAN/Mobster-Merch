@@ -20,8 +20,14 @@ const router = express.Router();
 const clientId = process.env.PHONEPE_CLIENT_ID;
 const clientSecret = process.env.PHONEPE_CLIENT_SECRET;
 const clientVersion = parseInt(process.env.PHONEPE_CLIENT_VERSION);
-const env =
-  process.env.NODE_ENV === "production" ? Env.PRODUCTION : Env.SANDBOX;
+const env = Env.PRODUCTION; // Force production since you're using production credentials
+
+console.log('PhonePe SDK Config:', {
+  clientId: clientId ? `${clientId.substring(0, 10)}...` : 'MISSING',
+  clientSecret: clientSecret ? 'SET' : 'MISSING',
+  clientVersion,
+  env: 'PRODUCTION'
+});
 
 const phonePeClient = StandardCheckoutClient.getInstance(
   clientId,
@@ -47,19 +53,36 @@ async function ensureOrder(orderId, userId, amount) {
 router.post("/initiate-payment", authMiddleware, async (req, res) => {
   const { orderId, amount } = req.body;
   const userId = req.session.userId;
-  if (!orderId || !amount || amount <= 0 || !userId) {
+  
+  console.log('PhonePe Payment Request:', { orderId, amount, userId, body: req.body });
+  
+  if (!orderId || !amount || Number(amount) <= 0 || !userId) {
+    console.log('Validation failed:', { orderId: !!orderId, amount: !!amount, amountValue: Number(amount), userId: !!userId });
     return res.status(400).json({ error: "Invalid orderId, amount or userId" });
   }
 
   const merchantOrderId = orderId;
   const amountPaisa = Math.round(amount * 100);
-  const redirectUrl = `${process.env.MERCHANT_REDIRECT_URL}/payment-success`;
+  const redirectUrl = `${MERCHANT_REDIRECT_URL}/payment-success`;
+  
+  console.log('PhonePe Request Details:', {
+    merchantOrderId,
+    amountPaisa,
+    redirectUrl,
+    MERCHANT_REDIRECT_URL
+  });
 
   const request = StandardCheckoutPayRequest.builder()
     .merchantOrderId(merchantOrderId)
     .amount(amountPaisa)
     .redirectUrl(redirectUrl)
     .build();
+    
+  console.log('PhonePe SDK Request:', {
+    merchantOrderId,
+    amount: amountPaisa,
+    redirectUrl
+  });
 
   try {
     await ensureOrder(merchantOrderId, userId, amount);
@@ -73,8 +96,6 @@ router.post("/initiate-payment", authMiddleware, async (req, res) => {
     }
 
     const response = await phonePeClient.pay(request);
-
-    // Don't create payment entry here - will be created after redirect
 
     res.json({
       checkoutUrl: response.redirectUrl,
@@ -90,46 +111,7 @@ router.post("/initiate-payment", authMiddleware, async (req, res) => {
   }
 });
 
-// 3. Create SDK Order
-router.post("/create-sdk-order", authMiddleware, async (req, res) => {
-  const { orderId, amount, userId } = req.body;
-  if (!orderId || !amount || amount <= 0 || !userId) {
-    return res.status(400).json({ error: "Invalid orderId, amount or userId" });
-  }
-
-  const merchantOrderId = orderId;
-  const amountPaisa = Math.round(amount * 100);
-  const redirectUrl = process.env.MERCHANT_REDIRECT_URL;
-
-  const request = CreateSdkOrderRequest.StandardCheckoutBuilder()
-    .merchantOrderId(merchantOrderId)
-    .amount(amountPaisa)
-    .redirectUrl(redirectUrl)
-    .build();
-
-  try {
-    await ensureOrder(merchantOrderId, userId, amount);
-    const response = await phonePeClient.createSdkOrder(request);
-
-    await pool.query(
-      `INSERT INTO payments (order_id, user_id, amount, status)
-       VALUES (?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE amount = VALUES(amount), status = VALUES(status)`,
-      [merchantOrderId, userId, amount, "pending"]
-    );
-
-    res.json({
-      sdkToken: response.token,
-      phonepeOrderId: response.order_id,
-      state: response.state,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "SDK Order creation failed", details: err.message });
-  }
-});
-
-// 4. Check Order Status
+// 3. Check Order Status
 router.get("/order-status/:orderId", authMiddleware, async (req, res) => {
   const connection = await pool.getConnection();
   const merchantOrderId = req.params.orderId;
@@ -141,7 +123,6 @@ router.get("/order-status/:orderId", authMiddleware, async (req, res) => {
 
     const response = await phonePeClient.getOrderStatus(merchantOrderId);
     const orderState = response?.state || "PENDING";
-    console.log(req.session)
     const userId = req.session.userId;
     const transactionId = response?.paymentDetails?.[0]?.transactionId || null;
 
@@ -161,15 +142,13 @@ router.get("/order-status/:orderId", authMiddleware, async (req, res) => {
       orderStatus = "pending";
     }
     
-    
-    // Create payment entry if it doesn't exist (after redirect)
+    // Create payment entry if it doesn't exist
     const [existingPayment] = await connection.execute(
       "SELECT payment_id FROM payments WHERE order_id = ?",
       [merchantOrderId]
     );
 
     if (existingPayment.length === 0) {
-      // Get order amount
       const [orderData] = await connection.execute(
         "SELECT total FROM orders WHERE order_id = ?",
         [merchantOrderId]
@@ -182,7 +161,7 @@ router.get("/order-status/:orderId", authMiddleware, async (req, res) => {
         const payment_id = paymentResult[0].next_id;
 
         await connection.execute(
-          "INSERT INTO payments (payment_id, order_id, user_id, amount, method, status, transaction_ref) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE status = VALUES(status), transaction_ref = VALUES(transaction_ref)",
+          "INSERT INTO payments (payment_id, order_id, user_id, amount, method, status, transaction_ref) VALUES (?, ?, ?, ?, ?, ?, ?)",
           [
             payment_id,
             merchantOrderId,
@@ -195,256 +174,36 @@ router.get("/order-status/:orderId", authMiddleware, async (req, res) => {
         );
       }
     } else {
-      // Update existing payment
       await connection.execute(
         "UPDATE payments SET status = ?, transaction_ref = ? WHERE order_id = ?",
         [paymentStatus, transactionId, merchantOrderId]
       );
     }
 
-    // Get current order status before update
-    const [currentOrder] = await connection.execute(
-      "SELECT status FROM orders WHERE order_id = ?",
-      [merchantOrderId]
-    );
-    const oldStatus = currentOrder.length > 0 ? currentOrder[0].status : 'pending';
-    
     // Update order status
     await connection.execute(
       "UPDATE orders SET status = ?, payment_status = ? WHERE order_id = ?",
       [orderStatus, paymentStatus, merchantOrderId]
     );
-    
-    // Reduce stock if order status changed to paid
-    if (orderStatus === 'paid' && oldStatus !== 'paid') {
-      const [orderItems] = await connection.execute(
-        'SELECT product_id, quantity FROM order_items WHERE order_id = ?',
-        [merchantOrderId]
-      );
-      
-      for (const item of orderItems) {
-        await connection.execute(
-          'UPDATE products SET stock = stock - ? WHERE product_id = ? AND stock >= ?',
-          [item.quantity, item.product_id, item.quantity]
-        );
-      }
-      
-      console.log(`✅ Stock reduced for PhonePe order ${merchantOrderId}`);
-    }
-
-    // If session has address but DB doesn’t, insert it
-    if (req.session.checkoutAddress) {
-      const addr = req.session.checkoutAddress;
-      await connection.execute(
-        `INSERT INTO addresses (user_id, address_line1, address_line2, city, district, state, country, pincode, is_default)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-        ON DUPLICATE KEY UPDATE
-        address_line1 = VALUES(address_line1),
-        address_line2 = VALUES(address_line2),
-        city = VALUES(city),
-        district = VALUES(district),
-        state = VALUES(state),
-        country = VALUES(country),
-        pincode = VALUES(pincode)`,
-        [userId, addr.address_line1, addr.address_line2, addr.city, addr.district, addr.state, addr.country, addr.pincode]
-      );
-    }
-
-    if (req.session.checkoutAddress) {
-      const addr = req.session.checkoutAddress;
-      await connection.execute(
-        `UPDATE orders 
-         SET address_line1 = ?, 
-             address_line2 = ?, 
-             city = ?, 
-             district = ?, 
-             state = ?, 
-             country = ?, 
-             pincode = ?
-         WHERE order_id = ?`,
-        [
-          addr.address_line1,
-          addr.address_line2,
-          addr.city,
-          addr.district,
-          addr.state,
-          addr.country,
-          addr.pincode,
-          merchantOrderId,
-        ]
-      );
-    }
-
-
-    // Get address information from addresses table
-    const [addressData] = await connection.execute(
-      "SELECT address_line1, address_line2, city, district, state, country, pincode FROM addresses WHERE user_id = ? ORDER BY created_at DESC LIMIT 1",
-      [userId]
-    );
-    console.log(`Address data: ${addressData}`);
 
     await connection.commit();
 
-    console.log(
-      `Database updated - OrderId: ${merchantOrderId}, PaymentStatus: ${paymentStatus}, OrderStatus: ${orderStatus}, StockReduced: ${orderStatus === 'paid' && oldStatus !== 'paid'}`
-    );
-
-    res.json({ 
+    res.json({
       orderStatus: response,
-      address: addressData.length > 0 ? addressData[0] : null
+      paymentStatus,
+      orderState,
+      transactionId
     });
   } catch (err) {
     await connection.rollback();
-    console.error(err);
-    res
-      .status(500)
-      .json({ error: "Error fetching order status", details: err.message });
+    console.error("Order status check error:", err);
+    res.status(500).json({ error: "Failed to check order status", details: err.message });
   } finally {
     connection.release();
   }
 });
 
-// 5. Refund Payment
-router.post("/refund", authMiddleware, async (req, res) => {
-  const { orderId, amount, refundId } = req.body;
-  if (!orderId || !amount || amount <= 0 || !refundId) {
-    return res
-      .status(400)
-      .json({ error: "Invalid orderId, refundId or amount" });
-  }
-
-  try {
-    const amountPaisa = Math.round(amount * 100);
-
-    // Fetch payment_id from payments table
-    const [[payment]] = await pool.query(
-      "SELECT payment_id FROM payments WHERE order_id = ?",
-      [orderId]
-    );
-
-    if (!payment || !payment.payment_id) {
-      return res
-        .status(400)
-        .json({ error: "No payment found for this orderId" });
-    }
-
-    const paymentId = payment.payment_id;
-
-    // Insert refund record (pending)
-    await pool.query(
-      `INSERT INTO refunds (refund_id, payment_id, order_id, amount, status, created_at)
-       VALUES (?, ?, ?, ?, 'pending', NOW())`,
-      [refundId, paymentId, orderId, amount]
-    );
-
-    // Call PhonePe Refund API
-    const response = await phonePeClient.refund(refundId, orderId, amountPaisa);
-
-    const refundState = response?.data?.state?.toLowerCase() || "pending";
-    const phonepeRefundTxnId = response?.data?.transactionId || null;
-
-    // Update refunds table
-    await pool.query(
-      `UPDATE refunds
-       SET status = ?, phonepe_refund_txn_id = ?, callback_data = ?
-       WHERE refund_id = ?`,
-      [refundState, phonepeRefundTxnId, JSON.stringify(response), refundId]
-    );
-
-    // Update payments table with refund_id
-    await pool.query("UPDATE payments SET refund_id = ? WHERE payment_id = ?", [
-      refundId,
-      paymentId,
-    ]);
-
-    // If full refund, mark payment and order as refunded
-    if (refundState === "success") {
-      const [[{ total }]] = await pool.query(
-        "SELECT total FROM orders WHERE order_id = ?",
-        [orderId]
-      );
-
-      if (Number(amount) >= Number(total)) {
-        await pool.query(
-          "UPDATE payments SET status = ? WHERE payment_id = ?",
-          ["refunded", paymentId]
-        );
-        await pool.query(
-          "UPDATE orders SET payment_status = ? WHERE order_id = ?",
-          ["refunded", orderId]
-        );
-      }
-    }
-
-    res.json({ refundStatus: response });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Refund failed", details: err.message });
-  }
-});
-
-// 6. Webhook Callback (payments + refunds)
-router.post("/webhook", express.json({ type: "*/*" }), async (req, res) => {
-  const connection = await pool.getConnection();
-
-  try {
-    await connection.beginTransaction();
-
-    const payload = req.body;
-    const orderId = payload?.merchantOrderId;
-    const txnId = payload?.transactionId;
-    const refundId = payload?.refundId;
-    const state = payload?.state || "PENDING";
-
-    if (refundId) {
-      await connection.execute(
-        `UPDATE refunds 
-         SET status = ?, phonepe_refund_txn_id = ?, callback_data = ?
-         WHERE refund_id = ?`,
-        [state.toLowerCase(), txnId, JSON.stringify(payload), refundId]
-      );
-    } else if (orderId) {
-      // Map PhonePe states to database values
-      let paymentStatus = "pending";
-      let orderStatus = "pending";
-
-      if (state === "COMPLETED") {
-        paymentStatus = "completed";
-        orderStatus = "paid";
-      } else if (state === "FAILED") {
-        paymentStatus = "failed";
-        orderStatus = "pending";
-      }
-
-      // Update payment status
-      await connection.execute(
-        `UPDATE payments 
-         SET status = ?, transaction_ref = ?
-         WHERE order_id = ?`,
-        [paymentStatus, txnId, orderId]
-      );
-
-      // Update order status
-      await connection.execute(
-        "UPDATE orders SET status = ?, payment_status = ? WHERE order_id = ?",
-        [orderStatus, paymentStatus, orderId]
-      );
-    }
-
-    await connection.commit();
-    res.json({ success: true });
-  } catch (err) {
-    await connection.rollback();
-    console.error("Webhook error:", err);
-    res
-      .status(500)
-      .json({ error: "Webhook handling failed", details: err.message });
-  } finally {
-    connection.release();
-  }
-});
-
-// Get current order ID from session
+// 4. Get Current Order ID from Session
 router.get("/current-order", authMiddleware, async (req, res) => {
   const orderId = req.session.currentOrderId;
   if (!orderId) {

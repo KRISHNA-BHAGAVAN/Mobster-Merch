@@ -323,21 +323,24 @@ const PaymentStep: React.FC<PaymentStepProps> = ({ orderData, address, onComplet
   const handlePhonePePayment = async () => {
     setSubmitting(true);
     try {
-      // Create order first
-      const orderResult = await orderService.createOrder();
+      const paymentData = {
+        orderId: orderData.order_id || orderData.temp_order_id,
+        amount: parseFloat(orderData.total),
+        address: address
+      };
       
-      if (orderResult.payment_method === 'phonepe') {
-        // Redirect to PhonePe gateway  
-        const phonepeResult = await checkoutService.createPhonePePayment({
-          orderId: orderResult.order_id,
-          amount: orderResult.total
-        });
-        
-        if (phonepeResult.checkoutUrl) {
-          window.location.href = phonepeResult.checkoutUrl;
-        }
+      console.log('Sending PhonePe payment data:', paymentData);
+      console.log('Full orderData:', orderData);
+      
+      const phonepeResult = await checkoutService.createPhonePePayment(paymentData);
+      
+      if (phonepeResult.checkoutUrl) {
+        window.location.href = phonepeResult.checkoutUrl;
+      } else {
+        toast.error('No checkout URL received from PhonePe');
       }
     } catch (error: any) {
+      console.error('PhonePe payment error:', error);
       toast.error(error.message || 'Error initiating PhonePe payment');
     } finally {
       setSubmitting(false);
@@ -353,7 +356,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({ orderData, address, onComplet
       <h2 className="text-xl font-semibold text-white mb-6">Complete Payment</h2>
       
       <div className="mb-6 p-4 bg-gray-700 rounded-lg">
-        <p className="text-white mb-2">Order ID: <span className="font-mono">{orderData.temp_order_id}</span></p>
+        <p className="text-white mb-2">Order ID: <span className="font-mono">{orderData.order_id || orderData.temp_order_id}</span></p>
         <p className="text-white mb-4">Amount: <span className="font-semibold">₹{orderData.total}</span></p>
         
         {orderData.payment_method === 'phonepe' ? (

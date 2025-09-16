@@ -19,6 +19,12 @@ export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
 
   const response = await fetch(url, config);
   
+  // Check if response is HTML (like PhonePe redirect pages)
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('text/html')) {
+    throw new Error('Received HTML response instead of JSON. Check if the endpoint is correct.');
+  }
+  
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
     console.error('API Error:', errorData);

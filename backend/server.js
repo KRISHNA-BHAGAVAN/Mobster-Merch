@@ -83,10 +83,15 @@ app.use(
 // ---------------------
 // CORS
 // ---------------------
+const allowedOrigins =
+  process.env.NODE_ENV === "production"
+    ? ["https://mobstermerch.store", "https://www.mobstermerch.store"]
+    : ["http://localhost:5173"];
+
 app.use(
   cors({
     credentials: true,
-    origin: ["https://mobstermerch.store", "https://www.mobstermerch.store"],
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
@@ -114,11 +119,11 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      ...(process.env.NODE_ENV === "production"
-        ? { domain: ".mobstermerch.store" } // works for both root + www
-        : {}),
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "None" : "lax",
+      ...(process.env.NODE_ENV === "production"
+        ? { domain: ".mobstermerch.store" }
+        : {}),
       maxAge: 1000 * 60 * 60 * 24, // 1 day
     },
   })
@@ -190,17 +195,17 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", message: "Your Merchandise API is running fine" });
 });
 
-if (process.env.NODE_ENV == "development") {
-  // ---------------------
-  // Serve React frontend (Reverse Proxy)
-  // ---------------------
-  const frontendPath = path.join(__dirname, "..", "frontend", "dist");
-  app.use(express.static(frontendPath));
+// if (process.env.NODE_ENV == "development") {
+//   // ---------------------
+//   // Serve React frontend (Reverse Proxy)
+//   // ---------------------
+//   const frontendPath = path.join(__dirname, "..", "frontend", "dist");
+//   app.use(express.static(frontendPath));
 
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(frontendPath, "index.html"));
-  });
-}
+//   app.get("*", (req, res) => {
+//     res.sendFile(path.join(frontendPath, "index.html"));
+//   });
+// }
 
 // ---------------------
 // Error handling middleware
