@@ -30,7 +30,7 @@ import pincodeRoutes from "./routes/pincode.js";
 // Import corrected middleware
 import { authMiddleware, adminMiddleware } from "./middleware/auth.js";
 
-dotenv.config({ path: "../.env", override: true });
+dotenv.config({ override: true });
 
 // ---------------------
 // Init
@@ -38,7 +38,6 @@ dotenv.config({ path: "../.env", override: true });
 const __dirname = import.meta.dirname;
 const app = express();
 const PORT = process.env.PORT || 5000;
-const NODE_ENV = process.env.NODE_ENV;
 
 // Debug Redis connection
 redisClient.on("connect", () => console.log("✅ Redis connected successfully"));
@@ -115,7 +114,7 @@ app.use(
     cookie: {
       httpOnly: true,
       ...(process.env.NODE_ENV === "production"
-        ? { domain: ".duckdns.org" }
+        ? { domain: "www.mobstermerch.store" }
         : {}),
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "None" : "lax",
@@ -153,7 +152,7 @@ app.get("/login", (req, res) => {
     const isAdmin = req.session.isAdmin;
     return res.redirect(isAdmin ? "/admin" : "/");
   }
-  res.redirect("/"); // Let frontend handle routing
+  res.redirect("/"); 
 });
 
 app.get("/register", (req, res) => {
@@ -161,7 +160,7 @@ app.get("/register", (req, res) => {
     const isAdmin = req.session.isAdmin;
     return res.redirect(isAdmin ? "/admin" : "/");
   }
-  res.redirect("/"); // Let frontend handle routing
+  res.redirect("/");
 });
 
 // ---------------------
@@ -214,6 +213,18 @@ app.use((err, req, res, next) => {
       .json({ error: err.message || "Internal Server Error" });
   }
 });
+
+
+app.get("/api/site-status", async (req, res) => {
+  try {
+    const closed = await redisClient.get("site_closed");
+    res.json({ closed: closed === "1" });
+  } catch (err) {
+    console.error("Error fetching site status:", err);
+    res.status(500).json({ closed: false });
+  }
+});
+
 
 // ---------------------
 // Start server

@@ -19,6 +19,7 @@ interface Product {
   description: string;
   stock: number;
   is_deleted: number;
+  additional_info?: any;
 }
 
 interface CartItem {
