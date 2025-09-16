@@ -1,116 +1,158 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, TextField, Button, Alert, Box, Typography } from '@mui/material';
-import { Icon } from '@iconify/react';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate, useLocation } from 'react-router-dom';
-
+import React, { useEffect, useState } from "react";
+import {
+  Card,
+  CardContent,
+  TextField,
+  Button,
+  Alert,
+  Box,
+  Typography,
+} from "@mui/material";
+import { Icon } from "@iconify/react";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import '../styles/admin.css';
+import "../styles/admin.css";
 
-export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }) => {
+export const Login: React.FC<{ siteClosed?: boolean }> = ({
+  siteClosed = false,
+}) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { login, register, user } = useAuth();
+
+  // form mode
   const [isLogin, setIsLogin] = useState(true);
+
+  // login/register fields
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+
+  // forgot password flow
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetStep, setResetStep] = useState<
+    "identifier" | "code" | "password"
+  >("identifier");
+  const [resetIdentifier, setResetIdentifier] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [resetUserId, setResetUserId] = useState<string | null>(null);
+  const [verifyToken, setVerifyToken] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  // generic UI state
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [resetIdentifier, setResetIdentifier] = useState("");
-  const [resetCode, setResetCode] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [resetStep, setResetStep] = useState<"identifier" | "code" | "password">("identifier");
-  const [resetUserId, setResetUserId] = useState<string | null>(null);
-  const [verifyToken, setVerifyToken] = useState<string | null>(null);
 
-  const { login, register, user } = useAuth();
+  // dynamic import for authService used only by forgot-password flow
   const [authService, setAuthService] = useState<any>(null);
-
   useEffect(() => {
-    import("../services/authService").then((module) => {
-      setAuthService(module.authService);
-    });
+    import("../services/authService").then((m) => setAuthService(m.authService));
   }, []);
-  const navigate = useNavigate();
 
   useEffect(() => {
-    if (location.state?.mode === "register") {
-      setIsLogin(false);
-    }
+    if (location.state?.mode === "register") setIsLogin(false);
   }, [location.state]);
 
+  // reset all forgot-password related states
+  const resetForgotPassword = () => {
+    setShowForgotPassword(false);
+    setResetStep("identifier");
+    setResetIdentifier("");
+    setResetCode("");
+    setResetUserId(null);
+    setVerifyToken(null);
+    setNewPassword("");
+    setConfirmPassword("");
+    setErrorMsg(null);
+    setSuccessMsg(null);
+  };
+
+  // ----------------- Submit handler (login or register) -----------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    e.stopPropagation();
     setLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    // Check maintenance mode before attempting auth
-    if (siteClosed) {
-      if (!isLogin) {
-        setErrorMsg(
-          "Registration is currently unavailable due to maintenance."
-        );
+    // registration guard if site closed
+    if (siteClosed && !isLogin) {
+      setErrorMsg("Registration is currently unavailable due to maintenance.");
+      setLoading(false);
+      setTimeout(() => navigate("/", { replace: true }), 2000);
+      return;
+    }
+
+    // basic validations for register
+    if (!isLogin) {
+      if (!username.endsWith("@gmail.com")) {
+        setErrorMsg("Please enter a valid Gmail address ending with @gmail.com");
         setLoading(false);
-        setTimeout(() => navigate("/", { replace: true }), 2000);
+        return;
+      }
+      if (!/^\d{10}$/.test(phone)) {
+        setErrorMsg("Phone number must be exactly 10 digits");
+        setLoading(false);
         return;
       }
     }
 
-    // Validate email for registration
-    if (!isLogin && !username.endsWith('@gmail.com')) {
-      setErrorMsg("Please enter a valid Gmail address ending with @gmail.com");
-      setLoading(false);
-      return;
-    }
-
-    // Validate phone number for registration
-    if (!isLogin && !/^\d{10}$/.test(phone)) {
-      setErrorMsg("Phone number must be exactly 10 digits");
-      setLoading(false);
-      return;
-    }
-
     try {
       if (isLogin) {
+        // login
         const result = await login(username, password);
-        if(result.status==401 && result.message.includes("Invalid")){
-          setErrorMsg("Invalid Credentials");
+        // Expect result: { success: boolean, error?: string, user?: {...}, status?: number, message?: string }
+        if (!result || !result.success) {
+          setErrorMsg(result?.error || "Invalid credentials");
+          setLoading(false);
+          return;
         }
-        // Check if backend returned maintenance message
-        if (result?.message && result.message.includes("maintainance")) {
+
+        // maintenance check (backend may return a message)
+        if (result?.message?.toLowerCase().includes("maintain")) {
           setErrorMsg("Site is under maintenance. Please try again later.");
+          setLoading(false);
           setTimeout(() => navigate("/", { replace: true }), 2000);
-        } else if (result?.user?.isAdmin) {
+          return;
+        }
+
+        // admin redirect
+        if (result?.user?.isAdmin) {
           navigate("/admin", { replace: true });
-        } else if (siteClosed) {
-          setErrorMsg("Site is under maintenance. Please try again later.");
-          setTimeout(() => navigate("/", { replace: true }), 2000);
         } else {
           navigate("/", { replace: true });
         }
       } else {
+        // register
         const result = await register(name, username, password, phone);
-        if (result.success) {
-          navigate('/waiting-verification', { state: { email: username } });
+        if (!result || !result.success) {
+          setErrorMsg(result?.error || "Registration failed. Please try again.");
+          setLoading(false);
+          return;
         }
+
+        navigate("/waiting-verification", {
+          state: { email: username },
+        });
       }
-    } catch (error: any) {
-      console.error("Auth error:", error);
-      const errorMessage = error.message || (isLogin ? "Invalid credentials" : "Registration failed. Please try again.");
-      setErrorMsg(errorMessage);
+    } catch (err: any) {
+      console.error("Auth error:", err);
+      setErrorMsg(err?.message || (isLogin ? "Invalid credentials" : "Registration failed"));
     } finally {
       setLoading(false);
     }
   };
 
+  // ----------------- Forgot password flow handler -----------------
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!authService) return;
+    if (!authService) {
+      setErrorMsg("Service unavailable. Try again later.");
+      return;
+    }
 
     setLoading(true);
     setErrorMsg(null);
@@ -118,92 +160,117 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
 
     try {
       if (resetStep === "identifier") {
-        const result = await authService.requestPasswordReset(resetIdentifier);
-        if (result.shouldRegister) {
+        // request reset code (backend returns { success, message, userId, shouldRegister })
+        const res = await authService.requestPasswordReset(resetIdentifier);
+        if (!res) throw new Error("No response from server");
+
+        if (res.shouldRegister) {
+          // user not found -> instruct to register
           setErrorMsg("User not found. Please register first.");
           setTimeout(() => {
             setIsLogin(false);
             setShowForgotPassword(false);
             resetForgotPassword();
-          }, 2000);
-        } else {
-          setSuccessMsg(result.message);
-          setResetUserId(result.userId);
-          setResetStep("code");
+          }, 1600);
+          return;
         }
+
+        if (!res.success) {
+          setErrorMsg(res.error || "Failed to send reset code");
+          setLoading(false);
+          return;
+        }
+
+        setSuccessMsg(res.message || "Reset code sent to your email");
+        setResetUserId(res.userId || null);
+        setResetStep("code");
       } else if (resetStep === "code") {
+        // verify reset code -> expects { success, verifyToken, message }
+        if (!resetUserId) {
+          setErrorMsg("Missing user id. Start again.");
+          setLoading(false);
+          return;
+        }
         if (!resetCode || resetCode.length !== 6) {
           setErrorMsg("Please enter a valid 6-digit code");
           setLoading(false);
           return;
         }
-        const result = await authService.verifyResetCode(resetUserId!, resetCode);
-        setSuccessMsg(result.message);
-        setVerifyToken(result.verifyToken);
+
+        const res = await authService.verifyResetCode(resetUserId, resetCode);
+        if (!res || !res.success) {
+          setErrorMsg(res?.error || "Invalid or expired code");
+          setLoading(false);
+          return;
+        }
+
+        setVerifyToken(res.verifyToken || null);
+        setSuccessMsg(res.message || "Code verified. Set a new password.");
         setResetStep("password");
       } else if (resetStep === "password") {
+        // complete reset
+        if (!verifyToken) {
+          setErrorMsg("Missing verification token. Start again.");
+          setLoading(false);
+          return;
+        }
         if (newPassword !== confirmPassword) {
           setErrorMsg("Passwords do not match");
           setLoading(false);
           return;
         }
         if (newPassword.length < 6) {
-          setErrorMsg("Password must be at least 6 characters long");
+          setErrorMsg("Password must be at least 6 characters");
           setLoading(false);
           return;
         }
-        await authService.completePasswordReset(verifyToken!, newPassword, confirmPassword);
-        setSuccessMsg("Password reset successfully! You can now login.");
+
+        const res = await authService.completePasswordReset(
+          verifyToken,
+          newPassword,
+          confirmPassword
+        );
+        if (!res || !res.success) {
+          setErrorMsg(res?.error || "Failed to reset password");
+          setLoading(false);
+          return;
+        }
+
+        setSuccessMsg(res.message || "Password reset successfully. You can login.");
         setTimeout(() => {
           resetForgotPassword();
-        }, 2000);
+        }, 1600);
       }
-    } catch (error: any) {
-      if (error.message.includes("User not found")) {
+    } catch (err: any) {
+      console.error("Forgot password error:", err);
+      const msg = err?.message || "Failed to process request";
+      if (msg.includes("User not found")) {
         setErrorMsg("User not found. Please register first.");
         setTimeout(() => {
           setIsLogin(false);
           setShowForgotPassword(false);
           resetForgotPassword();
-        }, 2000);
+        }, 1600);
       } else {
-        setErrorMsg(error.message || "Failed to process request");
+        setErrorMsg(msg);
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const resetForgotPassword = () => {
-    setShowForgotPassword(false);
-    setResetStep("identifier");
-    setResetIdentifier("");
-    setResetCode("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setResetUserId(null);
-    setVerifyToken(null);
-    setErrorMsg(null);
-    setSuccessMsg(null);
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-black relative">
-      <video
-        autoPlay
-        loop
-        muted
-        className="absolute inset-0 w-full h-full object-cover z-0"
-      >
+      <video autoPlay loop muted className="absolute inset-0 w-full h-full object-cover z-0">
         <source src="/images/boom1.mp4" type="video/mp4" />
       </video>
-      <div className="absolute inset-0 bg-black/30 z-10"></div>
-      {/* Animated Card */}
+      <div className="absolute inset-0 bg-black/30 z-10" />
+
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="w-full max-w-sm" // reduced from max-w-md
+        className="w-full max-w-sm"
       >
         <motion.div
           animate={{
@@ -228,73 +295,41 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
           >
             <CardContent sx={{ p: 3 }}>
               <motion.div
-                initial={{ scale: 0.9, opacity: 0 }} // slightly smaller
+                initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.6 }}
                 className="flex flex-col items-center mb-4"
               >
-                {/* <Icon icon="lucide:shield" className="w-10 h-10 text-red-500" />  */}
                 <h1 className="text-xl font-bold text-red-500 mt-2">
-                  {showForgotPassword
-                    ? "Reset Password"
-                    : isLogin
-                    ? "Login"
-                    : "Register"}
+                  {showForgotPassword ? "Reset Password" : isLogin ? "Login" : "Register"}
                 </h1>
                 <p className="text-xs text-gray-400">
-                  {showForgotPassword
-                    ? "Enter your details"
-                    : isLogin
-                    ? "Secure Access"
-                    : "Create Account"}
+                  {showForgotPassword ? "Enter details to reset your password" : isLogin ? "Secure Access" : "Create Account"}
                 </p>
               </motion.div>
 
+              {/* Alerts */}
               {errorMsg && (
-                <motion.div
-                  initial={{ x: 0 }}
-                  animate={{ x: [0, -8, 8, -8, 8, 0] }}
-                  transition={{ duration: 0.4 }}
-                >
-                  <Alert
-                    severity="error"
-                    sx={{
-                      mb: 2,
-                      backgroundColor: "rgba(127, 29, 29, 0.5)",
-                      border: "1px solid #dc2626",
-                      color: "#fca5a5",
-                    }}
-                  >
+                <motion.div initial={{ x: 0 }} animate={{ x: [0, -8, 8, -8, 8, 0] }} transition={{ duration: 0.4 }}>
+                  <Alert severity="error" sx={{ mb: 2, backgroundColor: "rgba(127,29,29,0.5)", border: "1px solid #dc2626", color: "#fca5a5" }}>
                     {errorMsg}
                   </Alert>
                 </motion.div>
               )}
-
               {successMsg && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4 }}
-                >
-                  <Alert
-                    severity="success"
-                    sx={{
-                      mb: 2,
-                      backgroundColor: "rgba(20, 83, 45, 0.5)",
-                      border: "1px solid #16a34a",
-                      color: "#86efac",
-                    }}
-                  >
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+                  <Alert severity="success" sx={{ mb: 2, backgroundColor: "rgba(20,83,45,0.5)", border: "1px solid #16a34a", color: "#86efac" }}>
                     {successMsg}
                   </Alert>
                 </motion.div>
               )}
 
+              {/* Single form for both login/register and forgot-password flows.
+                  onSubmit switches based on showForgotPassword */}
               <Box
                 component="form"
-                onSubmit={
-                  showForgotPassword ? handleForgotPassword : handleSubmit
-                }
+                onSubmit={showForgotPassword ? handleForgotPassword : handleSubmit}
+                noValidate
                 sx={{ "& > :not(style)": { mb: 2.5 } }}
               >
                 {showForgotPassword ? (
@@ -306,50 +341,32 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
                         label="Username or Email"
                         value={resetIdentifier}
                         onChange={(e) => setResetIdentifier(e.target.value)}
-                        autoComplete="off"
+                        autoComplete="username"
                         InputProps={{
-                          startAdornment: (
-                            <Icon
-                              icon="lucide:user"
-                              className="text-red-500 mr-2"
-                            />
-                          ),
+                          startAdornment: <Icon icon="lucide:user" className="text-red-500 mr-2" />,
                         }}
-                        sx={{
-                          "& .MuiInputLabel-root.Mui-focused": {
-                            color: "#dc2626",
-                          },
-                        }}
+                        sx={{ "& .MuiInputLabel-root.Mui-focused": { color: "#dc2626" } }}
                         required
                       />
                     )}
+
                     {resetStep === "code" && (
                       <TextField
                         fullWidth
                         type="text"
                         label="6-digit Code from Email"
                         value={resetCode}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, "").slice(0, 6);
-                          setResetCode(value);
-                        }}
+                        onChange={(e) => setResetCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        inputProps={{ maxLength: 6 }}
                         autoComplete="off"
                         InputProps={{
-                          startAdornment: (
-                            <Icon
-                              icon="lucide:key"
-                              className="text-red-500 mr-2"
-                            />
-                          ),
+                          startAdornment: <Icon icon="lucide:key" className="text-red-500 mr-2" />,
                         }}
-                        sx={{
-                          "& .MuiInputLabel-root.Mui-focused": {
-                            color: "#dc2626",
-                          },
-                        }}
+                        sx={{ "& .MuiInputLabel-root.Mui-focused": { color: "#dc2626" } }}
                         required
                       />
                     )}
+
                     {resetStep === "password" && (
                       <>
                         <TextField
@@ -358,20 +375,11 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
                           label="New Password"
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
-                          autoComplete="off"
+                          autoComplete="new-password"
                           InputProps={{
-                            startAdornment: (
-                              <Icon
-                                icon="lucide:lock"
-                                className="text-red-500 mr-2"
-                              />
-                            ),
+                            startAdornment: <Icon icon="lucide:lock" className="text-red-500 mr-2" />,
                           }}
-                          sx={{
-                            "& .MuiInputLabel-root.Mui-focused": {
-                              color: "#dc2626",
-                            },
-                          }}
+                          sx={{ "& .MuiInputLabel-root.Mui-focused": { color: "#dc2626" } }}
                           required
                         />
                         <TextField
@@ -380,20 +388,11 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
                           label="Confirm Password"
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
-                          autoComplete="off"
+                          autoComplete="new-password"
                           InputProps={{
-                            startAdornment: (
-                              <Icon
-                                icon="lucide:lock"
-                                className="text-red-500 mr-2"
-                              />
-                            ),
+                            startAdornment: <Icon icon="lucide:lock" className="text-red-500 mr-2" />,
                           }}
-                          sx={{
-                            "& .MuiInputLabel-root.Mui-focused": {
-                              color: "#dc2626",
-                            },
-                          }}
+                          sx={{ "& .MuiInputLabel-root.Mui-focused": { color: "#dc2626" } }}
                           required
                         />
                       </>
@@ -408,128 +407,80 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
                         label="Full Name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        autoComplete="off"
+                        autoComplete="name"
                         InputProps={{
-                          startAdornment: (
-                            <Icon
-                              icon="lucide:user"
-                              className="text-red-500 mr-2"
-                            />
-                          ),
+                          startAdornment: <Icon icon="lucide:user" className="text-red-500 mr-2" />,
                         }}
                         sx={{
-                          "& .MuiInputLabel-root.Mui-focused": {
-                            color: "#dc2626",
-                          },
-                          "& .MuiOutlinedInput-root": {
-                            "& input:-webkit-autofill": {
-                              WebkitBoxShadow: "0 0 0 1000px transparent inset",
-                              WebkitTextFillColor: "white",
-                            },
+                          "& .MuiInputLabel-root.Mui-focused": { color: "#dc2626" },
+                          "& .MuiOutlinedInput-root input:-webkit-autofill": {
+                            WebkitBoxShadow: "0 0 0 1000px transparent inset",
+                            WebkitTextFillColor: "white",
                           },
                         }}
                         required
                       />
                     )}
+
                     <TextField
                       fullWidth
                       type={isLogin ? "text" : "email"}
                       label={isLogin ? "Email or Username" : "Email"}
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      autoComplete="off"
+                      autoComplete={isLogin ? "username" : "email"}
                       InputProps={{
-                        startAdornment: (
-                          <Icon
-                            icon="lucide:mail"
-                            className="text-red-500 mr-2"
-                          />
-                        ),
+                        startAdornment: <Icon icon="lucide:mail" className="text-red-500 mr-2" />,
                       }}
                       sx={{
-                        "& .MuiInputLabel-root.Mui-focused": {
-                          color: "#dc2626",
-                        },
-                        "& .MuiOutlinedInput-root": {
-                          "& input:-webkit-autofill": {
-                            WebkitBoxShadow: "0 0 0 1000px transparent inset",
-                            WebkitTextFillColor: "white",
-                          },
+                        "& .MuiInputLabel-root.Mui-focused": { color: "#dc2626" },
+                        "& .MuiOutlinedInput-root input:-webkit-autofill": {
+                          WebkitBoxShadow: "0 0 0 1000px transparent inset",
+                          WebkitTextFillColor: "white",
                         },
                       }}
                       required
                     />
+
                     <TextField
                       fullWidth
                       type="password"
                       label="Password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      autoComplete="off"
+                      autoComplete={isLogin ? "current-password" : "new-password"}
                       InputProps={{
-                        startAdornment: (
-                          <Icon
-                            icon="lucide:lock"
-                            className="text-red-500 mr-2"
-                          />
-                        ),
+                        startAdornment: <Icon icon="lucide:lock" className="text-red-500 mr-2" />,
                       }}
                       sx={{
-                        "& .MuiInputLabel-root.Mui-focused": {
-                          color: "#dc2626",
-                        },
-                        "& .MuiOutlinedInput-root": {
-                          "& input:-webkit-autofill": {
-                            WebkitBoxShadow: "0 0 0 1000px transparent inset",
-                            WebkitTextFillColor: "white",
-                          },
+                        "& .MuiInputLabel-root.Mui-focused": { color: "#dc2626" },
+                        "& .MuiOutlinedInput-root input:-webkit-autofill": {
+                          WebkitBoxShadow: "0 0 0 1000px transparent inset",
+                          WebkitTextFillColor: "white",
                         },
                       }}
                       required
                     />
+
+                    {!isLogin && (
+                      <TextField
+                        fullWidth
+                        type="tel"
+                        label="Phone (10 digits)"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                        autoComplete="tel"
+                        InputProps={{
+                          startAdornment: <Icon icon="lucide:phone" className="text-red-500 mr-2" />,
+                        }}
+                        sx={{ "& .MuiInputLabel-root.Mui-focused": { color: "#dc2626" } }}
+                        required
+                      />
+                    )}
                   </>
                 )}
 
-                {!showForgotPassword && !isLogin && (
-                  <TextField
-                    fullWidth
-                    type="tel"
-                    label="Phone (10 digits)"
-                    value={phone}
-                    onChange={(e) => {
-                      const value = e.target.value
-                        .replace(/\D/g, "")
-                        .slice(0, 10);
-                      setPhone(value);
-                    }}
-                    autoComplete="off"
-                    InputProps={{
-                      startAdornment: (
-                        <Icon
-                          icon="lucide:phone"
-                          className="text-red-500 mr-2"
-                        />
-                      ),
-                    }}
-                    sx={{
-                      "& .MuiInputLabel-root.Mui-focused": {
-                        color: "#dc2626",
-                      },
-                      "& .MuiOutlinedInput-root": {
-                        "& input:-webkit-autofill": {
-                          WebkitBoxShadow: "0 0 0 1000px transparent inset",
-                          WebkitTextFillColor: "white",
-                        },
-                      },
-                    }}
-                    required
-                  />
-                )}
-
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button
                     type="submit"
                     fullWidth
@@ -556,28 +507,34 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
                       : "REGISTER"}
                   </Button>
                 </motion.div>
-                {isLogin && (
-                  <button
-                    type="button"
-                    onClick={() => setShowForgotPassword(true)}
-                    className="text-red-500 hover:text-red-400 underline ml-1"
-                    style={{ fontFamily: '"Ungai", sans-serif' }}
-                  >
-                    Reset Password
-                  </button>
+
+                {/* Show link to trigger forgot-password flow */}
+                {!showForgotPassword && isLogin && (
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowForgotPassword(true);
+                        setResetStep("identifier");
+                        setErrorMsg(null);
+                        setSuccessMsg(null);
+                      }}
+                      className="text-red-500 hover:text-red-400 underline ml-1"
+                      style={{ fontFamily: '"Ungai", sans-serif' }}
+                    >
+                      Reset Password
+                    </button>
+                  </div>
                 )}
               </Box>
 
               <div className="text-center mt-6">
                 {showForgotPassword ? (
-                  <p
-                    className="text-sm text-gray-400"
-                    style={{ fontFamily: '"Ungai", sans-serif' }}
-                  >
+                  <p className="text-sm text-gray-400" style={{ fontFamily: '"Ungai", sans-serif' }}>
                     Remember your password?
                     <button
                       type="button"
-                      onClick={resetForgotPassword}
+                      onClick={() => resetForgotPassword()}
                       className="text-red-500 hover:text-red-400 underline ml-1"
                       style={{ fontFamily: '"Ungai", sans-serif' }}
                     >
@@ -585,40 +542,17 @@ export const Login: React.FC<{ siteClosed?: boolean }> = ({ siteClosed = false }
                     </button>
                   </p>
                 ) : (
-                  <>
-                    <p
-                      className="text-sm text-gray-400"
+                  <p className="text-sm text-gray-400" style={{ fontFamily: '"Ungai", sans-serif' }}>
+                    {isLogin ? "Don't have an account? " : "Already have an account? "}
+                    <button
+                      type="button"
+                      onClick={() => setIsLogin((s) => !s)}
+                      className="text-red-500 hover:text-red-400 underline"
                       style={{ fontFamily: '"Ungai", sans-serif' }}
                     >
-                      {isLogin
-                        ? "Don't have an account? "
-                        : "Already have an account? "}
-                      <button
-                        type="button"
-                        onClick={() => setIsLogin(!isLogin)}
-                        className="text-red-500 hover:text-red-400 underline"
-                        style={{ fontFamily: '"Ungai", sans-serif' }}
-                      >
-                        {isLogin ? "Register" : "Login"}
-                      </button>
-                    </p>
-                    {/* {isLogin && (
-                      <p
-                        className="text-sm text-gray-400 mt-2"
-                        style={{ fontFamily: '"Ungai", sans-serif' }}
-                      >
-                        Forgot your password?
-                        <button
-                          type="button"
-                          onClick={() => setShowForgotPassword(true)}
-                          className="text-red-500 hover:text-red-400 underline ml-1"
-                          style={{ fontFamily: '"Ungai", sans-serif' }}
-                        >
-                          Reset Password
-                        </button>
-                      </p>
-                    )} */}
-                  </>
+                      {isLogin ? "Register" : "Login"}
+                    </button>
+                  </p>
                 )}
               </div>
 

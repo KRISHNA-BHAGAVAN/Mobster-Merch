@@ -95,7 +95,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
       price: product.price.toString(),
       stock: product.stock.toString(),
       category: categoryName,
-      additional_info: otherInfo
+      additional_info: []
     });
     
     // Set variant config if exists
@@ -179,21 +179,21 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   const updateDynamicField = (id: string, updates: Partial<DynamicField>) => {
     setFormData({
       ...formData,
-      additional_info: formData.additional_info?.map(field => 
+      additional_info: (formData.additional_info || []).map(field => 
         field.id === id ? { ...field, ...updates } : field
-      ) || []
+      )
     });
   };
 
   const removeDynamicField = (id: string) => {
     setFormData({
       ...formData,
-      additional_info: formData.additional_info?.filter(field => field.id !== id) || []
+      additional_info: (formData.additional_info || []).filter(field => field.id !== id)
     });
   };
 
   const addSelectOption = (fieldId: string) => {
-    const field = formData.additional_info?.find(f => f.id === fieldId);
+    const field = (formData.additional_info || []).find(f => f.id === fieldId);
     if (field) {
       updateDynamicField(fieldId, {
         options: [...(field.options || []), '']
@@ -202,7 +202,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   };
 
   const updateSelectOption = (fieldId: string, optionIndex: number, value: string) => {
-    const field = formData.additional_info?.find(f => f.id === fieldId);
+    const field = (formData.additional_info || []).find(f => f.id === fieldId);
     if (field && field.options) {
       const newOptions = [...field.options];
       newOptions[optionIndex] = value;
@@ -211,7 +211,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   };
 
   const removeSelectOption = (fieldId: string, optionIndex: number) => {
-    const field = formData.additional_info?.find(f => f.id === fieldId);
+    const field = (formData.additional_info || []).find(f => f.id === fieldId);
     if (field && field.options) {
       const newOptions = field.options.filter((_, index) => index !== optionIndex);
       updateDynamicField(fieldId, { options: newOptions });
@@ -352,7 +352,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                 
                 {showDynamicFields && (
                   <div className="space-y-4">
-                    {formData.additional_info?.map((field) => (
+                    {(formData.additional_info || []).map((field) => (
                       <div key={field.id} className="p-4 bg-gray-800 rounded border border-gray-600">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
                           <input

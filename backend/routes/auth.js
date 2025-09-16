@@ -38,7 +38,7 @@ router.post("/register", async (req, res) => {
     if (!name || !email || !phone || !password) {
       return res
         .status(400)
-        .json({ error: "Name, email, phone, and password are required" });
+        .json({ success: false, error: "Name, email, phone, and password are required" });
     }
 
     // Check for existing user
@@ -49,7 +49,7 @@ router.post("/register", async (req, res) => {
     if (existing.length > 0) {
       return res
         .status(400)
-        .json({ error: "Email, phone, or username already exists" });
+        .json({ success: false, error: "Email, phone, or username already exists" });
     }
 
     // Hash password
@@ -76,7 +76,7 @@ router.post("/register", async (req, res) => {
     } catch (emailError) {
       console.error('Email sending failed:', emailError);
       await redisClient.del(`verify_${verificationToken}`);
-      return res.status(500).json({ error: "Failed to send verification email. Please try again." });
+      return res.status(500).json({ success: false, error: "Failed to send verification email. Please try again." });
     }
 
     res.json({
@@ -85,7 +85,7 @@ router.post("/register", async (req, res) => {
     });
   } catch (error) {
     console.error("Registration error:", error);
-    res.status(500).json({ error: "Registration failed" });
+    res.status(500).json({ success: false, error: "Registration failed" });
   }
 });
 
@@ -99,7 +99,7 @@ router.post("/login",  async (req, res) => {
     if (!identifier || !password) {
       return res
         .status(400)
-        .json({ error: "Email/username and password are required" });
+        .json({ success: false, error: "Email/username and password are required" });
     }
 
     const closed = await redisClient.get('site_closed');
@@ -110,12 +110,12 @@ router.post("/login",  async (req, res) => {
     );
     
     if (rows.length<=0)
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(401).json({ success: false, error: "Invalid credentials" });
 
     const user = rows[0];
     const match = await bcrypt.compare(password, user.password);
     
-    if (!match) return res.status(401).json({ error: "Invalid credentials" });
+    if (!match) return res.status(401).json({ success: false, error: "Invalid credentials" });
     
     // Create session
     req.session.userId = user.user_id;
@@ -133,7 +133,7 @@ router.post("/login",  async (req, res) => {
     res.cookie("refreshToken", refreshToken, cookieOptions());
     
     if (closed === '1' && !user.is_admin) {
-      return res.json({ message: "Site is under maintainance" });
+      return res.json({ success: false, error: "Site is under maintenance" });
     }
 
     res.json({
@@ -150,7 +150,7 @@ router.post("/login",  async (req, res) => {
     });
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ error: "Login failed" });
+    res.status(500).json({ success: false, error: "Login failed" });
   }
 });
 
@@ -162,13 +162,13 @@ router.post("/refresh", async (req, res) => {
   try {
     const refreshToken = req.cookies.refreshToken;
     if (!refreshToken)
-      return res.status(401).json({ error: "No refresh token provided" });
+      return res.status(401).json({ success: false, error: "No refresh token provided" });
 
     const userId = await redisClient.get(`refresh_${refreshToken}`);
     if (!userId)
       return res
         .status(401)
-        .json({ error: "Invalid or expired refresh token" });
+        .json({ success: false, error: "Invalid or expired refresh token" });
 
     // Re-create session
     req.session.userId = userId;
@@ -194,7 +194,7 @@ router.post("/refresh", async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error("Refresh error:", error);
-    res.status(500).json({ error: "Could not refresh session" });
+    res.status(500).json({ success: false, error: "Could not refresh session" });
   }
 });
 
@@ -242,7 +242,7 @@ router.get("/me", async (req, res) => {
   try {
     const userId = req.session.userId;
     if (!userId) {
-      return res.status(401).json({ error: "Not authenticated" });
+      return res.status(401).json({ success: false, error: "Not authenticated" });
     }
 
     const [rows] = await db.query(
@@ -250,7 +250,7 @@ router.get("/me", async (req, res) => {
       [userId]
     );
 
-    if (!rows.length) return res.status(401).json({ error: "User not found" });
+    if (!rows.length) return res.status(401).json({ success: false, error: "User not found" });
 
     const user = rows[0];
     res.json({
@@ -264,7 +264,7 @@ router.get("/me", async (req, res) => {
     });
   } catch (error) {
     console.error("Get user error:", error);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ success: false, error: "Server error" });
   }
 });
 
@@ -276,7 +276,7 @@ router.get("/check-verification", async (req, res) => {
     const { email } = req.query;
     
     if (!email) {
-      return res.status(400).json({ error: "Email is required" });
+      return res.status(400).json({ success: false, error: "Email is required" });
     }
 
     const [rows] = await db.query(
@@ -287,7 +287,7 @@ router.get("/check-verification", async (req, res) => {
     res.json({ verified: rows.length > 0 });
   } catch (error) {
     console.error("Verification check error:", error);
-    res.status(500).json({ error: "Failed to check verification status" });
+    res.status(500).json({ success: false, error: "Failed to check verification status" });
   }
 });
 
@@ -299,13 +299,13 @@ router.get("/verify-email", async (req, res) => {
     const { token } = req.query;
 
     if (!token) {
-      return res.status(400).json({ error: "Verification token is required" });
+      return res.status(400).json({ success: false, error: "Verification token is required" });
     }
 
     // Get user data from Redis
     const userDataStr = await redisClient.get(`verify_${token}`);
     if (!userDataStr) {
-      return res.status(400).json({ error: "Invalid or expired verification token" });
+      return res.status(400).json({ success: false, error: "Invalid or expired verification token" });
     }
 
     const userData = JSON.parse(userDataStr);
@@ -329,7 +329,7 @@ router.get("/verify-email", async (req, res) => {
     });
   } catch (error) {
     console.error("Email verification error:", error);
-    res.status(500).json({ error: "Email verification failed" });
+    res.status(500).json({ success: false, error: "Email verification failed" });
   }
 });
 
@@ -581,13 +581,13 @@ router.post("/logout", async (req, res) => {
     req.session.destroy((err) => {
       if (err) {
         console.error("Session destroy error:", err);
-        return res.status(500).json({ error: "Logout failed" });
+        return res.status(500).json({ success: false, error: "Logout failed" });
       }
       return res.json({ success: true, message: "Logged out successfully" });
     });
   } catch (error) {
     console.error("Logout error:", error);
-    res.status(500).json({ error: "Logout failed" });
+    res.status(500).json({ success: false, error: "Logout failed" });
   }
 });
 

@@ -9,12 +9,20 @@ export const authService = {
       body: JSON.stringify({ identifier, password })
     });
     
+    const data = await response.json();
+    
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error);
+      return {
+        success: false,
+        status: response.status,
+        error: data.error
+      };
     }
     
-    return response.json();
+    return {
+      success: true,
+      ...data
+    };
   },
 
   register: async (name: string, email: string, password: string, phone: string) => {

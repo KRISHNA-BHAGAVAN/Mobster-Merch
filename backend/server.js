@@ -215,16 +215,6 @@ app.use((err, req, res, next) => {
   }
 });
 
-app.get("/api/site-status", async (req, res) => {
-  try {
-    const closed = await redisClient.get("site_closed");
-    res.json({ closed: closed === "1" });
-  } catch (err) {
-    console.error("Error fetching site status:", err);
-    res.status(500).json({ closed: false });
-  }
-});
-
 // ---------------------
 // Start server
 // ---------------------

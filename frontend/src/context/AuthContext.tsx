@@ -36,46 +36,56 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (identifier: string, password: string) => {
     try {
-      setLoading(true);
-      const data = await authService.login(identifier, password);
-      
-      // Check if response has user data (not maintenance message)
-      if (data.user) {
-        const mappedUser = {
-          userId: data.user.id,
-          name: data.user.name,
-          email: data.user.email,
-          phone: data.user.phone,
-          image_url: data.user.image_url,
-          isAdmin: data.user.isAdmin || data.isAdmin
-        };
-        
-        // Store user data in localStorage
-        localStorage.setItem('user', JSON.stringify(mappedUser));
-        
-        setUser(mappedUser);
-        setIsAuthenticated(true);
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ identifier, password })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.error || "Login failed", status: res.status };
       }
+
+      const mappedUser = {
+        userId: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        phone: data.user.phone,
+        image_url: data.user.image_url,
+        isAdmin: data.user.isAdmin || data.isAdmin
+      };
       
-      setLoading(false);
-      return data;
-    } catch (err) {
-      setLoading(false);
-      console.error("Login error:", err);
-      throw err;
+      localStorage.setItem('user', JSON.stringify(mappedUser));
+      setUser(mappedUser);
+      setIsAuthenticated(true);
+
+      return { success: true, user: data.user };
+    } catch (err: any) {
+      return { success: false, error: err.message || "Network error" };
     }
   };
 
   const register = async (name: string, email: string, password: string, phone: string) => {
     try {
-      setLoading(true);
-      const data = await authService.register(name, email, password, phone);
-      setLoading(false);
-      return data;
-    } catch (err) {
-      setLoading(false);
-      console.error("Registration error:", err);
-      throw err;
+      const res = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ name, email, password, phone })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.error || "Registration failed" };
+      }
+
+      return { success: true, message: data.message };
+    } catch (err: any) {
+      return { success: false, error: err.message || "Network error" };
     }
   };
 
