@@ -157,11 +157,9 @@ router.get('/:order_id/details', authMiddleware, async (req, res) => {
   try {
     const [orderDetails] = await pool.execute(`
       SELECT o.*, u.name, u.email, u.phone,
-             a.address_line1, a.address_line2, a.city, a.state, a.pincode,
              pv.transaction_id, pv.screenshot_url, pv.status as payment_status, pv.admin_notes
       FROM orders o
       JOIN users u ON o.user_id = u.user_id
-      LEFT JOIN addresses a ON u.user_id = a.user_id AND a.is_default = 1
       LEFT JOIN payment_verifications pv ON o.order_id = pv.order_id
       WHERE o.order_id = ?
     `, [req.params.order_id]);

@@ -20,7 +20,7 @@ const router = express.Router();
 const clientId = process.env.PHONEPE_CLIENT_ID;
 const clientSecret = process.env.PHONEPE_CLIENT_SECRET;
 const clientVersion = parseInt(process.env.PHONEPE_CLIENT_VERSION);
-const phonepeEnv = (process.env.PHONEPE_ENV || "SANDBOX").toUpperCase();
+const phonepeEnv = (process.env.PHONEPE_ENV).toUpperCase();
 const env = phonepeEnv === "SANDBOX" ? Env.SANDBOX : Env.PRODUCTION; 
 
 console.log('PhonePe SDK Config:', {
