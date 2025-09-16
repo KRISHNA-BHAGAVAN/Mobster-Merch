@@ -11,10 +11,6 @@ router.get('/', async (req, res) => {
     
     const [categories] = await pool.execute('SELECT * FROM categories ORDER BY name');
     
-    if (categories.length === 0) {
-      return res.json({ message: 'No categories added in the database', categories: [] });
-    }
-    
     res.json(categories);
   } catch (error) {
     console.error('Error fetching categories:', error);

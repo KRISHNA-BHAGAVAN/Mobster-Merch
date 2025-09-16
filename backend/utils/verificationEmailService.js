@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import FRONTEND_URL from '../config/api.js';
+import {FRONTEND_URL} from '../config/api.js';
 
 // Create transporter
 const createTransporter = () => {

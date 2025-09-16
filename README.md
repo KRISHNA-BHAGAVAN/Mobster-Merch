@@ -1,281 +1,226 @@
-# OG Merchandise - E-commerce Platform
+# OG Merchandise
 
-A complete e-commerce platform for "They Call Him OG" movie merchandise built with React, Node.js, and MySQL.
+A full-stack e-commerce platform for merchandise with React frontend and Node.js backend.
 
-## 🚀 Features
+## Features
 
-### Customer Features
-- **User Authentication** - Register, login with JWT tokens
-- **Password Reset** - Secure username-based password reset with email tokens
-- **Product Browsing** - View products by categories with search functionality
-- **Shopping Cart** - Add/remove items with quantity controls and stock validation
-- **Order Management** - Place orders with UPI payment integration
-- **Order Tracking** - View order history and status updates
-- **Order Cancellation** - Request order cancellation with admin approval
-- **Notifications** - Receive messages from admin and order updates
-- **Profile Management** - Update profile information and upload profile pictures
+- **Product Management**: Browse, search, and view detailed product information with variants
+- **User Authentication**: Secure login/register with email verification
+- **Shopping Cart**: Add/remove items, quantity management
+- **Wishlist**: Save favorite products
+- **Order Management**: Complete checkout process with payment integration
+- **Admin Dashboard**: Manage products, categories, orders, and analytics
+- **Payment Integration**: PhonePe payment gateway
+- **Image Management**: Cloudinary integration for image uploads
+- **Email Service**: Automated email notifications
 
-### Admin Features
-- **Dashboard** - Comprehensive admin panel with multiple tabs
-- **Product Management** - CRUD operations for products with image uploads
-- **Category Management** - Create and manage product categories
-- **Order Management** - View all orders with status filters and manual updates
-- **Payment Verification** - Verify and approve UPI payments
-- **Cancellation Requests** - Approve or decline customer cancellation requests
-- **Customer Messaging** - Send messages to customers with searchable user selection
-- **Reports** - Daily sales reports and analytics
-- **Notifications** - Manage refund requests and cancellation requests
-
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 - **React 18** with TypeScript
 - **Vite** for build tooling
-- **HeroUI** for UI components
+- **Tailwind CSS** for styling
+- **Material-UI** components
 - **Framer Motion** for animations
 - **React Router** for navigation
-- **Context API** for state management
 
 ### Backend
 - **Node.js** with Express
 - **MySQL** database
-- **JWT** authentication
-- **Nodemailer** for email services
-- **Multer** for file uploads
-- **bcryptjs** for password hashing
+- **Redis** for session management
+- **Cloudinary** for image storage
+- **PhonePe SDK** for payments
+- **Nodemailer** for emails
+- **JWT** for authentication
 
-## 📦 Installation
+## Project Structure
+
+```
+og_merchandise/
+├── frontend/           # React frontend application
+├── backend/           # Node.js backend API
+├── package.json       # Root dependencies
+└── README.md         # This file
+```
+
+## Installation
 
 ### Prerequisites
-- Node.js (v16 or higher)
-- MySQL (v8 or higher)
-- npm or yarn
-- PM2 (for production)
-- Nginx (for production reverse proxy)
+- Node.js (v16+)
+- MySQL
+- Redis
+- Cloudinary account
+- PhonePe merchant account
 
-### Database Setup
-1. Create MySQL database:
-```sql
-CREATE DATABASE merchandise;
+### Setup
+
+1. **Clone the repository**
+```bash
+git clone <repository-url>
+cd og_merchandise
 ```
 
-2. Import the database schema:
-```sql
--- Users table
-CREATE TABLE users (
-  user_id INT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  email VARCHAR(100) UNIQUE NOT NULL,
-  password VARCHAR(255) NOT NULL,
-  phone VARCHAR(15),
-  image_url VARCHAR(255),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Products table
-CREATE TABLE products (
-  product_id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  description TEXT,
-  price DECIMAL(10,2) NOT NULL,
-  stock INT NOT NULL,
-  category VARCHAR(100),
-  image_url VARCHAR(255),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Categories table
-CREATE TABLE categories (
-  category_name VARCHAR(100) PRIMARY KEY,
-  description TEXT,
-  image_url VARCHAR(255),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Orders table
-CREATE TABLE orders (
-  order_id CHAR(6) PRIMARY KEY,
-  user_id INT NOT NULL,
-  total DECIMAL(10,2) NOT NULL,
-  status ENUM('pending','paid','shipped','delivered','cancelled') DEFAULT 'pending',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(user_id)
-);
-
--- Order items table
-CREATE TABLE order_items (
-  order_item_id INT AUTO_INCREMENT PRIMARY KEY,
-  order_id CHAR(6) NOT NULL,
-  product_id INT NOT NULL,
-  quantity INT NOT NULL,
-  price DECIMAL(10,2) NOT NULL,
-  FOREIGN KEY (order_id) REFERENCES orders(order_id),
-  FOREIGN KEY (product_id) REFERENCES products(product_id)
-);
-
--- Cart table
-CREATE TABLE cart (
-  cart_id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  product_id INT NOT NULL,
-  quantity INT NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(user_id),
-  FOREIGN KEY (product_id) REFERENCES products(product_id)
-);
-
--- Payments table
-CREATE TABLE payments (
-  payment_id INT PRIMARY KEY,
-  order_id CHAR(6) NOT NULL,
-  amount DECIMAL(10,2) NOT NULL,
-  method ENUM('upi') NOT NULL,
-  status ENUM('pending','completed','failed','refunded') DEFAULT 'pending',
-  transaction_ref VARCHAR(50),
-  paid_at TIMESTAMP,
-  FOREIGN KEY (order_id) REFERENCES orders(order_id)
-);
-
--- Notifications table
-CREATE TABLE notifications (
-  notification_id INT AUTO_INCREMENT PRIMARY KEY,
-  type ENUM('refund_request', 'order_update', 'admin_message', 'cancellation_request') NOT NULL,
-  title VARCHAR(255) NOT NULL,
-  message TEXT NOT NULL,
-  order_id CHAR(6),
-  user_id INT,
-  is_read BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (order_id) REFERENCES orders(order_id),
-  FOREIGN KEY (user_id) REFERENCES users(user_id)
-);
+2. **Install root dependencies**
+```bash
+npm install
 ```
 
-### Backend Setup
-1. Navigate to backend directory:
+3. **Backend Setup**
 ```bash
 cd backend
-```
-
-2. Install dependencies:
-```bash
 npm install
 ```
 
-3. Create `.env` file:
+Create `.env` file in backend directory:
 ```env
-JWT_SECRET=your_jwt_secret_here
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_password
+SESSION_SECRET=your_session_secret
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
 DB_NAME=merchandise
+DB_HOST=localhost
 DB_PORT=3306
+NODE_ENV=development
+PORT=5000
 
-# Email Configuration (see EMAIL_SETUP.md for details)
+PHONEPE_CLIENT_ID=your_phonepe_client_id
+PHONEPE_CLIENT_SECRET=your_phonepe_client_secret
+PHONEPE_CLIENT_VERSION=1
+PHONEPE_ENV=Env.SANDBOX
+
+CLOUDINARY_CLOUD_NAME=your_cloudinary_name
+CLOUDINARY_API_KEY=your_cloudinary_key
+CLOUDINARY_API_SECRET=your_cloudinary_secret
+
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
-EMAIL_USER=your-email@gmail.com
-EMAIL_PASS=your-app-password
-EMAIL_FROM=OG Merchandise <your-email@gmail.com>
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_app_password
+EMAIL_FROM=Your Name <your_email@gmail.com>
 ```
 
-4. Start the server:
-```bash
-npm run dev
-```
-
-### Frontend Setup
-1. Navigate to frontend directory:
+4. **Frontend Setup**
 ```bash
 cd frontend
-```
-
-2. Install dependencies:
-```bash
 npm install
 ```
 
-3. Start the development server:
+Create `.env.development` file in frontend directory:
+```env
+VITE_API_URL="http://localhost:5000/api"
+VITE_UPLOAD_URL="http://localhost:5000"
+```
+
+5. **Database Setup**
 ```bash
+# Import the database schema
+mysql -u your_username -p merchandise < merchandise.sql
+```
+
+## Running the Application
+
+### Development Mode
+
+1. **Start Backend**
+```bash
+cd backend
 npm run dev
 ```
 
-## 🚀 Production Deployment
-
-### Quick Deploy
+2. **Start Frontend**
 ```bash
-./deploy.sh
+cd frontend
+npm run dev
 ```
 
-### Manual Production Setup
-1. Install all dependencies:
-```bash
-npm run install:all
-```
+The application will be available at:
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:5000
 
-2. Build frontend:
+### Production Build
+
+1. **Build Frontend**
 ```bash
+cd frontend
 npm run build
 ```
 
-3. Configure production environment:
+2. **Start Backend**
 ```bash
-cp .env.production .env
-# Edit .env with your production values
+cd backend
+npm start
 ```
 
-4. Start production server:
+## API Endpoints
+
+### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `GET /api/auth/verify-email/:token` - Email verification
+
+### Products
+- `GET /api/products` - Get all products
+- `GET /api/products/:id` - Get product by ID
+- `POST /api/products` - Create product (Admin)
+- `PUT /api/products/:id` - Update product (Admin)
+- `DELETE /api/products/:id` - Delete product (Admin)
+
+### Cart
+- `GET /api/cart` - Get user cart
+- `POST /api/cart/add` - Add item to cart
+- `PUT /api/cart/update` - Update cart item
+- `DELETE /api/cart/remove/:id` - Remove cart item
+
+### Wishlist
+- `GET /api/wishlist` - Get user wishlist
+- `POST /api/wishlist/add` - Add to wishlist
+- `DELETE /api/wishlist/remove/:id` - Remove from wishlist
+
+### Orders
+- `GET /api/orders` - Get user orders
+- `POST /api/checkout` - Create order
+- `GET /api/orders/:id` - Get order details
+
+## Environment Variables
+
+### Backend (.env)
+| Variable | Description |
+|----------|-------------|
+| `SESSION_SECRET` | Secret for session encryption |
+| `DB_*` | Database connection details |
+| `PHONEPE_*` | PhonePe payment gateway credentials |
+| `CLOUDINARY_*` | Cloudinary image storage credentials |
+| `EMAIL_*` | Email service configuration |
+
+### Frontend (.env.development)
+| Variable | Description |
+|----------|-------------|
+| `VITE_API_URL` | Backend API URL |
+| `VITE_UPLOAD_URL` | File upload base URL |
+
+## Deployment
+
+1. **Build the frontend**
 ```bash
-npm start
-# Or with PM2:
+cd frontend
+npm run build
+```
+
+2. **Deploy using PM2**
+```bash
 pm2 start ecosystem.config.js
 ```
 
-### Nginx Configuration
-Copy `nginx.conf` to your nginx sites and update paths/domain.
+3. **Setup Nginx** (optional)
+Configure Nginx to serve the frontend and proxy API requests to the backend.
 
-## 🔧 Configuration
-
-### Admin Access
-- **Username**: admin
-- **Password**: jamesbond001
-
-### UPI Payment Configuration
-- Update UPI ID in `/backend/routes/orders.js`
-- Modify payment gateway integration as needed
-
-## 📱 Usage
-
-1. **Customer Registration**: Create account with email and phone
-2. **Browse Products**: View products by categories or search
-3. **Add to Cart**: Select products with quantity controls
-4. **Checkout**: Place order with UPI payment
-5. **Track Orders**: Monitor order status and history
-6. **Admin Panel**: Access at `/admin` with admin credentials
-
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **HeroUI** for the beautiful UI components
-- **Framer Motion** for smooth animations
-- **React** team for the amazing framework
-- **Node.js** community for the robust backend platform
-
-## 📞 Support
-
-For support, email support@ogmerchandise.com or create an issue in this repository.
-
----
-
-**Built with ❤️ for "They Call Him OG" movie fans**
+This project is licensed under the MIT License.

@@ -19,9 +19,10 @@ export const ProductCollections: React.FC = () => {
   const fetchCategoriesWithCount = async () => {
     try {
       const categoriesData = await categoryService.getAllCategories();
+      const categoriesArray = Array.isArray(categoriesData) ? categoriesData : [];
       
       const categoriesWithCount = await Promise.all(
-        categoriesData.map(async (category) => {
+        categoriesArray.map(async (category) => {
           try {
             const products = await productService.getProductsByCategory(category.category_id);
             return {
