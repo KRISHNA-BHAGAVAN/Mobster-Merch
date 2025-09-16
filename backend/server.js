@@ -86,7 +86,7 @@ app.use(
 app.use(
   cors({
     credentials: true,
-    origin: true,
+    origin: ["https://mobstermerch.store", "https://www.mobstermerch.store"],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
@@ -99,6 +99,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
+// Trust proxy for correct protocol/secure cookies behind Nginx/Certbot
 app.set("trust proxy", 1);
 
 // ---------------------
@@ -114,7 +115,7 @@ app.use(
     cookie: {
       httpOnly: true,
       ...(process.env.NODE_ENV === "production"
-        ? { domain: "www.mobstermerch.store" }
+        ? { domain: ".mobstermerch.store" } // works for both root + www
         : {}),
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "None" : "lax",
@@ -152,7 +153,7 @@ app.get("/login", (req, res) => {
     const isAdmin = req.session.isAdmin;
     return res.redirect(isAdmin ? "/admin" : "/");
   }
-  res.redirect("/"); 
+  res.redirect("/");
 });
 
 app.get("/register", (req, res) => {
@@ -166,9 +167,9 @@ app.get("/register", (req, res) => {
 // ---------------------
 // API Routes
 // ---------------------
-app.use("/api/auth", authRoutes); // Auth routes don't need the middleware
+app.use("/api/auth", authRoutes);
 app.use("/api/profile", authMiddleware, profileRoutes);
-app.use("/api/products", productRoutes); // Assuming some routes are public
+app.use("/api/products", productRoutes);
 app.use("/api/admin", authMiddleware, adminMiddleware, adminRoutes);
 app.use("/api/cart", authMiddleware, cartRoutes);
 app.use("/api/orders", authMiddleware, orderRoutes);
@@ -189,17 +190,16 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", message: "Your Merchandise API is running fine" });
 });
 
+if (process.env.NODE_ENV == "development") {
+  // ---------------------
+  // Serve React frontend (Reverse Proxy)
+  // ---------------------
+  const frontendPath = path.join(__dirname, "..", "frontend", "dist");
+  app.use(express.static(frontendPath));
 
-if (process.env.NODE_ENV=="development") {
-    // ---------------------
-    // Serve React frontend (Reverse Proxy)
-    // ---------------------
-    const frontendPath = path.join(__dirname, "..", "frontend", "dist");
-    app.use(express.static(frontendPath));
-
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(frontendPath, "index.html"));
-    });
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(frontendPath, "index.html"));
+  });
 }
 
 // ---------------------
@@ -214,7 +214,6 @@ app.use((err, req, res, next) => {
   }
 });
 
-
 app.get("/api/site-status", async (req, res) => {
   try {
     const closed = await redisClient.get("site_closed");
@@ -224,7 +223,6 @@ app.get("/api/site-status", async (req, res) => {
     res.status(500).json({ closed: false });
   }
 });
-
 
 // ---------------------
 // Start server
