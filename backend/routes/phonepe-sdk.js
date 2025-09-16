@@ -63,7 +63,7 @@ router.post("/initiate-payment", authMiddleware, async (req, res) => {
 
   const merchantOrderId = orderId;
   const amountPaisa = Math.round(amount * 100);
-  const redirectUrl = `${MERCHANT_REDIRECT_URL}/payment-success`;
+  const redirectUrl = `${MERCHANT_REDIRECT_URL}/payment-success?orderId=${merchantOrderId}`;
   
   console.log('PhonePe Request Details:', {
     merchantOrderId,
@@ -203,7 +203,97 @@ router.get("/order-status/:orderId", authMiddleware, async (req, res) => {
   }
 });
 
-// 4. Get Current Order ID from Session
+// 4. Create SDK Order (for mobile/frontend SDK integration)
+router.post("/create-sdk-order", authMiddleware, async (req, res) => {
+  const { orderId, amount } = req.body;
+  const userId = req.session.userId;
+  
+  if (!orderId || !amount || Number(amount) <= 0 || !userId) {
+    return res.status(400).json({ error: "Invalid parameters" });
+  }
+  
+  const merchantOrderId = orderId;
+  const amountPaisa = Math.round(amount * 100);
+  const redirectUrl = `${MERCHANT_REDIRECT_URL}/payment-success?orderId=${merchantOrderId}`;
+  
+  try {
+    await ensureOrder(merchantOrderId, userId, amount);
+    
+    const sdkRequest = CreateSdkOrderRequest.StandardCheckoutBuilder()
+      .merchantOrderId(merchantOrderId)
+      .amount(amountPaisa)
+      .redirectUrl(redirectUrl)
+      .build();
+    
+    const sdkResponse = await phonePeClient.createSdkOrder(sdkRequest);
+    
+    res.json({
+      token: sdkResponse.token,
+      orderId: merchantOrderId,
+      state: sdkResponse.state
+    });
+  } catch (err) {
+    console.error("SDK order creation error:", err);
+    res.status(500).json({ error: "SDK order creation failed", details: err.message });
+  }
+});
+
+// 5. Webhook Handler
+router.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+  const connection = await pool.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+    
+    const rawBody = req.body.toString();
+    const callbackData = JSON.parse(rawBody);
+    
+    console.log('PhonePe Webhook received:', callbackData);
+    
+    const merchantOrderId = callbackData.merchantOrderId;
+    const state = callbackData.state;
+    const transactionId = callbackData.transactionId;
+    
+    if (!merchantOrderId) {
+      return res.status(400).send("Missing merchantOrderId");
+    }
+    
+    // Map PhonePe states
+    let paymentStatus = "pending";
+    let orderStatus = "pending";
+    
+    if (state === "COMPLETED") {
+      paymentStatus = "completed";
+      orderStatus = "paid";
+    } else if (state === "FAILED") {
+      paymentStatus = "failed";
+      orderStatus = "pending";
+    }
+    
+    // Update payment status
+    await connection.execute(
+      "UPDATE payments SET status = ?, transaction_ref = ? WHERE order_id = ?",
+      [paymentStatus, transactionId, merchantOrderId]
+    );
+    
+    // Update order status
+    await connection.execute(
+      "UPDATE orders SET status = ?, payment_status = ? WHERE order_id = ?",
+      [orderStatus, paymentStatus, merchantOrderId]
+    );
+    
+    await connection.commit();
+    res.status(200).send("OK");
+  } catch (err) {
+    await connection.rollback();
+    console.error("Webhook handling error:", err);
+    res.status(500).send("Error");
+  } finally {
+    connection.release();
+  }
+});
+
+// 6. Get Current Order ID from Session
 router.get("/current-order", authMiddleware, async (req, res) => {
   const orderId = req.session.currentOrderId;
   if (!orderId) {
