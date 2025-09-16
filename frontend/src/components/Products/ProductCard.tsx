@@ -12,6 +12,8 @@ interface Product {
   category: string;
   description: string;
   stock: number;
+  additional_info?: any;
+  total_variant_stock?: number;
 }
 
 interface ProductCardProps {
