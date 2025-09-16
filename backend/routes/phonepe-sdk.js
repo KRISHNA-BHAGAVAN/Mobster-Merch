@@ -20,13 +20,14 @@ const router = express.Router();
 const clientId = process.env.PHONEPE_CLIENT_ID;
 const clientSecret = process.env.PHONEPE_CLIENT_SECRET;
 const clientVersion = parseInt(process.env.PHONEPE_CLIENT_VERSION);
-const env = Env.PRODUCTION; // Force production since you're using production credentials
+const phonepeEnv = (process.env.PHONEPE_ENV || "SANDBOX").toUpperCase();
+const env = phonepeEnv === "SANDBOX" ? Env.SANDBOX : Env.PRODUCTION; 
 
 console.log('PhonePe SDK Config:', {
   clientId: clientId ? `${clientId.substring(0, 10)}...` : 'MISSING',
   clientSecret: clientSecret ? 'SET' : 'MISSING',
   clientVersion,
-  env: 'PRODUCTION'
+  env: phonepeEnv
 });
 
 const phonePeClient = StandardCheckoutClient.getInstance(
@@ -104,10 +105,22 @@ router.post("/initiate-payment", authMiddleware, async (req, res) => {
     });
 
   } catch (err) {
-    console.error(err);
-    res
-      .status(500)
-      .json({ error: "Payment initiation failed", details: err.message });
+    console.error('PhonePe pay error:', err);
+    
+    // Handle INTERNAL_SECURITY_BLOCK_1 specifically
+    if (err.message && err.message.includes('INTERNAL_SECURITY_BLOCK_1')) {
+      return res.status(403).json({
+        error: "MERCHANT_ONBOARDING_REQUIRED",
+        details: "Your merchant account requires onboarding. Please complete merchant verification.",
+        onboardingUrls: ["https://mobstermerch.store/"],
+        phonepeError: err.message
+      });
+    }
+    
+    res.status(500).json({ 
+      error: "Payment initiation failed", 
+      details: err.message || "Unknown error"
+    });
   }
 });
 
