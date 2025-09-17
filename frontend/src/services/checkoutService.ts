@@ -37,7 +37,7 @@ export const checkoutService = {
     return apiCall('/checkout/addresses');
   },
 
-  createPhonePePayment: async (orderData: { orderId: string; amount: number }) => {
+  createPhonePePayment: async (orderData: { orderId: string; amount: number; address?: AddressData }) => {
     return apiCall('/phonepe/initiate-payment', {
       method: 'POST',
       body: JSON.stringify(orderData),

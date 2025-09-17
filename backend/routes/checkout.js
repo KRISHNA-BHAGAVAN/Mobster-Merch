@@ -131,10 +131,10 @@ router.post("/prepare-checkout", authMiddleware, async (req, res) => {
       try {
         const order_id = await generateUniqueOrderId(connection);
         
-        // Create a pending order for PhonePe
+        // Create a pending order for PhonePe with address
         await connection.execute(
-          "INSERT INTO orders (order_id, user_id, total, status, payment_status) VALUES (?, ?, ?, ?, ?)",
-          [order_id, user_id, total, "pending", "pending"]
+          "INSERT INTO orders (order_id, user_id, total, status, payment_status, address_line1, address_line2, city, district, state, country, pincode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          [order_id, user_id, total, "pending", "pending", address_line1, address_line2 || null, city, district || null, state, country || null, pincode]
         );
         
         // Insert order items with correct variant pricing

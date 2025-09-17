@@ -51,6 +51,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ orderId, o
       
       if (response.ok) {
         const data = await response.json();
+        console.log(data)
         setOrderDetails(data);
       }
     } catch (error) {

@@ -94,8 +94,10 @@ router.post("/initiate-payment", authMiddleware, async (req, res) => {
     // Store address in session if provided in request
     if (req.body.address) {
       req.session.checkoutAddress = req.body.address;
+      console.log(`📦 Address stored in session for order ${merchantOrderId}:`, req.body.address);
+    } else {
+      console.log(`⚠️ No address provided in payment request for order ${merchantOrderId}`);
     }
-
     const response = await phonePeClient.pay(request);
 
     res.json({
@@ -193,11 +195,57 @@ router.get("/order-status/:orderId", authMiddleware, async (req, res) => {
       );
     }
 
-    // Update order status
-    await connection.execute(
-      "UPDATE orders SET status = ?, payment_status = ? WHERE order_id = ?",
-      [orderStatus, paymentStatus, merchantOrderId]
-    );
+    // Update order status and address if payment is completed
+    if (orderState === "COMPLETED") {
+      let addressUpdate = "";
+      let addressParams = [orderStatus, paymentStatus, merchantOrderId];
+      
+      // Check if address is stored in current session
+      if (req.session && req.session.checkoutAddress) {
+        const addr = req.session.checkoutAddress;
+        addressUpdate = ", address_line1 = ?, address_line2 = ?, city = ?, district = ?, state = ?, country = ?, pincode = ?";
+        addressParams = [
+          orderStatus, paymentStatus,
+          addr.address_line1 || null,
+          addr.address_line2 || null, 
+          addr.city || null,
+          addr.district || null,
+          addr.state || null,
+          addr.country || null,
+          addr.pincode || null,
+          merchantOrderId
+        ];
+        
+        // Clear address from session and cart
+        delete req.session.checkoutAddress;
+        
+        // Clear cart for this user when payment is completed
+        await connection.execute(
+          "DELETE FROM cart WHERE user_id = ?",
+          [userId]
+        );
+        
+        console.log(`✅ Address updated for order ${merchantOrderId}, cart cleared, and session cleaned`);
+      } else {
+        console.log(`⚠️ No address found in session for order ${merchantOrderId}`);
+        
+        // Still clear cart even if no address
+        await connection.execute(
+          "DELETE FROM cart WHERE user_id = ?",
+          [userId]
+        );
+      }
+      
+      await connection.execute(
+        `UPDATE orders SET status = ?, payment_status = ?${addressUpdate} WHERE order_id = ?`,
+        addressParams
+      );
+    } else {
+      await connection.execute(
+        "UPDATE orders SET status = ?, payment_status = ? WHERE order_id = ?",
+        [orderStatus, paymentStatus, merchantOrderId]
+      );
+    }
 
     await connection.commit();
 
@@ -289,11 +337,36 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
       [paymentStatus, transactionId, merchantOrderId]
     );
     
-    // Update order status
-    await connection.execute(
-      "UPDATE orders SET status = ?, payment_status = ? WHERE order_id = ?",
-      [orderStatus, paymentStatus, merchantOrderId]
-    );
+    // Update order status and address if payment is completed
+    if (state === "COMPLETED") {
+      // For webhook, we can't access session data directly
+      // The address should have been stored when the order was created
+      // Just update the order status and clear cart
+      
+      // Get user_id from order to clear cart
+      const [orderData] = await connection.execute(
+        "SELECT user_id FROM orders WHERE order_id = ?",
+        [merchantOrderId]
+      );
+      
+      if (orderData.length > 0) {
+        await connection.execute(
+          "DELETE FROM cart WHERE user_id = ?",
+          [orderData[0].user_id]
+        );
+        console.log(`✅ Order ${merchantOrderId} status updated via webhook, cart cleared for user ${orderData[0].user_id}`);
+      }
+      
+      await connection.execute(
+        "UPDATE orders SET status = ?, payment_status = ? WHERE order_id = ?",
+        [orderStatus, paymentStatus, merchantOrderId]
+      );
+    } else {
+      await connection.execute(
+        "UPDATE orders SET status = ?, payment_status = ? WHERE order_id = ?",
+        [orderStatus, paymentStatus, merchantOrderId]
+      );
+    }
     
     await connection.commit();
     res.status(200).send("OK");
