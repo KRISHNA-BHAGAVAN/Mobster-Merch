@@ -1,6 +1,6 @@
 import express from "express";
 import pool from "../config/database.js";
-import { calculateVariantPrice, getTotalStock } from "../utils/variantHelper.js";
+import { getTotalStock, getProductDisplayPrice, getDefaultVariant, getDefaultVariantStock } from "../utils/variantHelper.js";
 
 const router = express.Router();
 
@@ -17,11 +17,25 @@ router.get("/get-available-products", async (req, res) => {
     
     // Add variant information to each product
     const productsWithVariants = rows.map(product => {
-      if (product.additional_info?.variants) {
+      if (product.additional_info?.variants && product.additional_info.variants.length > 0) {
         const totalStock = getTotalStock(product.additional_info, product.stock);
-        return { ...product, total_variant_stock: totalStock };
+        const displayPrice = getProductDisplayPrice(product);
+        const defaultVariant = getDefaultVariant(product.additional_info);
+        const defaultStock = getDefaultVariantStock(product.additional_info);
+        
+        return { 
+          ...product, 
+          total_variant_stock: totalStock,
+          display_price: displayPrice,
+          default_variant: defaultVariant,
+          current_stock: defaultStock
+        };
       }
-      return product;
+      return {
+        ...product,
+        display_price: parseFloat(product.price),
+        current_stock: product.stock
+      };
     });
     
     res.json(productsWithVariants);
@@ -84,9 +98,19 @@ router.get("/single/:id", async (req, res) => {
     }
     
     const product = rows[0];
-    if (product.additional_info?.variants) {
+    if (product.additional_info?.variants && product.additional_info.variants.length > 0) {
       const totalStock = getTotalStock(product.additional_info, product.stock);
+      const displayPrice = getProductDisplayPrice(product);
+      const defaultVariant = getDefaultVariant(product.additional_info);
+      const defaultStock = getDefaultVariantStock(product.additional_info);
+      
       product.total_variant_stock = totalStock;
+      product.display_price = displayPrice;
+      product.default_variant = defaultVariant;
+      product.current_stock = defaultStock;
+    } else {
+      product.display_price = parseFloat(product.price);
+      product.current_stock = product.stock;
     }
     
     res.json(product);

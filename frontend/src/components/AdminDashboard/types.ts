@@ -7,6 +7,9 @@ export interface Product {
   category_name: string;
   image_url: string;
   additional_info?: any;
+  display_price?: number;
+  current_stock?: number;
+  total_variant_stock?: number;
 }
 
 export interface Notification {

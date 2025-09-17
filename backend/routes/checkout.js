@@ -75,20 +75,27 @@ router.post("/prepare-checkout", authMiddleware, async (req, res) => {
       [user_id]
     );
     
-    // Calculate correct prices including variant modifiers
+    // Calculate correct prices using absolute variant pricing
     const cartItemsWithCorrectPrices = cartItems.map(item => {
       let finalPrice = parseFloat(item.price);
       
-      if (item.variant_id && item.additional_info) {
+      if (item.additional_info) {
         try {
           const additionalInfo = typeof item.additional_info === 'string' 
             ? JSON.parse(item.additional_info) 
             : item.additional_info;
           
-          if (additionalInfo.variants) {
-            const variant = additionalInfo.variants.find(v => v.id === item.variant_id);
-            if (variant && variant.price_modifier) {
-              finalPrice += parseFloat(variant.price_modifier);
+          if (additionalInfo.variants && additionalInfo.variants.length > 0) {
+            if (item.variant_id) {
+              const selectedVariant = additionalInfo.variants.find(v => v.id === item.variant_id);
+              if (selectedVariant) {
+                finalPrice = parseFloat(selectedVariant.price || 0);
+              }
+            } else {
+              const defaultVariant = additionalInfo.variants.find(v => v.is_default) || additionalInfo.variants[0];
+              if (defaultVariant) {
+                finalPrice = parseFloat(defaultVariant.price || 0);
+              }
             }
           }
         } catch (e) {
@@ -131,10 +138,10 @@ router.post("/prepare-checkout", authMiddleware, async (req, res) => {
       try {
         const order_id = await generateUniqueOrderId(connection);
         
-        // Create a pending order for PhonePe with address
+        // Create a pending order for PhonePe (without address)
         await connection.execute(
-          "INSERT INTO orders (order_id, user_id, total, status, payment_status, address_line1, address_line2, city, district, state, country, pincode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-          [order_id, user_id, total, "pending", "pending", address_line1, address_line2 || null, city, district || null, state, country || null, pincode]
+          "INSERT INTO orders (order_id, user_id, total, status, payment_status) VALUES (?, ?, ?, ?, ?)",
+          [order_id, user_id, total, "pending", "pending"]
         );
         
         // Insert order items with correct variant pricing
@@ -215,20 +222,27 @@ router.post("/create-order-with-payment", authMiddleware, async (req, res) => {
       return res.status(400).json({ message: "Cart is empty" });
     }
     
-    // Calculate correct prices including variant modifiers
+    // Calculate correct prices using absolute variant pricing
     const cartItemsWithCorrectPrices = cartItems.map(item => {
       let finalPrice = parseFloat(item.price);
       
-      if (item.variant_id && item.additional_info) {
+      if (item.additional_info) {
         try {
           const additionalInfo = typeof item.additional_info === 'string' 
             ? JSON.parse(item.additional_info) 
             : item.additional_info;
           
-          if (additionalInfo.variants) {
-            const variant = additionalInfo.variants.find(v => v.id === item.variant_id);
-            if (variant && variant.price_modifier) {
-              finalPrice += parseFloat(variant.price_modifier);
+          if (additionalInfo.variants && additionalInfo.variants.length > 0) {
+            if (item.variant_id) {
+              const selectedVariant = additionalInfo.variants.find(v => v.id === item.variant_id);
+              if (selectedVariant) {
+                finalPrice = parseFloat(selectedVariant.price || 0);
+              }
+            } else {
+              const defaultVariant = additionalInfo.variants.find(v => v.is_default) || additionalInfo.variants[0];
+              if (defaultVariant) {
+                finalPrice = parseFloat(defaultVariant.price || 0);
+              }
             }
           }
         } catch (e) {

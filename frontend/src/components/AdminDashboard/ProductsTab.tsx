@@ -45,9 +45,25 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
       ...(variantConfig || {})
     };
     
+    // Calculate price and stock based on variants or use direct values
+    let finalPrice = formData.price;
+    let finalStock = formData.stock;
+    
+    if (variantConfig && variantConfig.variants && variantConfig.variants.length > 0) {
+      const defaultVariant = variantConfig.variants.find(v => v.is_default);
+      if (defaultVariant) {
+        finalPrice = defaultVariant.price.toString();
+        finalStock = '0'; // Stock managed by variants
+      }
+    }
+    
     Object.entries(formData).forEach(([key, value]) => {
       if (key === 'additional_info') {
         formDataToSend.append(key, JSON.stringify(combinedAdditionalInfo));
+      } else if (key === 'price') {
+        formDataToSend.append(key, finalPrice);
+      } else if (key === 'stock') {
+        formDataToSend.append(key, finalStock);
       } else {
         formDataToSend.append(key, value);
       }
@@ -100,7 +116,12 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
     
     // Set variant config if exists
     if (variants || variant_fields) {
-      setVariantConfig({ variants: variants || [], variant_fields: variant_fields || [] });
+      const variantConfig = { 
+        variants: variants || [], 
+        variant_fields: variant_fields || [],
+        default_variant_id: variants?.find(v => v.is_default)?.id
+      };
+      setVariantConfig(variantConfig);
     } else {
       setVariantConfig(null);
     }
@@ -273,27 +294,31 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                   className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-red-500"
                   required
                 />
-                <input
-                  placeholder="Price"
-                  type="number"
-                  step="0.01"
-                  value={formData.price}
-                  onChange={(e) =>
-                    setFormData({ ...formData, price: e.target.value })
-                  }
-                  className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-red-500"
-                  required
-                />
-                <input
-                  placeholder="Stock"
-                  type="number"
-                  value={formData.stock}
-                  onChange={(e) =>
-                    setFormData({ ...formData, stock: e.target.value })
-                  }
-                  className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-red-500"
-                  required
-                />
+                {!variantConfig && (
+                  <input
+                    placeholder="Price"
+                    type="number"
+                    step="0.01"
+                    value={formData.price}
+                    onChange={(e) =>
+                      setFormData({ ...formData, price: e.target.value })
+                    }
+                    className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-red-500"
+                    required
+                  />
+                )}
+                {!variantConfig && (
+                  <input
+                    placeholder="Stock"
+                    type="number"
+                    value={formData.stock}
+                    onChange={(e) =>
+                      setFormData({ ...formData, stock: e.target.value })
+                    }
+                    className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-red-500"
+                    required
+                  />
+                )}
                 <select
                   value={formData.category}
                   onChange={(e) =>
@@ -517,8 +542,11 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                 {product.description}
               </p>
               <div className="flex justify-between items-center mb-4 text-sm font-mono text-red-400">
-                <span>₹{product.price}</span>
-                <span className="text-gray-400">Stock: {product.stock}</span>
+                <span>₹{product.display_price || product.price}</span>
+                <span className="text-gray-400">
+                  Stock: {product.additional_info?.variants && product.additional_info.variants.length > 0 ? 
+                    (product.total_variant_stock || product.stock || 0) : product.stock}
+                </span>
               </div>
               <div className="flex gap-2">
                 <button
@@ -559,8 +587,11 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                 {product.description}
               </p>
               <div className="flex justify-between items-center mb-4 text-sm font-mono text-red-400">
-                <span>₹{product.price}</span>
-                <span className="text-gray-400">Stock: {product.stock}</span>
+                <span>₹{product.display_price || product.price}</span>
+                <span className="text-gray-400">
+                  Stock: {product.additional_info?.variants && product.additional_info.variants.length > 0 ? 
+                    (product.total_variant_stock || product.stock || 0) : product.stock}
+                </span>
               </div>
               <div className="flex gap-2">
                 <button

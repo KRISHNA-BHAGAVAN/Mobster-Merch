@@ -55,7 +55,12 @@ export const AllProducts: React.FC = () => {
     }
 
     try {
-      await cartService.addToCart({ product_id: productId, quantity: 1 });
+      // For products without variants, variant_id should be null/undefined
+      await cartService.addToCart({ 
+        product_id: productId, 
+        quantity: 1,
+        variant_id: undefined
+      });
       await Promise.all([fetchCartItems(), refreshCart()]);
       showToast("Added to cart successfully!", "success");
     } catch (error) {

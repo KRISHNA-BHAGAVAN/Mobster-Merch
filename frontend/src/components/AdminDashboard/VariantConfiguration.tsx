@@ -12,8 +12,9 @@ interface Variant {
   id: string;
   name: string;
   options: VariantOption;
-  price_modifier: number;
+  price: number;
   stock: number;
+  is_default?: boolean;
 }
 
 interface VariantField {
@@ -26,6 +27,7 @@ interface VariantField {
 interface VariantConfig {
   variants: Variant[];
   variant_fields: VariantField[];
+  default_variant_id?: string;
 }
 
 interface VariantConfigurationProps {
@@ -120,13 +122,15 @@ export const VariantConfiguration: React.FC<VariantConfigurationProps> = ({
       id: `variant_${Date.now()}_${index}`,
       name: Object.values(combo).join(' - '),
       options: combo,
-      price_modifier: 0,
-      stock: 0
+      price: 0,
+      stock: 0,
+      is_default: index === 0
     }));
 
     onChange({
       ...config,
-      variants: newVariants
+      variants: newVariants,
+      default_variant_id: newVariants[0]?.id
     });
   };
 
@@ -157,9 +161,17 @@ export const VariantConfiguration: React.FC<VariantConfigurationProps> = ({
     const newVariants = [...config.variants];
     newVariants[index] = { ...newVariants[index], ...updates };
     
+    // If setting as default, unset other defaults
+    if (updates.is_default) {
+      newVariants.forEach((variant, i) => {
+        if (i !== index) variant.is_default = false;
+      });
+    }
+    
     onChange({
       ...config,
-      variants: newVariants
+      variants: newVariants,
+      default_variant_id: updates.is_default ? newVariants[index].id : config.default_variant_id
     });
   };
 
@@ -297,8 +309,10 @@ export const VariantConfiguration: React.FC<VariantConfigurationProps> = ({
                 <h4 className="text-md font-semibold text-white mb-3">Generated Variants</h4>
                 <div className="space-y-3">
                   {config.variants.map((variant, index) => (
-                    <div key={variant.id} className="p-3 bg-gray-900 rounded border border-gray-700">
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div key={variant.id} className={`p-3 bg-gray-900 rounded border ${
+                      variant.is_default ? 'border-green-500' : 'border-gray-700'
+                    }`}>
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                         <input
                           placeholder="Variant Name"
                           value={variant.name}
@@ -306,23 +320,39 @@ export const VariantConfiguration: React.FC<VariantConfigurationProps> = ({
                           className="p-2 bg-gray-800 border border-gray-600 rounded text-white text-sm"
                         />
                         <input
-                          placeholder="Price Modifier (₹)"
+                          placeholder="Price (₹)"
                           type="number"
-                          step="1"
-                          value={variant.price_modifier}
+                          step="0.1"
+                          value={variant.price}
                           onChange={(e) => {
-                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                            updateVariant(index, { price_modifier: value });
+                            const value = parseFloat(e.target.value);
+                            updateVariant(index, { price: value });
                           }}
+                          required
                           className="p-2 bg-gray-800 border border-gray-600 rounded text-white text-sm"
                         />
                         <input
                           placeholder="Stock"
                           type="number"
                           value={variant.stock}
-                          onChange={(e) => updateVariant(index, { stock: parseInt(e.target.value) || 0 })}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            updateVariant(index, { stock: value });
+                          }}
+                          required
                           className="p-2 bg-gray-800 border border-gray-600 rounded text-white text-sm"
                         />
+                        <button
+                          type="button"
+                          onClick={() => updateVariant(index, { is_default: !variant.is_default })}
+                          className={`px-3 py-2 rounded text-sm transition-colors ${
+                            variant.is_default 
+                              ? 'bg-green-600 text-white hover:bg-green-700' 
+                              : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                          }`}
+                        >
+                          {variant.is_default ? 'Default' : 'Set Default'}
+                        </button>
                         <button
                           type="button"
                           onClick={() => removeVariant(index)}
@@ -333,6 +363,7 @@ export const VariantConfiguration: React.FC<VariantConfigurationProps> = ({
                       </div>
                       <div className="mt-2 text-xs text-gray-400">
                         Options: {Object.entries(variant.options).map(([key, value]) => `${key}: ${value}`).join(', ')}
+                        {variant.is_default && <span className="ml-2 text-green-400 font-semibold">(Default Variant)</span>}
                       </div>
                     </div>
                   ))}

@@ -3,6 +3,7 @@ import pool from '../config/database.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import { redisClient } from '../config/redis.js';
 import { upload, uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinaryUpload.js';
+import { getTotalStock } from '../utils/variantHelper.js';
 
 const router = express.Router();
 
@@ -34,6 +35,8 @@ router.post('/create-product', authMiddleware, adminMiddleware, upload.single('i
     }
     
     let additionalInfoJson = null;
+    let finalStock = stock;
+    
     if (additional_info) {
       additionalInfoJson = JSON.parse(additional_info);
       
@@ -47,12 +50,14 @@ router.post('/create-product', authMiddleware, adminMiddleware, upload.single('i
             return res.status(400).json({ message: 'Variant stock cannot be negative' });
           }
         }
+        // Calculate total stock from variants
+        finalStock = getTotalStock(additionalInfoJson, 0);
       }
     }
     
     const [result] = await pool.execute(
       'INSERT INTO products (name, description, price, stock, category_id, image_url, cloudinary_public_id, additional_info) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [name, description, price, stock, category_id, imageUrl, cloudinaryPublicId, additionalInfoJson]
+      [name, description, price, finalStock, category_id, imageUrl, cloudinaryPublicId, additionalInfoJson]
     );
     
     res.status(201).json({ 
@@ -92,10 +97,16 @@ router.put('/products/:id', authMiddleware, adminMiddleware, upload.single('imag
     }
     
     const additionalInfoJson = additional_info ? JSON.parse(additional_info) : null;
+    let finalStock = stock;
+    
+    // Calculate total stock from variants if they exist
+    if (additionalInfoJson?.variants) {
+      finalStock = getTotalStock(additionalInfoJson, 0);
+    }
     
     const [result] = await pool.execute(
       'UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category_id = ?, image_url = ?, cloudinary_public_id = ?, additional_info = ? WHERE product_id = ?',
-      [name, description, price, stock, category_id, imageUrl, cloudinaryPublicId, additionalInfoJson, productId]
+      [name, description, price, finalStock, category_id, imageUrl, cloudinaryPublicId, additionalInfoJson, productId]
     );
     
     res.json({ message: 'Product updated successfully', image_url: imageUrl });

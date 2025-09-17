@@ -58,24 +58,25 @@ export const ProductDetails: React.FC = () => {
     try {
       const data = await productService.getProductById(productId);
       setProduct(data);
-      setCurrentPrice(data.price);
-      setCurrentStock(data.stock);
       
-      // If product has variants, initialize selection
+      // If product has variants, initialize with default variant
       if (data.additional_info?.variants && data.additional_info.variants.length > 0) {
-        const firstVariant = data.additional_info.variants[0];
-        setSelectedVariant(firstVariant.id);
-        const basePrice = parseFloat(data.price) || 0;
-        const modifier = parseFloat(firstVariant.price_modifier) || 0;
-        setCurrentPrice(basePrice + modifier);
-        setCurrentStock(firstVariant.stock || 0);
+        const defaultVariant = data.additional_info.variants.find((v: any) => v.is_default) || data.additional_info.variants[0];
+        setSelectedVariant(defaultVariant.id);
         
-        // Initialize selected options
+        setCurrentPrice(parseFloat(defaultVariant.price) || 0);
+        setCurrentStock(defaultVariant.stock || 0);
+        
+        // Initialize selected options with default variant
         const initialOptions: {[key: string]: string} = {};
-        Object.entries(firstVariant.options || {}).forEach(([key, value]) => {
+        Object.entries(defaultVariant.options || {}).forEach(([key, value]) => {
           initialOptions[key] = value as string;
         });
         setSelectedOptions(initialOptions);
+      } else {
+        // No variants, use original price and stock
+        setCurrentPrice(data.display_price || data.price);
+        setCurrentStock(data.current_stock || data.stock);
       }
     } catch (error) {
       console.error("Error fetching product:", error);
@@ -100,9 +101,7 @@ export const ProductDetails: React.FC = () => {
       
       if (matchingVariant) {
         setSelectedVariant(matchingVariant.id);
-        const basePrice = parseFloat(product.price) || 0;
-        const modifier = parseFloat(matchingVariant.price_modifier) || 0;
-        setCurrentPrice(basePrice + modifier);
+        setCurrentPrice(parseFloat(matchingVariant.price) || 0);
         setCurrentStock(matchingVariant.stock || 0);
         setQuantity(1); // Reset quantity when variant changes
       }
@@ -239,11 +238,6 @@ export const ProductDetails: React.FC = () => {
               </h1>
               <p className="text-2xl font-bold text-red-500 mt-4">
                 ₹{Number(currentPrice || 0).toFixed(0)}
-                {product.additional_info?.variants && currentPrice !== product.price && (
-                  <span className="text-sm text-gray-400 ml-2 line-through">
-                    ₹{Number(product.price || 0).toFixed(0)}
-                  </span>
-                )}
               </p>
             </div>
 

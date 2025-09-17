@@ -24,9 +24,6 @@ const phonepeEnv = (process.env.PHONEPE_ENV).toUpperCase();
 const env = phonepeEnv === "SANDBOX" ? Env.SANDBOX : Env.PRODUCTION; 
 
 console.log('PhonePe SDK Config:', {
-  clientId: clientId ? `${clientId.substring(0, 10)}...` : 'MISSING',
-  clientSecret: clientSecret ? 'SET' : 'MISSING',
-  clientVersion,
   env: phonepeEnv
 });
 
@@ -195,50 +192,31 @@ router.get("/order-status/:orderId", authMiddleware, async (req, res) => {
       );
     }
 
-    // Update order status and address if payment is completed
+    // Update order status and store address when payment is completed
     if (orderState === "COMPLETED") {
-      let addressUpdate = "";
-      let addressParams = [orderStatus, paymentStatus, merchantOrderId];
-      
-      // Check if address is stored in current session
+      // Store address from session to orders table when payment is completed
       if (req.session && req.session.checkoutAddress) {
         const addr = req.session.checkoutAddress;
-        addressUpdate = ", address_line1 = ?, address_line2 = ?, city = ?, district = ?, state = ?, country = ?, pincode = ?";
-        addressParams = [
-          orderStatus, paymentStatus,
-          addr.address_line1 || null,
-          addr.address_line2 || null, 
-          addr.city || null,
-          addr.district || null,
-          addr.state || null,
-          addr.country || null,
-          addr.pincode || null,
-          merchantOrderId
-        ];
+        await connection.execute(
+          "UPDATE orders SET status = ?, payment_status = ?, address_line1 = ?, address_line2 = ?, city = ?, district = ?, state = ?, country = ?, pincode = ? WHERE order_id = ?",
+          [orderStatus, paymentStatus, addr.address_line1, addr.address_line2, addr.city, addr.district, addr.state, addr.country, addr.pincode, merchantOrderId]
+        );
         
-        // Clear address from session and cart
+        // Clear address from session
         delete req.session.checkoutAddress;
-        
-        // Clear cart for this user when payment is completed
-        await connection.execute(
-          "DELETE FROM cart WHERE user_id = ?",
-          [userId]
-        );
-        
-        console.log(`✅ Address updated for order ${merchantOrderId}, cart cleared, and session cleaned`);
+        console.log(`✅ Payment completed: Address stored in orders table for ${merchantOrderId}`);
       } else {
-        console.log(`⚠️ No address found in session for order ${merchantOrderId}`);
-        
-        // Still clear cart even if no address
         await connection.execute(
-          "DELETE FROM cart WHERE user_id = ?",
-          [userId]
+          "UPDATE orders SET status = ?, payment_status = ? WHERE order_id = ?",
+          [orderStatus, paymentStatus, merchantOrderId]
         );
+        console.log(`⚠️ Payment completed but no address in session for ${merchantOrderId}`);
       }
       
+      // Clear cart when payment is completed
       await connection.execute(
-        `UPDATE orders SET status = ?, payment_status = ?${addressUpdate} WHERE order_id = ?`,
-        addressParams
+        "DELETE FROM cart WHERE user_id = ?",
+        [userId]
       );
     } else {
       await connection.execute(

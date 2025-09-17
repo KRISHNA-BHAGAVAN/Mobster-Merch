@@ -1,12 +1,12 @@
 import express from 'express';
 import pool from '../config/database.js';
-import { authMiddleware } from '../middleware/auth.js';
-import { validateVariantSelection, calculateVariantPrice, findVariantById } from '../utils/variantHelper.js';
+
+import { validateVariantSelection, findVariantById, getDefaultVariant, getVariantPrice } from '../utils/variantHelper.js';
 
 const router = express.Router();
 
 // Add to cart
-router.post('/',  async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { product_id, quantity, variant_id } = req.body;
     const user_id = req.session.userId;
@@ -22,6 +22,8 @@ router.post('/',  async (req, res) => {
     }
     
     const product = productRows[0];
+    console.log(`Product rows: ${JSON.stringify(product)}`);
+
     
     // Validate variant if provided
     if (variant_id) {
@@ -51,6 +53,7 @@ router.post('/',  async (req, res) => {
         'INSERT INTO cart (user_id, product_id, quantity, variant_id) VALUES (?, ?, ?, ?)',
         [user_id, product_id, quantity, variant_id]
       );
+      console.log(`REsult from cart: ${result}`)
       res.status(201).json({ message: 'Added to cart', cart_id: result.insertId });
     }
   } catch (error) {
@@ -59,7 +62,7 @@ router.post('/',  async (req, res) => {
 });
 
 // Get cart items
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const user_id = req.session.userId;
     const [rows] = await pool.execute(`
@@ -77,12 +80,18 @@ router.get('/', authMiddleware, async (req, res) => {
       if (item.variant_id && item.additional_info?.variants) {
         const variant = findVariantById(item.additional_info, item.variant_id);
         if (variant) {
-          finalPrice = calculateVariantPrice(item.price, variant.price_modifier);
+          finalPrice = parseFloat(variant.price) || 0;
           variantDetails = {
             id: variant.id,
             name: variant.name,
             options: variant.options
           };
+        }
+      } else if (item.additional_info?.variants && item.additional_info.variants.length > 0) {
+        // Product has variants but no specific variant selected, use default variant price
+        const defaultVariant = getDefaultVariant(item.additional_info);
+        if (defaultVariant) {
+          finalPrice = parseFloat(defaultVariant.price) || 0;
         }
       }
       
@@ -102,7 +111,7 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 // Update cart quantity
-router.put('/:cart_id',  async (req, res) => {
+router.put('/:cart_id', async (req, res) => {
   try {
     const { quantity } = req.body;
     const [result] = await pool.execute(
@@ -121,7 +130,7 @@ router.put('/:cart_id',  async (req, res) => {
 });
 
 // Remove from cart
-router.delete('/:cart_id',  async (req, res) => {
+router.delete('/:cart_id', async (req, res) => {
   try {
     const [result] = await pool.execute('DELETE FROM cart WHERE cart_id = ?', [req.params.cart_id]);
     
@@ -158,7 +167,7 @@ router.put('/product/:product_id', async (req, res) => {
 });
 
 // Remove from cart by product_id
-router.delete('/product/:product_id', authMiddleware, async (req, res) => {
+router.delete('/product/:product_id', async (req, res) => {
   try {
     const user_id = req.session.userId;
     const product_id = req.params.product_id;

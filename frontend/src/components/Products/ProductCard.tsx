@@ -14,6 +14,9 @@ interface Product {
   stock: number;
   additional_info?: any;
   total_variant_stock?: number;
+  display_price?: number;
+  original_price?: number;
+  current_stock?: number;
 }
 
 interface ProductCardProps {
@@ -75,7 +78,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             </p>
             <div className="flex justify-between items-center mb-3">
               <p className="text-primary font-bold font-mono">
-                ₹{product.price}
+                ₹{product.display_price || product.price}
               </p>
             </div>
             {cartQuantity > 0 ? (
@@ -94,7 +97,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 <button
                   className="hover:text-red-500 p-1 border border-gray-400 rounded-sm"
                   disabled={cartQuantity >= (product.additional_info?.variants ? 
-                    (product.total_variant_stock || 0) : product.stock)}
+                    (product.current_stock || product.total_variant_stock || 0) : product.stock)}
                   onClick={() =>
                     onUpdateQuantity(product.product_id, cartQuantity + 1)
                   }
@@ -107,16 +110,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 style={{ width: "100%" }}
                 className={`heading-font tracking-wider text-sm p-3 rounded-md cursor-pointer ${
                   (product.additional_info?.variants ? 
-                    (product.total_variant_stock || 0) === 0 : product.stock === 0) 
+                    (product.current_stock || product.total_variant_stock || 0) === 0 : product.stock === 0) 
                     ? 'bg-gray-600 text-gray-300' 
                     : 'bg-red-600'
                 }`}
                 onClick={() => {
                   const hasStock = product.additional_info?.variants ? 
-                    (product.total_variant_stock || 0) > 0 : product.stock > 0;
+                    (product.current_stock || product.total_variant_stock || 0) > 0 : product.stock > 0;
                   if (hasStock) {
                     // For variant products, navigate to detail page for selection
-                    if (product.additional_info?.variants) {
+                    if (product.additional_info?.variants && product.additional_info.variants.length > 0) {
                       window.location.href = `/product/${product.product_id}`;
                     } else {
                       onAddToCart(product.product_id);
@@ -124,12 +127,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   }
                 }}
                 disabled={(product.additional_info?.variants ? 
-                  (product.total_variant_stock || 0) === 0 : product.stock === 0)}
+                  (product.current_stock || product.total_variant_stock || 0) === 0 : product.stock === 0)}
               >
                 {(product.additional_info?.variants ? 
-                  (product.total_variant_stock || 0) === 0 : product.stock === 0) 
+                  (product.current_stock || product.total_variant_stock || 0) === 0 : product.stock === 0) 
                   ? 'NOTIFY ME' 
-                  : (product.additional_info?.variants ? 'SELECT OPTIONS' : 'ADD TO CART')}
+                  : (product.additional_info?.variants && product.additional_info.variants.length > 0 ? 'SELECT OPTIONS' : 'ADD TO CART')}
               </button>
             )}
           </div>
