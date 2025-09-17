@@ -30,7 +30,7 @@ export const Footer: React.FC<FooterProps> = ({ showNavbar }) =>{
 
               <div className="flex gap-4">
                 <a
-                  href="https://www.instagram.com/mobster_merch_offcl?igsh=YjhwYWVnNTlkb3dl&utm_source=qr"
+                  href="https://www.instagram.com/mobstermerch_store?igsh=YjhwYWVnNTlkb3dl&utm_source=qr"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Instagram"
