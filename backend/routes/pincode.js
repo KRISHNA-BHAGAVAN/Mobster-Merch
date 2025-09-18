@@ -38,7 +38,11 @@ router.get('/:code', async (req, res) => {
 
   } catch (err) {
     console.error('Pincode lookup error:', err.response?.data || err.message);
-    res.status(500).json({ error: 'Server error' });
+    res.status(503).json({ 
+      error: 'Pincode service temporarily unavailable', 
+      message: 'Please enter your address details manually',
+      allowManualInput: true 
+    });
   }
 });
 

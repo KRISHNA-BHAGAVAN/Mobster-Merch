@@ -33,6 +33,8 @@ export const CheckoutPage: React.FC = () => {
   const [pincodeError, setPincodeError] = useState('');
   const [availableCities, setAvailableCities] = useState<string[]>([]);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
+  const [manualInputMode, setManualInputMode] = useState(false);
+  const [pincodeSuccess, setPincodeSuccess] = useState(false);
 
   const handlePincodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const pincode = e.target.value.replace(/\D/g, '').slice(0, 6);
@@ -46,11 +48,20 @@ export const CheckoutPage: React.FC = () => {
         const data = await response.json();
         
         if (data.error) {
-          setPincodeError(data.error);
-          setAddressForm(prev => ({...prev, city: '', district: '', state: ''}));
+          setPincodeSuccess(false);
+          if (data.allowManualInput) {
+            setManualInputMode(true);
+            setPincodeError(data.message || 'Please enter address details manually');
+            toast.error('Pincode service unavailable. Please enter details manually.');
+          } else {
+            setPincodeError(data.error);
+          }
           setAvailableCities([]);
           setShowCityDropdown(false);
         } else {
+          setPincodeSuccess(true);
+          setManualInputMode(false);
+          setPincodeError('');
           setAvailableCities(data.cities || []);
           setShowCityDropdown(data.cities && data.cities.length > 0);
           setAddressForm(prev => ({
@@ -62,14 +73,19 @@ export const CheckoutPage: React.FC = () => {
           }));
         }
       } catch (error) {
-        setPincodeError('Failed to fetch location details');
+        setPincodeSuccess(false);
+        setManualInputMode(true);
+        setPincodeError('Pincode service unavailable. Please enter address details manually.');
+        toast.error('Pincode service unavailable. Please enter details manually.');
       } finally {
         setPincodeLoading(false);
       }
     } else if (pincode.length < 6) {
-      setAddressForm(prev => ({...prev, city: '', district: '', state: ''}));
+      setPincodeSuccess(false);
       setAvailableCities([]);
       setShowCityDropdown(false);
+      setManualInputMode(false);
+      setPincodeError('');
     }
   };
 
@@ -143,7 +159,12 @@ export const CheckoutPage: React.FC = () => {
                 )}
               </div>
               {pincodeError && (
-                <p className="text-red-400 text-sm">{pincodeError}</p>
+                <div className="text-red-400 text-sm">
+                  <p>{pincodeError}</p>
+                  {manualInputMode && (
+                    <p className="text-yellow-400 mt-1">💡 You can now enter city, district, state, and country manually below.</p>
+                  )}
+                </div>
               )}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {showCityDropdown ? (
@@ -180,11 +201,11 @@ export const CheckoutPage: React.FC = () => {
                   value={addressForm.district}
                   onChange={(e) => setAddressForm({...addressForm, district: e.target.value})}
                   className={`w-full p-3 border border-gray-600 rounded-lg text-white ${
-                    addressForm.district && addressForm.pincode.length === 6 
+                    pincodeSuccess && addressForm.district
                       ? 'bg-gray-600' 
                       : 'bg-gray-700'
                   }`}
-                  readOnly={addressForm.district && addressForm.pincode.length === 6}
+                  readOnly={pincodeSuccess && addressForm.district}
                   required
                 />
                 <input
@@ -195,11 +216,11 @@ export const CheckoutPage: React.FC = () => {
                   value={addressForm.state}
                   onChange={(e) => setAddressForm({...addressForm, state: e.target.value})}
                   className={`w-full p-3 border border-gray-600 rounded-lg text-white ${
-                    addressForm.state && addressForm.pincode.length === 6 
+                    pincodeSuccess && addressForm.state
                       ? 'bg-gray-600' 
                       : 'bg-gray-700'
                   }`}
-                  readOnly={addressForm.state && addressForm.pincode.length === 6}
+                  readOnly={pincodeSuccess && addressForm.state}
                   required
                 />
                 <input
@@ -210,11 +231,11 @@ export const CheckoutPage: React.FC = () => {
                   value={addressForm.country}
                   onChange={(e) => setAddressForm({...addressForm, country: e.target.value})}
                   className={`w-full p-3 border border-gray-600 rounded-lg text-white ${
-                    addressForm.country && addressForm.pincode.length === 6 
+                    pincodeSuccess && addressForm.country
                       ? 'bg-gray-600' 
                       : 'bg-gray-700'
                   }`}
-                  readOnly={addressForm.country && addressForm.pincode.length === 6}
+                  readOnly={pincodeSuccess && addressForm.country}
                   required
                 />
               </div>
